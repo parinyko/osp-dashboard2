@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="3600">
+
+<title>OSP BKK Dashboard</title>
+
+<style>
+
+    .zone-dmp{
+    background:#ead7cc;
+    font-weight:bold;
+}
+
+.zone-origin{
+    background:#c7cfde;
+    font-weight:bold;
+}
+
+.zone-sct{
+    background:#ebc5a7;
+    font-weight:bold;
+}
+
+.zone-bpl{
+    background:#a9c98e;
+    font-weight:bold;
+}
+
+.zone-tlc{
+    background:#eedb95;
+    font-weight:bold;
+}
+
+.zone-cwt{
+    background:#aab9d8;
+    font-weight:bold;
+}
+
+.zone-eds{
+    background:#ecd991;
+    font-weight:bold;
+}
+
+.zone-spare{
+    background:#d984dc;
+    font-weight:bold;
+}
+
+.zone-bkk2{
+    background:#e9c4a9;
+    font-weight:bold;
+}
+
+.zone-spk{
+    background:#aab9d8;
+    font-weight:bold;
+}
+
+.zone-ntb{
+    background:#ffc000;
+    font-weight:bold;
+}
+
+.zone-ais{
+    background:#92d050;
+    font-weight:bold;
+}
+
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:5px;
+    font-size:11px;
+}
+
+h1{
+    text-align:center;
+    color:red;
+    margin:2px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.info{
+    text-align:center;
+    margin:2px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+}
+
+th,td{
+    border:1px solid #cccccc;
+    padding:3px;
+    text-align:center;
+    font-size:11px;
+    white-space:nowrap;
+}
+
+th{
+    background:#4f81bd;
+    color:white;
+}
+
+.zone{
+    width:70px;
+    font-weight:bold;
+}
+
+.user{
+    width:120px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.user-status{
+    width:80px;
+}
+
+.job-zero{
+    background:#d9ead3;
+    color:black;
+    font-weight:bold;
+}
+
+.job-work{
+    background:#ffffff;
+    color:red;
+    font-weight:bold;
+}
+
+.status-col{
+    width:160px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-weight:bold;
+}
+
+.remark-col{
+    width:220px;
+}
+
+.remark-input{
+    width:98%;
+    border:none;
+    background:#fffde7;
+    font-size:11px;
+    padding:2px;
+}
+
+.working{
+    background:#ffffff;   /* พื้นขาว */
+    color:red;            /* ตัวหนังสือแดง */
+    font-weight:bold;
+}
+
+.free{
+    background:#d9ead3;   /* พื้นเขียว */
+    color:black;          /* ตัวหนังสือดำ */
+    font-weight:bold;
+}
+
+</style>
+
+</head>
+<div style="text-align:right; margin-bottom:10px;">
+    Auto Refresh :
+    <span id="countdown" style="font-weight:bold;color:red;"></span>
+</div>
+
+<script>
+let timeLeft = 60;
+
+function updateTimer() {
+
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+
+    document.getElementById("countdown").innerText =
+        minutes + ":" + String(seconds).padStart(2,'0');
+
+    if(timeLeft <= 0){
+        location.reload();
+    }
+
+    timeLeft--;
+}
+
+updateTimer();
+setInterval(updateTimer, 1000);
+</script>
+<script>
+
+function saveAllRemarks(){
+
+    const inputs =
+        document.querySelectorAll(".remark-input");
+
+async function saveAllRemarks(){
+
+    const inputs =
+        document.querySelectorAll(".remark-input");
+
+    for (const input of inputs){
+
+        const user =
+            input.id.replace("remark_","");
+
+        await fetch("/save_remark",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":
+                "application/x-www-form-urlencoded"
+            },
+
+            body:
+                "user=" + encodeURIComponent(user) +
+                "&remark=" + encodeURIComponent(input.value)
+        });
+    }
+
+    alert("✅ บันทึก Remark เรียบร้อย");
+}
+
+</script>
+<body>
+</a>
+<h1>TEAM OSP BKK Dashboard</h1>
+
+<div class="info">
+    Last Update : {{ last_update }}
+</div>
+
+<form method="POST"
+      enctype="multipart/form-data"
+      style="
+          display:flex;
+          align-items:center;
+          width:100%;
+          gap:5px;
+      ">
+
+    <input type="file" name="file">
+
+    <button type="submit"
+            style="
+                background:#d9ead3;
+                font-weight:bold;
+            ">
+        📤 Upload Excel
+    </button>
+
+    <button type="button"
+            onclick="window.location.href='/job_monitor'"
+            style="
+                background:#cfe2f3;
+                font-weight:bold;
+            ">
+        📋 Job Monitor
+    </button>
+
+    <button type="button"
+            onclick="saveAllRemarks()"
+            style="
+                margin-left:auto;
+                background:#fff2cc;
+                font-weight:bold;
+            ">
+        💾 Save Remark
+    </button>
+
+</form>
+
+<table>
+
+<tr>
+    <th style="width:70px;">Zone</th>
+    <th style="width:120px;">User</th>
+    <th style="width:80px;">User Status</th>
+    <th style="width:60px;">Total Job</th>
+    <th style="width:160px;">Status</th>
+    <th style="width:220px;">Remark (ให้เขียนข้อความก่อน แล้ว Upload ไฟล์ใหม่ ข้อความจะขึ้น)</th>
+</tr>
+
+{% for row in data %}
+
+<tr>
+
+{% if row.show_zone %}
+<td rowspan="{{ row.rowspan }}"
+    class="zone
+    {% if row.zone == 'DMP' %}zone-dmp{% endif %}
+    {% if row.zone == 'Origin' %}zone-origin{% endif %}
+    {% if row.zone == 'SCT' %}zone-sct{% endif %}
+    {% if row.zone == 'BPL' %}zone-bpl{% endif %}
+    {% if row.zone == 'TLC' %}zone-tlc{% endif %}
+    {% if row.zone == 'CWT' %}zone-cwt{% endif %}
+    {% if row.zone == 'EDS BKK' %}zone-eds{% endif %}
+    {% if row.zone == 'Team Spare' %}zone-spare{% endif %}
+    {% if row.zone == 'BKK2' %}zone-bkk2{% endif %}
+    {% if row.zone == 'SPK' %}zone-spk{% endif %}
+    {% if row.zone == 'NTB' %}zone-ntb{% endif %}
+    {% if row.zone == 'AIS' %}zone-ais{% endif %}
+">
+    {{ row.zone }}
+</td>
+{% endif %}
+
+<td class="
+{% if row.zone == 'DMP' %}zone-dmp{% endif %}
+{% if row.zone == 'Origin' %}zone-origin{% endif %}
+{% if row.zone == 'SCT' %}zone-sct{% endif %}
+{% if row.zone == 'BPL' %}zone-bpl{% endif %}
+{% if row.zone == 'TLC' %}zone-tlc{% endif %}
+{% if row.zone == 'CWT' %}zone-cwt{% endif %}
+{% if row.zone == 'EDS BKK' %}zone-eds{% endif %}
+{% if row.zone == 'Team Spare' %}zone-spare{% endif %}
+{% if row.zone == 'BKK2' %}zone-bkk2{% endif %}
+{% if row.zone == 'SPK' %}zone-spk{% endif %}
+{% if row.zone == 'NTB' %}zone-ntb{% endif %}
+{% if row.zone == 'AIS' %}zone-ais{% endif %}
+user">
+    <b>{{ row.user }}</b>
+</td>
+
+
+<td class="user-status {% if row.work_status == 'Working' %}working{% else %}free{% endif %}">
+    {{ row.work_status }}
+</td>
+
+<td class="{% if row.job_count == 0 %}job-zero{% else %}job-work{% endif %}">
+    {{ row.job_count }}
+</td>
+
+<td class="status-col"
+    style="background-color:{{ row.status_color }}">
+    {{ row.status_text }}
+</td>
+
+<td class="remark-col">
+    <input
+        type="text"
+        class="remark-input"
+        id="remark_{{ row.user }}"
+        value="{{ row.remark }}"
+        onchange="saveRemark('{{ row.user }}')"
+        placeholder="Remark..."
+    >
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<script>
+
+function saveRemark(user){
+
+    let remark =
+        document.getElementById(
+            "remark_" + user
+        ).value;
+
+    fetch("/save_remark", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type":
+            "application/x-www-form-urlencoded"
+        },
+
+        body:
+            "user=" + encodeURIComponent(user)
+            + "&remark=" +
+            encodeURIComponent(remark)
+
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Remark Saved:", user);
+    })
+    .catch(error => {
+        console.error(error);
+        alert("บันทึก Remark ไม่สำเร็จ");
+    });
+
+}
+
+</script>
+
+</body>
+</html>

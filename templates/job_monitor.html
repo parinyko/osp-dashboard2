@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="60">
+
+<title>Job Monitor</title>
+
+<style>
+
+.zone-dmp{
+    background:#ead7cc;
+}
+
+.zone-origin{
+    background:#c7cfde;
+}
+
+.zone-sct{
+    background:#ebc5a7;
+}
+
+.zone-bpl{
+    background:#a9c98e;
+}
+
+.zone-tlc{
+    background:#eedb95;
+}
+
+.zone-cwt{
+    background:#aab9d8;
+}
+
+.zone-eds{
+    background:#ecd991;
+}
+
+.zone-spare{
+    background:#d984dc;
+}
+
+.zone-bkk2{
+    background:#e9c4a9;
+}
+
+.zone-spk{
+    background:#aab9d8;
+}
+
+.zone-ntb{
+    background:#ffc000;
+}
+
+.zone-ais{
+    background:#92d050;
+}
+.zone-workforce{
+    background:#ffff00;
+}
+html,
+body{
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    display:flex;
+    flex-direction:column;
+}
+
+.header{
+    height:60px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:5px 10px;
+    box-sizing:border-box;
+    background:#ffffff;
+}
+
+.left-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.right-header{
+    display:flex;
+    gap:10px;
+}
+
+.box{
+    padding:8px 15px;
+    color:white;
+    font-weight:bold;
+    border-radius:5px;
+    font-size:12px;
+}
+
+.green{
+    background:#198754;
+}
+
+.blue{
+    background:#0d6efd;
+}
+
+.dashboard-btn{
+    display:inline-block;
+    padding:8px 18px;
+    background:linear-gradient(
+        to bottom,
+        #4facfe,
+        #0066cc
+    );
+    color:white;
+    text-decoration:none;
+    border-radius:6px;
+    font-weight:bold;
+    font-size:12px;
+    border:1px solid #004c99;
+    box-shadow:0 2px 4px rgba(0,0,0,0.3);
+}
+
+.dashboard-btn:hover{
+    background:linear-gradient(
+        to bottom,
+        #66b8ff,
+        #0055aa
+    );
+}
+
+.table-container{
+    flex:1;
+    overflow:auto;
+    border-top:1px solid #ccc;
+}
+
+table{
+    border-collapse:collapse;
+    width:max-content;
+    min-width:100%;
+    font-size:11px;
+}
+
+thead th{
+    position:sticky;
+    top:0;
+    z-index:999;
+    background:#4f81bd;
+    color:white;
+}
+
+th{
+    border:1px solid #ccc;
+    padding:4px;
+    text-align:center;
+    white-space:nowrap;
+}
+
+td{
+    border:1px solid #ccc;
+    padding:3px;
+    white-space:nowrap;
+}
+
+tr:nth-child(even){
+    background:#f8f8f8;
+}
+
+.col-assign{
+    min-width:160px;
+    text-align:center;
+}
+
+.col-age{
+    width:120px;
+    min-width:120px;
+    text-align:center;
+}
+
+.col-status{
+    min-width:100px;
+    text-align:center;
+}
+
+.col-priority{
+    min-width:100px;
+    text-align:center;
+}
+
+.col-subsystem{
+    min-width:120px;
+    text-align:center;
+}
+
+.col-jobid{
+    min-width:120px;
+    text-align:center;
+}
+.col-district{
+    min-width:100px;
+    text-align:center;
+}
+.col-zone{
+    min-width:160px;
+    text-align:center;
+}
+
+.col-title{
+    min-width:300px;
+}
+
+.col-createtime{
+    min-width:100px;
+}
+
+.status-onsite{
+    background:#c6efce;
+}
+
+.status-accepted{
+    background:#ffc7ce;
+}
+
+.status-departed{
+    background:#ffe699;
+}
+
+.status-assigned{
+    background:#ffc7ce;
+}
+
+.status-held{
+    background:#9fd5ff;
+}
+
+.priority-critical{
+    background:#f36c60;
+    color:white;
+}
+
+.priority-major{
+    background:#ffca28;
+}
+
+.priority-minor{
+    background:#ffff00;
+}
+.area-st2{
+    background:#ffc7ce;   /* แดงอ่อน */
+}
+
+.area-cwt{
+    background:#9fd5ff;   /* ฟ้าอ่อน */
+}
+
+.area-ont{
+    background:#fff2cc;   /* เหลืองอ่อน */
+}
+
+.area-tlc{
+    background:#d9ead3;   /* เขียวอ่อน */
+}
+    @keyframes blinkRed{
+    0% {background:#ff0000;}
+    50% {background:#ffffff;}
+    100% {background:#ff0000;}
+}
+
+.blink-red{
+    animation:blinkRed 1s infinite;
+    color:white !important;
+    font-weight:bold;
+}
+    @keyframes blink-red{
+    0%{
+        background:#ff0000;
+        color:#ffffff;
+    }
+
+    50%{
+        background:#ffffff;
+        color:#ff0000;
+    }
+
+    100%{
+        background:#ff0000;
+        color:#ffffff;
+    }
+}
+
+.status-created{
+    animation:blink-red 1s infinite;
+    font-weight:bold;
+}
+
+.status-transfered{
+    animation:blink-red 1s infinite;
+    font-weight:bold;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+    <div class="left-header">
+
+        <button
+    type="button"
+    class="dashboard-btn"
+    onclick="window.location.href='/'">
+    🏠 Dashboard
+</button>
+
+
+        <h2 style="
+            margin:0;
+            color:red;
+            font-size:20px;
+        ">
+            📋 Job Monitor
+        </h2>
+
+    </div>
+
+    <div class="right-header">
+
+        <div class="box green">
+            Last Update :
+            {{ last_update }}
+        </div>
+
+        <div class="box blue">
+            Total Jobs :
+            {{ total_jobs }}
+        </div>
+
+    </div>
+
+</div>
+
+<div class="table-container">
+
+<table>
+
+<thead>
+
+<tr>
+    <th class="col-age">Age (Hrs)</th>
+    <th class="col-assign">Assign To</th>
+    <th class="col-status">Status</th>
+    <th class="col-jobid">Job ID</th>
+    <th class="col-subsystem">Sub System</th>
+    <th class="col-priority">Priority</th>
+    <th class="col-district">District Name</th>
+    <th class="col-zone">Zone</th>
+    <th class="col-title">Job Title</th>
+    <th class="col-createtime">Create Time</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for row in jobs %}
+
+<tr>
+
+<td class="col-age age-cell"
+    data-priority="{{ row.get('Priority','') }}"
+    data-time="{{ row.get('Create Time',
+               row.get('Created Time',
+               row.get('Create Date',''))) }}">
+</td>
+
+<td class="col-assign
+{% if row.get('Assign to','') in [
+'Dmplocallatkrabang A',
+'Dmplocallatkrabang B',
+'Dmplocallatkrabang C',
+'Dmplocalpathumthani A',
+'Dmplocalpathumthani B',
+'Dmplocalpathumthani C'
+] %} zone-dmp
+
+{% elif row.get('Assign to','') in [
+'Originlocal Center',
+'Originlocalthungkhru A',
+'Originlocalthungkhru B',
+'Originlocalthungkhru C',
+'Originlocalnonthaburi A',
+'Originlocalnonthaburi B',
+'Originlocalnonthaburi C'
+] %} zone-origin
+
+{% elif row.get('Assign to','') in [
+'Exeds A',
+'Exeds B'
+] %} zone-eds
+
+{% elif row.get('Assign to','') in [
+'Exsct A',
+'Exsct B',
+'Exsct C',
+'Extrsct E'
+] %} zone-sct
+
+{% elif row.get('Assign to','') in [
+'Exbpl A',
+'Exbpl B',
+'Exbpl C',
+'Exbpl D',
+'Exbpl E',
+'Extrbpl F',
+'Extrbpl G'
+] %} zone-bpl
+
+{% elif row.get('Assign to','') in [
+'Extlc A',
+'Extlc B',
+'Extlc C',
+'Extlc D',
+'Extlc E',
+'Extrtlc F'
+] %} zone-tlc
+
+{% elif row.get('Assign to','') in [
+'Excwt A',
+'Excwt B',
+'Excwt C',
+'Excwt D',
+'Excwt E',
+'Extrcwt F',
+'Extrcwt G',
+'Extrcwt H'
+] %} zone-cwt
+
+{% elif row.get('Assign to','') == 'Exspare A' %} zone-spare
+
+{% elif row.get('Assign to','') in [
+'Kitsada Wiraphan',
+'Poolsak Saenmee',
+'Chawalit Bunrod'
+] %} zone-bkk2
+
+{% elif row.get('Assign to','') in [
+'Sittikorn Pantanoo',
+'Phongsakron Topradit',
+'Preecha Ruamsungneon'
+] %} zone-spk
+
+{% elif row.get('Assign to','') in [
+'Piriya Sripoon',
+'Cherdchai Wandee',
+'Piyanut Wattanonda'
+] %} zone-ntb
+
+{% elif row.get('Assign to','') in [
+'Ruj Chalanun',
+'Parinya Khoonkrong',
+'Songwat Sintanarot',
+'Boonsom Duangjun',
+'Nares Vongkasigum'
+] %} zone-ais
+
+{% elif row.get('Assign to','') == 'Workforce BKK Pool' %}
+zone-workforce
+{% endif %}">
+    {{ row.get('Assign to','') }}
+</td>
+
+
+<td class="col-status
+    {% if 'created' in row.get('Status','')|lower %}
+        status-created
+
+    {% elif 'transfered' in row.get('Status','')|lower %}
+        status-transfered
+
+    {% elif 'on-site' in row.get('Status','')|lower %}
+        status-onsite
+
+    {% elif 'departed' in row.get('Status','')|lower %}
+        status-departed
+
+    {% elif 'accepted' in row.get('Status','')|lower %}
+        status-accepted
+
+    {% elif 'assigned' in row.get('Status','')|lower %}
+        status-assigned
+
+    {% elif 'held' in row.get('Status','')|lower %}
+        status-held
+    {% endif %}
+">
+        {{ row.get('Status','') }}
+    </td>
+    <td class="col-jobid">
+        {{ row.get('Job ID',
+           row.get('Job No',
+           row.get('JB No',''))) }}
+    </td>
+        <td class="col-subsystem">
+        {{ row.get('Sub System','') }}
+    </td>
+    <td class="
+        col-priority
+        {% if row.get('Priority','')|lower == 'critical' %}
+            priority-critical
+        {% elif row.get('Priority','')|lower == 'major' %}
+            priority-major
+        {% elif row.get('Priority','')|lower == 'minor' %}
+            priority-minor
+        {% endif %}
+    ">
+        {{ row.get('Priority','') }}
+    </td>
+
+
+    <td class="col-district">
+    {{ row.get('District Name',
+       row.get('District',
+       row.get('DistrictName',''))) }}
+    </td>
+
+    <td class="col-zone
+
+{% set zone = row.get('Zone',
+    row.get('Zone',
+    row.get('Zone',''))) %}
+
+{% if 'Bangkok-ST2' in zone %}
+area-st2
+
+{% elif 'Bangkok-CWT' in zone %}
+area-cwt
+
+{% elif 'Bangkok-ONT' in zone %}
+area-ont
+
+{% elif 'Bangkok-TLC' in zone %}
+area-tlc
+
+{% endif %}
+
+">
+    {{ zone }}
+</td>
+
+    <td class="col-title">
+        {{ row.get('Job Title',
+           row.get('Title',
+           row.get('JOB TITLE',
+           row.get('Issue Title',
+           row.get('Description',''))))) }}
+    </td>
+
+    <td class="col-createtime">
+        {{ row.get('Create Time',
+           row.get('Created Time',
+           row.get('Create Date',''))) }}
+    </td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+<script>
+
+function updateAge(){
+
+    const cells =
+        document.querySelectorAll('.age-cell');
+
+    const now = new Date();
+
+    cells.forEach(function(cell){
+
+        const txt =
+            cell.dataset.time;
+
+        const priority =
+            (cell.dataset.priority || "")
+            .toLowerCase()
+            .trim();
+
+        cell.classList.remove("blink-red");
+
+        if(!txt){
+            cell.innerText="-";
+            return;
+        }
+
+        const dt = new Date(txt);
+
+        if(isNaN(dt)){
+            cell.innerText="-";
+            return;
+        }
+
+        const diffHours =
+            (now - dt) / (1000 * 60 * 60);
+
+        const totalMinutes =
+    Math.floor(diffHours * 60);
+
+const days =
+    Math.floor(totalMinutes / 1440);
+
+const hours =
+    Math.floor((totalMinutes % 1440) / 60);
+
+const minutes =
+    totalMinutes % 60;
+
+if(days > 0){
+    cell.innerText =
+        days + "D " +
+        hours + "H " +
+        String(minutes).padStart(2,"0") + "m";
+}else{
+    cell.innerText =
+        hours + "H " +
+        String(minutes).padStart(2,"0") + "m";
+}
+
+        cell.style.background="";
+        cell.style.color="#000";
+
+        /* ---------- CRITICAL ---------- */
+
+        if(priority === "critical"){
+
+            if(diffHours >= 12){
+
+                cell.style.background="#ff0000";
+                cell.style.color="#fff";
+                cell.classList.add("blink-red");
+
+            }
+            else if(diffHours >= 6){
+
+                cell.style.background="#ff0000";
+                cell.style.color="#fff";
+
+            }
+            else if(diffHours >= 3){
+
+                cell.style.background="#ffc7ce";
+                cell.style.color="#000";
+
+            }
+        }
+
+        /* ---------- MAJOR ---------- */
+
+        else if(priority === "major"){
+
+            if(diffHours >= 24){
+
+                cell.style.background="#ff0000";
+                cell.style.color="#fff";
+                cell.classList.add("blink-red");
+
+            }
+            else if(diffHours >= 18){
+
+                cell.style.background="#ff0000";
+                cell.style.color="#fff";
+
+            }
+            else if(diffHours >= 10){
+
+                cell.style.background="#ffc7ce";
+                cell.style.color="#000";
+
+            }
+        }
+
+        /* ---------- MINOR ---------- */
+
+        else if(priority === "minor"){
+
+            cell.style.background="";
+            cell.style.color="#000";
+
+        }
+
+    });
+}
+
+updateAge();
+setInterval(updateAge,60000);
+
+</script>
+</body>
+</html>
