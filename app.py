@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from collections import Counter
 
 app = Flask(__name__)
@@ -13,7 +14,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 DATA = []
 RAW_DATA = []
 LAST_UPDATE = "-"
+
 TOTAL_JOBS = 0
+TOTAL_CRITICAL = 0
+TOTAL_MAJOR = 0
+TOTAL_MINOR = 0
+
 REMARKS = {}
 REMARK_FILE = "remarks.json"
 
@@ -165,6 +171,59 @@ TEAM_DATA = [
     {"zone": "AIS", "user": "Nares Vongkasigum"},
 ]
 
+AREA_DATA = {
+
+    "Dmplocallatkrabang A": "หนองจอก มีนบุรี คลองสามวา คันนายาว  บึงกุ่ม",
+    "Dmplocallatkrabang B": "สวนหลวง ลาดกระบัง บางกะปิ ",
+    "Dmplocallatkrabang C": "สะพานสูง ประเวศ บางนา",
+
+    "Dmplocalpathumthani A": "เมืองปทุมธานี สามโคก ลาดหลุมแก้ว",
+    "Dmplocalpathumthani B": "คลองหลวง หนองเสือ",
+    "Dmplocalpathumthani C": "ลำลูกกา ธัญบุรี",
+
+    "Originlocal Center": "",
+    "Originlocalthungkhru A": "บางขุนเทียน ราษฎร์บูรณะ จอมทอง ",
+    "Originlocalthungkhru B": "ทุ่งครุ บางบอน ทวีวัฒนา",
+    "Originlocalthungkhru C": "หนองแขม บางแค ภาษีเจริญ",
+
+    "Originlocalnonthaburi A": "บางใหญ่ บางบัวทอง ไทรน้อย เมืองนนทบุรี ปากเกร็ด",
+    "Originlocalnonthaburi B": "บางใหญ่ บางบัวทอง ไทรน้อย เมืองนนทบุรี ปากเกร็ด",
+    "Originlocalnonthaburi C": "บางใหญ่ บางบัวทอง ไทรน้อย เมืองนนทบุรี ปากเกร็ด",
+
+    "Exsct A": "ลาดพร้าว จตุจักร บางซื่อ วังทองหลาง ห้วยขวาง ดินแดง พญาไท",
+    "Exsct B": "ดุสิต ราชเทวี วัฒนา คลองเตย ปทุมวัน ป้อมปราบศัตรูพ่าย พระนคร สัมพันธวงศ์",
+    "Exsct C": "บางรัก สาธร ยานนาวา บางคอแหลม คลองเตย",
+    "Extrsct E": "Around the zone (Night)",
+
+    "Exbpl A": "สะพานสูง มีนบุรี หนองจอก ลาดกระบัง รามคำแหง",
+    "Exbpl B": "บางพลี(ตอนล่าง) บางเสาธง(ตอนล่าง) บางบ่อ(ตอนล่าง)",
+    "Exbpl C": "บางพลี(ตอนบน) บางเสาธง(ตอนบน) บางบ่อ(ตอนบน)",
+    "Exbpl D": "บางนา พระประแดง เมืองสมุทรปราการ",
+    "Exbpl E": "Around the zone (Night)",
+    "Extrbpl F": "คลองเตย พระโขนง สวนหลวง ประเวศ",
+    "Extrbpl G": "บางกะปิ วังทองหลาง ห้วยขวาง วัฒนา",
+
+    "Extlc A": "บางขุนเทียน พระสมุทรเจดีย์ พระประแดง ทุ่งครุ ราษฎร์บูรณะ จอมทอง บางบอน",
+    "Extlc B": "บางพลัด บางกรวย บางใหญ่ เมืองนนทบุรี (Zone TLC)",
+    "Extlc C": "ปากเกร็ด บางบัวทอง ไทรน้อย(ตอนล่าง) ไทรน้อย(ตอนบน)",
+    "Extlc D": "Around the zone (Night)",
+    "Extlc E": "หนองแขม บางแค ภาษีเจริญ ธนบุรี คลองสาน บางกอกใหญ่ บางกอกน้อย ตลิ่งชัน ทวีวัฒนา",
+    "Extrtlc F": "Around the zone (Night)",
+
+    "Excwt A": "Around the zone (Night)",
+    "Excwt B": "สามโคก(ฝั่งตะวันออก) เมืองปทุมธานี(ฝั่งตะวันออก) ธัญบุรี(คลอง1-7) คลองหลวง(คลอง1-7)",
+    "Excwt C": "ลำลูกกา หนองจอก คลองสามวา มีนบุรี รามอินทรา",
+    "Excwt D": "ธัญบุรี(คลอง7 เป็นต้นไป) คลองหลวง(คลอง7 เป็นต้นไป) หนองเสือ",
+    "Excwt E": "บางซื่อ หลักสี่ เมืองนนทบุรี ปากเกร็ด ดอนเมือง",
+    "Extrcwt F": "เมืองปทุม(ฝั่งตะวันตก) สามโคก(ฝั่งตะวันตก) ลาดหลุมแก้ว",
+    "Extrcwt G": "Around the zone (Night)",
+    "Extrcwt H": "คันนายาว บึงกุ่ม ลาดพร้าว บางเขน สายไหม จตุจักร",
+
+    "Exeds A": "All Zone (เน้น RRU กับงานภายในห้าง ทุกโซน)",
+    "Exeds B": "All Zone",
+
+    "Exspare A": "ปากเกร็ด บางบัวทอง ไทรน้อย"
+}
 
 def get_status_color(status_text):
 
@@ -219,7 +278,11 @@ def index():
     global DATA
     global RAW_DATA
     global LAST_UPDATE
+    global TOTAL_CRITICAL
+    global TOTAL_MAJOR
+    global TOTAL_MINOR
     global TOTAL_JOBS
+
 
     if request.method == "POST":
 
@@ -335,12 +398,50 @@ def index():
                     .str.lower()
                     .ne("none")
                 ]
+                TOTAL_CRITICAL = len(
+                    total_df[
+                        total_df["Priority"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        == "critical"
+                        ]
+                )
 
+                TOTAL_MAJOR = len(
+                    total_df[
+                        total_df["Priority"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        == "major"
+                        ]
+                )
+
+                TOTAL_MINOR = len(
+                    total_df[
+                        total_df["Priority"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        == "minor"
+                        ]
+                )
                 TOTAL_JOBS = len(total_df)
+
 
             else:
 
                 TOTAL_JOBS = len(df)
+
+                TOTAL_CRITICAL = 0
+
+                TOTAL_MAJOR = 0
+
+                TOTAL_MINOR = 0
 
             result = []
 
@@ -354,13 +455,13 @@ def index():
 
                 user_jobs = df[
                     (
-                        df["Assign to"]
-                        .fillna("")
-                        .astype(str)
-                        .str.strip()
-                        .str.lower()
-                        ==
-                        user.strip().lower()
+                            df["Assign to"]
+                            .fillna("")
+                            .astype(str)
+                            .str.strip()
+                            .str.lower()
+                            ==
+                            user.strip().lower()
                     )
                     &
                     (
@@ -373,7 +474,24 @@ def index():
                             regex=False
                         )
                     )
-                ]
+                    &
+                    (
+                        df["Priority"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .ne("")
+                    )
+                    &
+                    (
+                        df["Priority"]
+                        .fillna("")
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        .ne("none")
+                    )
+                    ]
 
                 job_count = len(user_jobs)
 
@@ -405,6 +523,7 @@ def index():
                 result.append({
                     "zone": zone,
                     "user": user,
+                    "area": AREA_DATA.get(user, ""),
                     "work_status": work_status,
                     "job_count": job_count,
                     "status_text": status_text,
@@ -419,9 +538,9 @@ def index():
 
             DATA = result
 
-            LAST_UPDATE = datetime.now().strftime(
-                "%d/%m/%Y %H:%M:%S"
-            )
+            LAST_UPDATE = datetime.now(
+                ZoneInfo("Asia/Bangkok")
+            ).strftime("%d/%m/%Y %H:%M:%S")
 
         return redirect("/")
 
@@ -495,6 +614,9 @@ def index():
         "index.html",
         data=display_data,
         total_jobs=TOTAL_JOBS,
+        total_critical=TOTAL_CRITICAL,
+        total_major=TOTAL_MAJOR,
+        total_minor=TOTAL_MINOR,
         last_update=LAST_UPDATE
     )
 @app.route("/job_monitor")
@@ -505,6 +627,9 @@ def job_monitor():
     return render_template(
         "job_monitor.html",
         jobs=RAW_DATA,
+        total_critical=TOTAL_CRITICAL,
+        total_major=TOTAL_MAJOR,
+        total_minor=TOTAL_MINOR,
         total_jobs=TOTAL_JOBS,
         last_update=LAST_UPDATE
     )

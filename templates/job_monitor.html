@@ -268,18 +268,7 @@ tr:nth-child(even){
 .area-tlc{
     background:#d9ead3;   /* เขียวอ่อน */
 }
-    @keyframes blinkRed{
-    0% {background:#ff0000;}
-    50% {background:#ffffff;}
-    100% {background:#ff0000;}
-}
-
-.blink-red{
-    animation:blinkRed 1s infinite;
-    color:white !important;
-    font-weight:bold;
-}
-    @keyframes blink-red{
+@keyframes blinkRed{
     0%{
         background:#ff0000;
         color:#ffffff;
@@ -296,9 +285,29 @@ tr:nth-child(even){
     }
 }
 
-.status-created{
-    animation:blink-red 1s infinite;
-    font-weight:bold;
+.blink-red{
+    animation:blinkRed 1s infinite;
+}
+
+   @keyframes blinkRed{
+    0%{
+        background:#ff0000;
+        color:#ffffff;
+    }
+
+    50%{
+        background:#ffffff;
+        color:#000000;
+    }
+
+    100%{
+        background:#ff0000;
+        color:#ffffff;
+    }
+}
+
+.blink-red{
+    animation:blinkRed 1s infinite;
 }
 
 .status-transfered{
@@ -333,19 +342,33 @@ tr:nth-child(even){
 
     </div>
 
-    <div class="right-header">
+<div class="right-header">
 
-        <div class="box green">
-            Last Update :
-            {{ last_update }}
-        </div>
-
-        <div class="box blue">
-            Total Jobs :
-            {{ total_jobs }}
-        </div>
-
+    <div class="box green">
+        Last Update :
+        {{ last_update }}
     </div>
+
+    <div class="box" style="background:#dc3545;">
+        Critical :
+        {{ total_critical }}
+    </div>
+
+    <div class="box" style="background:#fd7e14;">
+        Major :
+        {{ total_major }}
+    </div>
+
+    <div class="box" style="background:#ffff00;color:#000000;">
+    Minor : {{ total_minor }}
+    </div>
+
+    <div class="box blue">
+        Total Jobs :
+        {{ total_jobs }}
+    </div>
+
+</div>
 
 </div>
 
