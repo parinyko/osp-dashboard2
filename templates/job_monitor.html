@@ -65,23 +65,22 @@ body{
     height:100%;
     margin:0;
     padding:0;
-    overflow:hidden;
+    overflow:auto;
     font-family:Arial,sans-serif;
 }
 
 body{
     display:flex;
     flex-direction:column;
+    overflow:hidden;
 }
 
 .header{
-    height:60px;
     display:flex;
     justify-content:space-between;
-    align-items:center;
+    align-items:flex-start;
     padding:5px 10px;
-    box-sizing:border-box;
-    background:#ffffff;
+    background:#fff;
 }
 
 .left-header{
@@ -90,7 +89,19 @@ body{
     gap:10px;
 }
 
+.right-header-container{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:5px;
+}
+
 .right-header{
+    display:flex;
+    gap:10px;
+}
+
+.zone-header{
     display:flex;
     gap:10px;
 }
@@ -138,8 +149,11 @@ body{
 
 .table-container{
     flex:1;
+    width:100%;
     overflow:auto;
     border-top:1px solid #ccc;
+    margin-top:10px;
+    min-height:0;
 }
 
 table{
@@ -289,31 +303,168 @@ tr:nth-child(even){
     animation:blinkRed 1s infinite;
 }
 
-   @keyframes blinkRed{
+@keyframes blinkRed{
     0%{
         background:#ff0000;
         color:#ffffff;
     }
-
     50%{
         background:#ffffff;
         color:#000000;
     }
-
     100%{
         background:#ff0000;
         color:#ffffff;
     }
 }
 
-.blink-red{
-    animation:blinkRed 1s infinite;
+.status-created,
+.status-transfered{
+    animation: blinkRed 1s infinite;
+    font-weight: bold;
 }
 
 .status-transfered{
-    animation:blink-red 1s infinite;
     font-weight:bold;
 }
+
+@keyframes blinkRed {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.status-created,
+.status-transfered{
+    background:#ff0000 !important;
+    color:#ffffff !important;
+    font-weight:bold !important;
+    animation: blinkRed 1s infinite !important;
+}
+.title-site-down{
+    background:#ffc7ce !important;
+    animation:blinkRed 1s infinite;
+    font-weight:bold;
+}
+
+.title-down{
+    background:#ffc7ce !important;
+}
+
+.title-los{
+    background:#ffc7ce !important;
+}
+
+.title-bbu{
+    background:#d9ead3 !important;
+}
+
+.title-rru{
+    background:#d9ead3 !important;
+}
+.job-row{
+    position:relative;
+}
+
+    .right-header-container{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:5px;
+}
+
+.zone-header{
+    display:flex;
+    gap:10px;
+}
+
+.zone-filter{
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.zone-filter:hover{
+    transform:scale(1.05);
+}
+    .header-top{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    width:100%;
+}
+
+.header-summary{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    width:100%;
+}
+
+.zone-header{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    width:100%;
+}
+.reason-cell{
+    position:relative;
+    cursor:pointer;
+}
+
+.reason-tooltip{
+    display:none;
+    position:absolute;
+
+    left:0;
+    top:100%;
+
+    background:#222;
+    color:#fff;
+
+    padding:10px;
+    border-radius:8px;
+
+    min-width:350px;
+    max-width:600px;
+
+    white-space:normal;
+    text-align:left;
+
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
+
+    z-index:99999;
+}
+
+.reason-cell:hover .reason-tooltip{
+    display:block;
+}
+    .search-box{
+    margin-top:8px;
+}
+
+.search-box input{
+    width:350px;
+    padding:10px 15px;
+
+    border:2px solid #0d6efd;
+    border-radius:10px;
+
+    font-size:14px;
+
+    outline:none;
+
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+
+.search-box input:focus{
+    border-color:#198754;
+    box-shadow:0 0
 </style>
 
 </head>
@@ -325,50 +476,95 @@ tr:nth-child(even){
     <div class="left-header">
 
         <button
-    type="button"
-    class="dashboard-btn"
-    onclick="window.location.href='/'">
-    🏠 Dashboard
-</button>
+            type="button"
+            class="dashboard-btn"
+            onclick="window.location.href='/'">
+            🏠 Dashboard
+        </button>
 
-
-        <h2 style="
-            margin:0;
-            color:red;
-            font-size:20px;
-        ">
+        <h2 style="margin:0;color:red;">
             📋 Job Monitor
         </h2>
 
     </div>
-
-<div class="right-header">
-
-    <div class="box green">
-        Last Update :
-        {{ last_update }}
-    </div>
-
-    <div class="box" style="background:#dc3545;">
-        Critical :
-        {{ total_critical }}
-    </div>
-
-    <div class="box" style="background:#fd7e14;">
-        Major :
-        {{ total_major }}
-    </div>
-
-    <div class="box" style="background:#ffff00;color:#000000;">
-    Minor : {{ total_minor }}
-    </div>
-
-    <div class="box blue">
-        Total Jobs :
-        {{ total_jobs }}
-    </div>
-
+<div class="search-box">
+    <input
+        type="text"
+        id="searchInput"
+        placeholder="🔍 ค้นหา Job ID, Assign To, Status, District, Zone..."
+    >
 </div>
+
+    <div class="right-header-container">
+
+        <!-- บรรทัดบน -->
+        <div class="right-header">
+
+            <div class="box green">
+                Last Update : {{ last_update }}
+            </div>
+
+            <div class="box priority-filter"
+                 id="criticalCount"
+                 data-priority="critical"
+                 style="background:#dc3545;">
+                Critical : {{ total_critical }}
+            </div>
+
+            <div class="box priority-filter"
+                 id="majorCount"
+                 data-priority="major"
+                 style="background:#fd7e14;">
+                Major : {{ total_major }}
+            </div>
+
+            <div class="box priority-filter"
+                 id="minorCount"
+                 data-priority="minor"
+                 style="background:#ffff00;color:#000;">
+                Minor : {{ total_minor }}
+            </div>
+
+            <div class="box blue" id="totalJobsCount">
+                Total Jobs : {{ total_jobs }}
+            </div>
+
+        </div>
+
+        <!-- บรรทัดล่าง -->
+        <div class="zone-header">
+
+            <div class="box zone-filter"
+                 data-zone="Bangkok-ST2"
+                 style="background:#ffc7ce;color:#000;">
+                SCT : {{ total_sct }}
+            </div>
+
+            <div class="box zone-filter"
+                 data-zone="Bangkok-CWT"
+                 style="background:#9fd5ff;color:#000;">
+                CWT : {{ total_cwt }}
+            </div>
+
+            <div class="box zone-filter"
+                 data-zone="Bangkok-ONT"
+                 style="background:#fff2cc;color:#000;">
+                ONT : {{ total_ont }}
+            </div>
+
+            <div class="box zone-filter"
+                 data-zone="Bangkok-TLC"
+                 style="background:#d9ead3;color:#000;">
+                TLC : {{ total_tlc }}
+            </div>
+
+            <div class="box blue" id="showAllBtn">
+                Show All
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
@@ -397,7 +593,10 @@ tr:nth-child(even){
 
 {% for row in jobs %}
 
-<tr>
+<tr class="job-row"
+    data-priority="{{ row.get('Priority','')|lower }}"
+    data-zone="{{ row.get('Zone','') }}"
+    data-reason="{{ row.get('Reason by WF','') }}">
 
 <td class="col-age age-cell"
     data-priority="{{ row.get('Priority','') }}"
@@ -504,35 +703,37 @@ zone-workforce
 
 
 <td class="col-status
-    {% if 'created' in row.get('Status','')|lower %}
-        status-created
-
-    {% elif 'transfered' in row.get('Status','')|lower %}
-        status-transfered
-
-    {% elif 'on-site' in row.get('Status','')|lower %}
-        status-onsite
-
-    {% elif 'departed' in row.get('Status','')|lower %}
-        status-departed
-
-    {% elif 'accepted' in row.get('Status','')|lower %}
-        status-accepted
-
-    {% elif 'assigned' in row.get('Status','')|lower %}
-        status-assigned
-
-    {% elif 'held' in row.get('Status','')|lower %}
-        status-held
-    {% endif %}
-">
+{% if 'created' in row.get('Status','')|lower %}
+    status-created
+{% elif 'transfered' in row.get('Status','')|lower %}
+    status-transfered
+{% elif 'on-site' in row.get('Status','')|lower %}
+    status-onsite
+{% elif 'departed' in row.get('Status','')|lower %}
+    status-departed
+{% elif 'accepted' in row.get('Status','')|lower %}
+    status-accepted
+{% elif 'assigned' in row.get('Status','')|lower %}
+    status-assigned
+{% elif 'held' in row.get('Status','')|lower %}
+    status-held
+{% endif %}
+"
+title="{{ row.get('Reason by WF','') }}">
         {{ row.get('Status','') }}
     </td>
-    <td class="col-jobid">
-        {{ row.get('Job ID',
-           row.get('Job No',
-           row.get('JB No',''))) }}
-    </td>
+<td class="col-jobid reason-cell">
+
+    {{ row.get('Job ID',
+       row.get('Job No',
+       row.get('JB No',''))) }}
+
+    <div class="reason-tooltip">
+        {{ row.get('Reason by WF','') }}
+    </div>
+
+</td>
+
         <td class="col-subsystem">
         {{ row.get('Sub System','') }}
     </td>
@@ -580,13 +781,35 @@ area-tlc
     {{ zone }}
 </td>
 
-    <td class="col-title">
-        {{ row.get('Job Title',
-           row.get('Title',
-           row.get('JOB TITLE',
-           row.get('Issue Title',
-           row.get('Description',''))))) }}
-    </td>
+    {% set job_title =
+    row.get('Job Title',
+    row.get('Title',
+    row.get('JOB TITLE',
+    row.get('Issue Title',
+    row.get('Description',''))))) %}
+
+<td class="col-title
+
+{% if 'site down' in job_title|lower %}
+    title-site-down
+
+{% elif 'optic los' in job_title|lower %}
+    title-los
+
+{% elif 'down' in job_title|lower %}
+    title-down
+
+{% elif 'bbu' in job_title|lower %}
+    title-bbu
+
+{% elif 'rru' in job_title|lower %}
+    title-rru
+
+{% endif %}
+
+">
+    {{ job_title }}
+</td>
 
     <td class="col-createtime">
         {{ row.get('Create Time',
@@ -729,6 +952,161 @@ if(days > 0){
 
 updateAge();
 setInterval(updateAge,60000);
+
+</script>
+    <script>
+
+document.querySelectorAll('.zone-filter')
+.forEach(btn => {
+
+    btn.addEventListener('click', () => {
+
+        const zone = btn.dataset.zone;
+
+        document
+        .querySelectorAll('.job-row')
+        .forEach(row => {
+
+            const rowZone =
+                row.dataset.zone || '';
+
+            if(rowZone.includes(zone)){
+                row.style.display = '';
+            }
+            else{
+                row.style.display = 'none';
+            }
+
+        });
+
+        updateSummary();
+
+    });
+
+});
+
+</script>
+<script>
+
+function updateSummary(){
+
+    let critical = 0;
+    let major = 0;
+    let minor = 0;
+    let total = 0;
+
+    document.querySelectorAll('.job-row')
+    .forEach(row => {
+
+        if(row.style.display === 'none'){
+            return;
+        }
+
+        total++;
+
+        const p =
+            (row.dataset.priority || '')
+            .toLowerCase();
+
+        if(p === 'critical'){
+            critical++;
+        }
+        else if(p === 'major'){
+            major++;
+        }
+        else if(p === 'minor'){
+            minor++;
+        }
+    });
+
+    document.getElementById('criticalCount')
+        .innerText = `Critical : ${critical}`;
+
+    document.getElementById('majorCount')
+        .innerText = `Major : ${major}`;
+
+    document.getElementById('minorCount')
+        .innerText = `Minor : ${minor}`;
+
+    document.getElementById('totalJobsCount')
+        .innerText = `Total Jobs : ${total}`;
+}
+
+updateSummary();
+
+</script>
+<script>
+
+document.querySelectorAll('.priority-filter')
+.forEach(btn => {
+
+    btn.addEventListener('click', () => {
+
+        const filter =
+            btn.dataset.priority;
+
+        document
+        .querySelectorAll('.job-row')
+        .forEach(row => {
+
+            if(row.dataset.priority === filter){
+                row.style.display = '';
+            }
+            else{
+                row.style.display = 'none';
+            }
+
+        });
+
+        updateSummary();
+
+    });
+
+});
+
+document
+.getElementById('showAllBtn')
+.addEventListener('click', () => {
+
+    document
+    .querySelectorAll('.job-row')
+    .forEach(row => {
+        row.style.display = '';
+    });
+
+    updateSummary();
+
+});
+
+</script>
+<script>
+
+document
+.getElementById('searchInput')
+.addEventListener('keyup', function(){
+
+    const keyword =
+        this.value.toLowerCase();
+
+    document
+    .querySelectorAll('.job-row')
+    .forEach(row => {
+
+        const text =
+            row.innerText.toLowerCase();
+
+        if(text.includes(keyword)){
+            row.style.display = '';
+        }
+        else{
+            row.style.display = 'none';
+        }
+
+    });
+
+    updateSummary();
+
+});
 
 </script>
 </body>
