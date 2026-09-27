@@ -20,6 +20,11 @@ TOTAL_CRITICAL = 0
 TOTAL_MAJOR = 0
 TOTAL_MINOR = 0
 
+TOTAL_SCT = 0
+TOTAL_CWT = 0
+TOTAL_ONT = 0
+TOTAL_TLC = 0
+
 REMARKS = {}
 REMARK_FILE = "remarks.json"
 
@@ -282,6 +287,10 @@ def index():
     global TOTAL_MAJOR
     global TOTAL_MINOR
     global TOTAL_JOBS
+    global TOTAL_SCT
+    global TOTAL_CWT
+    global TOTAL_ONT
+    global TOTAL_TLC
 
 
     if request.method == "POST":
@@ -431,7 +440,41 @@ def index():
                         ]
                 )
                 TOTAL_JOBS = len(total_df)
+                TOTAL_SCT = len(
+                    total_df[
+                        total_df["Zone"]
+                        .fillna("")
+                        .astype(str)
+                        .str.contains("Bangkok-ST2", na=False)
+                    ]
+                )
 
+                TOTAL_CWT = len(
+                    total_df[
+                        total_df["Zone"]
+                        .fillna("")
+                        .astype(str)
+                        .str.contains("Bangkok-CWT", na=False)
+                    ]
+                )
+
+                TOTAL_ONT = len(
+                    total_df[
+                        total_df["Zone"]
+                        .fillna("")
+                        .astype(str)
+                        .str.contains("Bangkok-ONT", na=False)
+                    ]
+                )
+
+                TOTAL_TLC = len(
+                    total_df[
+                        total_df["Zone"]
+                        .fillna("")
+                        .astype(str)
+                        .str.contains("Bangkok-TLC", na=False)
+                    ]
+                )
 
             else:
 
@@ -631,6 +674,10 @@ def job_monitor():
         total_major=TOTAL_MAJOR,
         total_minor=TOTAL_MINOR,
         total_jobs=TOTAL_JOBS,
+        total_sct=TOTAL_SCT,
+        total_cwt=TOTAL_CWT,
+        total_ont=TOTAL_ONT,
+        total_tlc=TOTAL_TLC,
         last_update=LAST_UPDATE
     )
 if __name__ == "__main__":
