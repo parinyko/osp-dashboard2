@@ -1,433 +1,121 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
-
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="3600">
-
-<title>OSP BKK Dashboard</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Dashboard</title>
 <style>
+*{box-sizing:border-box}html,body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#222}body{padding:14px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.title{font-size:24px;font-weight:800;color:#b40000}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:7px;padding:9px 13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.btn-blue{background:#0d6efd;color:#fff}.btn-green{background:#198754;color:#fff}.btn-dark{background:#343a40;color:#fff}.btn-orange{background:#fd7e14;color:#fff}.upload{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.badge{padding:8px 12px;border-radius:7px;color:#fff;font-weight:700;font-size:13px}.critical{background:#dc3545}.major{background:#fd7e14}.minor{background:#e6c400;color:#111}.total{background:#0d6efd}.refresh{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px 12px;font-size:13px}.refresh b{font-variant-numeric:tabular-nums}.flash{padding:9px 12px;border-radius:7px;margin:8px 0;font-weight:700}.flash.success{background:#d1e7dd;color:#0f5132}.flash.error{background:#f8d7da;color:#842029}.table-wrap{background:#fff;border-radius:10px;overflow:auto;max-height:calc(100vh - 180px);border:1px solid #ddd}table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12px}th{position:sticky;top:0;z-index:5;background:#4f81bd;color:#fff;padding:7px;border:1px solid #c7c7c7;white-space:nowrap}td{border:1px solid #d2d2d2;padding:4px 6px;vertical-align:middle;white-space:nowrap}tbody tr:nth-child(even){background:#fafafa}.zone{font-weight:800;text-align:center;min-width:80px}.user{font-weight:700;min-width:105px;max-width:130px;overflow:hidden;text-overflow:ellipsis}.area{min-width:220px;white-space:nowrap;line-height:1.2}.working{font-weight:800;color:#dc3545;background:#fff}.free{font-weight:800;color:#000;background:#92d050}.count{text-align:center;font-weight:800;min-width:75px}.status{min-width:150px;white-space:nowrap}.input{width:100%;border:1px solid #bbb;border-radius:5px;padding:6px;font-size:12px}.contact{min-width:180px}.contact .input{white-space:nowrap}.remark{min-width:260px}.remark .input{white-space:nowrap;resize:none}.save-state{font-size:11px;color:#198754;display:block;min-height:14px;margin-top:2px}.zone-DMP{background:#ead7cc}.zone-Origin{background:#c7cfde}.zone-EDS{background:#ecd991}.zone-SCT{background:#ebc5a7}.zone-BPL{background:#a9c98e}.zone-TLC{background:#eedb95}.zone-CWT{background:#aab9d8}.zone-Team{background:#d984dc}.zone-BKK2{background:#e9c4a9}.zone-SPK{background:#aab9d8}.zone-NTB{background:#ffc000}.zone-AIS{background:#92d050}
+.refreshbar{display:flex;align-items:center;gap:10px;margin-left:auto}.paused{background:#6c757d!important}.save-error{color:#dc3545!important}
 
-    .zone-dmp{
-    background:#ead7cc;
-    font-weight:bold;
-}
-
-.zone-origin{
-    background:#c7cfde;
-    font-weight:bold;
-}
-
-.zone-sct{
-    background:#ebc5a7;
-    font-weight:bold;
-}
-
-.zone-bpl{
-    background:#a9c98e;
-    font-weight:bold;
-}
-
-.zone-tlc{
-    background:#eedb95;
-    font-weight:bold;
-}
-
-.zone-cwt{
-    background:#aab9d8;
-    font-weight:bold;
-}
-
-.zone-eds{
-    background:#ecd991;
-    font-weight:bold;
-}
-
-.zone-spare{
-    background:#d984dc;
-    font-weight:bold;
-}
-
-.zone-bkk2{
-    background:#e9c4a9;
-    font-weight:bold;
-}
-
-.zone-spk{
-    background:#aab9d8;
-    font-weight:bold;
-}
-
-.zone-ntb{
-    background:#ffc000;
-    font-weight:bold;
-}
-
-.zone-ais{
-    background:#92d050;
-    font-weight:bold;
-}
-
-body{
-    font-family: Arial, sans-serif;
-    margin:0;
-    padding:5px;
-    font-size:11px;
-}
-
-h1{
-    text-align:center;
-    color:red;
-    margin:2px;
-    font-size:20px;
-    font-weight:bold;
-}
-
-.info{
-    text-align:center;
-    margin:2px;
-    font-size:11px;
-    font-weight:bold;
-}
-
-table{
-    width:100%;
-    border-collapse:collapse;
-    table-layout:fixed;
-}
-
-th,td{
-    border:1px solid #cccccc;
-    padding:3px;
-    text-align:center;
-    font-size:11px;
-    white-space:nowrap;
-}
-
-th{
-    background:#4f81bd;
-    color:white;
-}
-
-.zone{
-    width:70px;
-    font-weight:bold;
-}
-
-.user{
-    width:120px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-
-.user-status{
-    width:80px;
-}
-
-.job-zero{
-    background:#d9ead3;
-    color:black;
-    font-weight:bold;
-}
-
-.job-work{
-    background:#ffffff;
-    color:red;
-    font-weight:bold;
-}
-
-.status-col{
-    width:160px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    font-weight:bold;
-}
-
-.remark-col{
-    width:220px;
-}
-
-.remark-input{
-    width:98%;
-    border:none;
-    background:#fffde7;
-    font-size:11px;
-    padding:2px;
-}
-
-.working{
-    background:#ffffff;   /* พื้นขาว */
-    color:red;            /* ตัวหนังสือแดง */
-    font-weight:bold;
-}
-
-.free{
-    background:#d9ead3;   /* พื้นเขียว */
-    color:black;          /* ตัวหนังสือดำ */
-    font-weight:bold;
-}
-
+/* Dashboard layout adjustments */
+.dashboard-actions .btn{min-width:105px;text-align:center}
+.top-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.upload-inline{display:flex;align-items:center;gap:8px;margin:0}
+.upload-inline b{white-space:nowrap}
+.upload-inline input[type=file]{max-width:260px}
+.dashboard-summary .badge{min-width:105px;text-align:center}
+.status{min-width:200px;text-align:center;font-weight:700}
+.status-empty{background:#c6efce!important;color:#000!important}
+.area{min-width:220px;max-width:320px;white-space:nowrap;overflow:visible;text-overflow:clip}
+.contact,.remark{min-width:190px}
+.input{height:24px;line-height:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:3px 5px}
+.contact .input,.remark .input{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;resize:none}
+td,th{line-height:14px;padding-top:1px;padding-bottom:1px}.status{text-align:center!important;vertical-align:middle!important}.work-status{text-align:center!important;vertical-align:middle!important}.save-state{min-height:0;height:0;line-height:0;margin:0;overflow:visible;position:relative;z-index:2;font-size:10px}
 </style>
-
 </head>
-
-</head>
-<div style="
-    position:absolute;
-    top:5px;
-    right:10px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-">
-    📝 Update History
-</a>
-
-    <div>
-        Auto Refresh :
-        <span id="countdown" style="color:red;font-weight:bold;">60</span>
-    </div>
-
-</div>
-
-<script>
-let timeLeft = 60;
-
-function updateTimer() {
-
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
-
-    document.getElementById("countdown").innerText =
-        minutes + ":" + String(seconds).padStart(2,'0');
-
-    if(timeLeft <= 0){
-        location.reload();
-    }
-
-    timeLeft--;
-}
-
-updateTimer();
-setInterval(updateTimer, 1000);
-</script>
-<script>
-
-function saveAllRemarks(){
-
-    const inputs =
-        document.querySelectorAll(".remark-input");
-
-async function saveAllRemarks(){
-
-    const inputs =
-        document.querySelectorAll(".remark-input");
-
-    for (const input of inputs){
-
-        const user =
-            input.id.replace("remark_","");
-
-        await fetch("/save_remark",{
-
-            method:"POST",
-
-            headers:{
-                "Content-Type":
-                "application/x-www-form-urlencoded"
-            },
-
-            body:
-                "user=" + encodeURIComponent(user) +
-                "&remark=" + encodeURIComponent(input.value)
-        });
-    }
-
-    alert("✅ บันทึก Remark เรียบร้อย");
-}
-
-</script>
 <body>
-</a>
-<h1>TEAM OSP BKK Dashboard</h1>
-
-<div class="info">
-    Last Update : {{ last_update }}
+<div class="top">
+  <div>
+    <div class="title">📊 Job Dashboard</div>
+    <div class="top-meta">
+      <span>Last Update: <b>{{ last_update }}</b></span>
+      <form class="upload-inline" method="post" enctype="multipart/form-data">
+        <b>Upload Excel:</b>
+        <input type="file" name="file" accept=".xlsx,.xls" required>
+        <button class="btn btn-blue" type="submit">Upload / Update</button>
+      </form>
+    </div>
+  </div>
+  <div class="actions dashboard-actions">
+    <a class="btn btn-blue" href="/job_monitor">📋 Job Monitor</a>
+    <a class="btn btn-green" href="/export_dashboard_excel">⬇ Export Dashboard</a>
+    <a class="btn btn-green" href="/export_excel">⬇ Export Jobs</a>
+    <div class="refreshbar refresh">
+      <span>Auto Refresh: <b id="refreshCountdown">05:00</b></span>
+      <button id="refreshToggle" class="btn btn-dark" type="button">⏸ หยุด</button>
+    </div>
+  </div>
 </div>
 
-<form method="POST"
-      enctype="multipart/form-data"
-      style="
-          display:flex;
-          align-items:center;
-          width:100%;
-          gap:5px;
-      ">
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+{% endwith %}
 
-    <input type="file" name="file">
+<div class="summary dashboard-summary">
+  <span class="badge critical">Critical: {{ total_critical }}</span>
+  <span class="badge major">Major: {{ total_major }}</span>
+  <span class="badge minor">Minor: {{ total_minor }}</span>
+  <span class="badge total">Total Jobs: {{ total_jobs }}</span>
+</div>
 
-    <button type="submit"
-            style="
-                background:#d9ead3;
-                font-weight:bold;
-            ">
-        📤 Upload Excel
-    </button>
-
-    <button type="button"
-            onclick="window.location.href='/job_monitor'"
-            style="
-                background:#cfe2f3;
-                font-weight:bold;
-            ">
-        📋 Job Monitor
-    </button>
-
-</form>
-
+<div class="table-wrap">
 <table>
-
-<tr>
-    <th style="width:70px;">Zone</th>
-    <th style="width:120px;">User</th>
-    <th style="width:80px;">User Status</th>
-    <th style="width:60px;">Total Job</th>
-    <th style="width:160px;">Status</th>
-    <th style="width:250px;">Remark (Upload ไฟล์ใหม่ ข้อความจะขึ้น)</th>
-    <th style="width:350px;">Area</th>
-</tr>
-
+<thead><tr>
+  <th>Zone</th><th>User</th><th>Contact / เบอร์ติดต่อ</th><th>Status</th><th>Job Count</th><th>Current Status</th><th>Remark</th><th>Area</th>
+</tr></thead>
+<tbody>
 {% for row in data %}
-
 <tr>
-
-{% if row.show_zone %}
-<td rowspan="{{ row.rowspan }}"
-    class="zone
-    {% if row.zone == 'DMP' %}zone-dmp{% endif %}
-    {% if row.zone == 'Origin' %}zone-origin{% endif %}
-    {% if row.zone == 'SCT' %}zone-sct{% endif %}
-    {% if row.zone == 'BPL' %}zone-bpl{% endif %}
-    {% if row.zone == 'TLC' %}zone-tlc{% endif %}
-    {% if row.zone == 'CWT' %}zone-cwt{% endif %}
-    {% if row.zone == 'EDS BKK' %}zone-eds{% endif %}
-    {% if row.zone == 'Team Spare' %}zone-spare{% endif %}
-    {% if row.zone == 'BKK2' %}zone-bkk2{% endif %}
-    {% if row.zone == 'SPK' %}zone-spk{% endif %}
-    {% if row.zone == 'NTB' %}zone-ntb{% endif %}
-    {% if row.zone == 'AIS' %}zone-ais{% endif %}
-">
-    {{ row.zone }}
-</td>
-{% endif %}
-
-<td class="
-{% if row.zone == 'DMP' %}zone-dmp{% endif %}
-{% if row.zone == 'Origin' %}zone-origin{% endif %}
-{% if row.zone == 'SCT' %}zone-sct{% endif %}
-{% if row.zone == 'BPL' %}zone-bpl{% endif %}
-{% if row.zone == 'TLC' %}zone-tlc{% endif %}
-{% if row.zone == 'CWT' %}zone-cwt{% endif %}
-{% if row.zone == 'EDS BKK' %}zone-eds{% endif %}
-{% if row.zone == 'Team Spare' %}zone-spare{% endif %}
-{% if row.zone == 'BKK2' %}zone-bkk2{% endif %}
-{% if row.zone == 'SPK' %}zone-spk{% endif %}
-{% if row.zone == 'NTB' %}zone-ntb{% endif %}
-{% if row.zone == 'AIS' %}zone-ais{% endif %}
-user">
-    <b>{{ row.user }}</b>
-</td>
-
-
-<td class="user-status {% if row.work_status == 'Working' %}working{% else %}free{% endif %}">
-    {{ row.work_status }}
-</td>
-
-<td class="{% if row.job_count == 0 %}job-zero{% else %}job-work{% endif %}">
-    {{ row.job_count }}
-</td>
-
-<td class="status-col"
-    style="background-color:{{ row.status_color }}">
-    {{ row.status_text }}
-</td>
-
-<td class="remark-col">
-    <input
-    type="text"
-    class="remark-input"
-    id="remark_{{ row.user }}"
-    value="{{ row.remark }}"
-    onchange="saveRemark('{{ row.user }}')"
-    placeholder=""
-
->
-</td>
-<td rowspan="{{ row.area_rowspan }}"
-    class="
-    {% if row.zone == 'DMP' %}zone-dmp{% endif %}
-    {% if row.zone == 'Origin' %}zone-origin{% endif %}
-    {% if row.zone == 'SCT' %}zone-sct{% endif %}
-    {% if row.zone == 'BPL' %}zone-bpl{% endif %}
-    {% if row.zone == 'TLC' %}zone-tlc{% endif %}
-    {% if row.zone == 'CWT' %}zone-cwt{% endif %}
-    {% if row.zone == 'EDS BKK' %}zone-eds{% endif %}
-    {% if row.zone == 'Team Spare' %}zone-spare{% endif %}
-    {% if row.zone == 'BKK2' %}zone-bkk2{% endif %}
-    {% if row.zone == 'SPK' %}zone-spk{% endif %}
-    {% if row.zone == 'NTB' %}zone-ntb{% endif %}
-    {% if row.zone == 'AIS' %}zone-ais{% endif %}
-    "
-style="
-vertical-align:middle;
-text-align:center;
-font-weight:normal;
-">
-{{ row.area }}
-</td>
+  {% if row.show_zone %}<td class="zone zone-{{ row.zone|replace(' ','-') }}" rowspan="{{ row.rowspan }}">{{ row.zone }}</td>{% endif %}
+  <td class="user">{{ row.user }}</td>
+  <td class="contact">
+    <input class="input contact-input" value="{{ row.contact|e }}" data-user="{{ row.user|e }}" placeholder="ชื่อ / เบอร์โทร">
+    <span class="save-state" id="contact-state-{{ loop.index }}"></span>
+  </td>
+  <td class="work-status {{ 'working' if row.work_status == 'Working' else 'free' }}">{{ row.work_status }}</td>
+  <td class="count">{{ row.job_count }}</td>
+  <td class="status{% if not row.status_text|string|trim %} status-empty{% endif %}"{% if row.status_text|string|trim %} style="background:{{ row.status_color }}"{% endif %}>{{ row.status_text }}</td>
+  <td class="remark">
+    <textarea class="input remark-input" rows="1" data-user="{{ row.user|e }}" placeholder="Remark...">{{ row.remark|e }}</textarea>
+    <span class="save-state" id="remark-state-{{ loop.index }}"></span>
+  </td>
+  <td class="area">{{ row.area }}</td>
 </tr>
-
 {% endfor %}
-
+</tbody>
 </table>
+</div>
 
 <script>
-
-function saveRemark(user){
-
-    let remark =
-        document.getElementById(
-            "remark_" + user
-        ).value;
-
-    fetch("/save_remark", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type":
-            "application/x-www-form-urlencoded"
-        },
-
-        body:
-            "user=" + encodeURIComponent(user)
-            + "&remark=" +
-            encodeURIComponent(remark)
-
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Remark Saved:", user);
-    })
-    .catch(error => {
-        console.error(error);
-        alert("บันทึก Remark ไม่สำเร็จ");
-    });
-
+const REFRESH_SECONDS = 300;
+let refreshRemaining = REFRESH_SECONDS;
+let refreshPaused = localStorage.getItem('jobRefreshPaused') === '1';
+const countdown = document.getElementById('refreshCountdown');
+const toggle = document.getElementById('refreshToggle');
+function renderRefresh(){
+  const m=String(Math.floor(refreshRemaining/60)).padStart(2,'0');
+  const s=String(refreshRemaining%60).padStart(2,'0');
+  countdown.textContent = refreshPaused ? 'หยุด' : `${m}:${s}`;
+  toggle.textContent = refreshPaused ? '▶ เริ่ม' : '⏸ หยุด';
+  toggle.classList.toggle('paused', refreshPaused);
 }
+toggle.addEventListener('click',()=>{refreshPaused=!refreshPaused;localStorage.setItem('jobRefreshPaused',refreshPaused?'1':'0');if(!refreshPaused&&refreshRemaining<=0)refreshRemaining=REFRESH_SECONDS;renderRefresh();});
+renderRefresh();
+setInterval(()=>{if(refreshPaused)return;refreshRemaining--;if(refreshRemaining<=0){window.location.reload();return;}renderRefresh();},1000);
 
+async function saveTeamField(url, user, value, stateEl){
+  stateEl.classList.remove('save-error'); stateEl.textContent='กำลังบันทึก...';
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:user,[url.includes('remark')?'remark':'contact']:value})});
+    const data=await res.json();
+    if(!res.ok||!data.success) throw new Error(data.message||'save failed');
+    stateEl.textContent='✓ บันทึกแล้ว';
+    clearTimeout(stateEl._timer); stateEl._timer=setTimeout(()=>stateEl.textContent='',1800);
+  }catch(e){stateEl.textContent='✕ บันทึกไม่สำเร็จ';stateEl.classList.add('save-error');}
+}
+document.querySelectorAll('.contact-input').forEach((el,i)=>el.addEventListener('change',()=>saveTeamField('/save_contact',el.dataset.user,el.value,document.getElementById('contact-state-'+(i+1)))));
+document.querySelectorAll('.remark-input').forEach((el,i)=>el.addEventListener('change',()=>saveTeamField('/save_remark',el.dataset.user,el.value,document.getElementById('remark-state-'+(i+1)))));
 </script>
-
 </body>
 </html>
