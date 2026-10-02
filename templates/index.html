@@ -240,6 +240,8 @@ body{padding:0}
 /* =========================
    TABLE - 1:1 REFERENCE
 ========================= */
+.mobile-dashboard{display:none}
+
 .table-wrap{
   margin:0 16px;
   height:calc(100vh - 78px);
@@ -405,6 +407,72 @@ th:nth-child(8),td:nth-child(8){width:460px}
 .zone-NTB{background:#f5df83!important}
 .zone-AIS{background:#d7efbd!important}
 
+
+/* =========================
+   MOBILE RESPONSIVE
+========================= */
+@media(max-width:700px){
+  .table-wrap{display:none!important}
+  .mobile-dashboard{display:block;margin:0 8px 10px}
+  .mobile-card{background:#fff;border:1px solid #dce8e2;border-radius:12px;margin:0 0 8px;overflow:hidden;box-shadow:0 2px 8px rgba(40,90,50,.07)}
+  .mobile-card-head{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px;background:#f3f8f1;border-bottom:1px solid #dce8e2}
+  .mobile-card-user{font-size:15px;font-weight:800;color:#203a52;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-card-zone{font-size:11px;font-weight:800;padding:5px 8px;border-radius:7px;color:#193149}
+  .mobile-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:9px 10px}
+  .mobile-field{min-width:0}
+  .mobile-field.full{grid-column:1/-1}
+  .mobile-label{font-size:10px;color:#7a8790;font-weight:700;margin-bottom:3px}
+  .mobile-value{font-size:12px;color:#29405a;line-height:17px;word-break:break-word}
+  .mobile-count{font-size:16px;font-weight:800;color:#167b40}
+  .mobile-status{display:inline-block;padding:4px 7px;border-radius:6px;font-weight:800;font-size:11px;max-width:100%;white-space:normal}
+  .mobile-card .input{height:32px;font-size:12px}
+  .mobile-card textarea.input{height:52px;resize:vertical;white-space:normal}
+  .mobile-card .save-state{height:auto;line-height:12px;margin-top:2px}
+
+  html,body{width:100%;min-width:0;overflow-x:hidden}
+  .top{padding:7px 8px 6px}
+  .brand{height:auto;min-height:52px}
+  .title{font-size:25px;line-height:28px;letter-spacing:-.5px}
+  .subtitle{font-size:12px;line-height:15px;white-space:normal}
+  .top-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:visible;padding:0}
+  .meta-box:first-child{width:auto;min-width:0}
+  .meta-box{width:auto!important;min-width:0;height:40px;min-height:40px;padding:4px 7px;border-radius:8px;font-size:10px;line-height:12px;overflow:hidden}
+  .meta-box:first-child>span:first-child,.upload-inline .meta-box>span:first-child{font-size:19px}
+  .upload-inline{grid-column:1 / -1;width:100%;min-width:0}
+  .upload-inline .meta-box{display:grid;grid-template-columns:22px 1fr;gap:2px 5px;height:auto;min-height:58px}
+  .upload-inline .meta-box>span:nth-child(2){font-size:10px}
+  .upload-inline input[type=file]{grid-column:2;width:100%;max-width:none;height:28px;font-size:11px}
+  .upload-inline .btn{grid-column:2;min-height:28px;height:28px;font-size:10px;padding:0 8px}
+  .actions{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .dashboard-actions .btn{min-width:0;width:100%;min-height:38px;height:38px;font-size:11px;padding:0 6px}
+  .refreshbar{grid-column:1 / -1;width:100%;min-width:0;max-width:none;flex:none;height:38px;min-height:38px;padding:3px 5px 3px 8px}
+  .refreshbar .btn{min-width:58px;height:30px;min-height:30px;font-size:10px}
+  .flash{margin:5px 8px;padding:7px 9px;font-size:11px}
+
+  .table-wrap{margin:0 6px 8px;height:calc(100vh - 250px);min-height:300px;border-radius:10px;overflow:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:900px;width:900px;font-size:12px}
+  th{height:38px;padding:7px 8px;font-size:11px;position:sticky;top:0}
+  td{height:38px;line-height:18px;padding:5px 8px;font-size:12px}
+  th:nth-child(1),td:nth-child(1){width:88px}
+  th:nth-child(2),td:nth-child(2){width:150px}
+  th:nth-child(3),td:nth-child(3){width:145px}
+  th:nth-child(4),td:nth-child(4){width:100px}
+  th:nth-child(5),td:nth-child(5){width:80px}
+  th:nth-child(6),td:nth-child(6){width:130px}
+  th:nth-child(7),td:nth-child(7){width:190px}
+  th:nth-child(8),td:nth-child(8){width:250px}
+  .zone{font-size:13px}
+  .input{height:29px;font-size:12px;padding:3px 6px}
+  .remark{min-width:190px;width:190px}
+  .area{min-width:250px;width:250px}
+  .table-wrap table th:first-child,.table-wrap table td:first-child{position:sticky;left:0;z-index:6}
+  .table-wrap table td:first-child{z-index:4}
+  .table-wrap table th:nth-child(2),.table-wrap table td:nth-child(2){position:sticky;left:88px;z-index:6}
+  .table-wrap table th:first-child,.table-wrap table th:nth-child(2){background:linear-gradient(180deg,#2e9c35 0%,#08723f 100%);color:#fff}
+  .table-wrap table td:first-child{box-shadow:2px 0 3px rgba(0,0,0,.05)}
+  .table-wrap table td:nth-child(2){box-shadow:2px 0 3px rgba(0,0,0,.04)}
+}
+
 /* mobile */
 @media(max-width:1100px){
   .top{min-height:auto}
@@ -506,7 +574,7 @@ th:nth-child(8),td:nth-child(8){width:460px}
 <tbody>
 
 {% for row in data %}
-
+{% if row.zone not in ['BKK2','SPK','NTB','AIS'] %}
 <tr>
 
   {% if row.show_zone %}
@@ -598,6 +666,7 @@ th:nth-child(8),td:nth-child(8){width:460px}
   </td>
 
 </tr>
+{% endif %}
 
 {% endfor %}
 
@@ -607,6 +676,50 @@ th:nth-child(8),td:nth-child(8){width:460px}
 
 </div>
 
+
+<!-- =========================
+     MOBILE DASHBOARD CARDS
+========================= -->
+<div class="mobile-dashboard">
+{% for row in data %}
+{% if row.zone not in ['BKK2','SPK','NTB','AIS'] %}
+  <div class="mobile-card">
+    <div class="mobile-card-head">
+      <div class="mobile-card-user">{{ row.user }}</div>
+      <div class="mobile-card-zone zone-{{ row.zone|replace(' ','-') }}">{{ row.zone }}</div>
+    </div>
+    <div class="mobile-card-grid">
+      <div class="mobile-field">
+        <div class="mobile-label">สถานะการทำงาน</div>
+        <div class="mobile-value"><span class="mobile-status {{ 'working' if row.work_status == 'Working' else 'free' }}">{{ row.work_status }}</span></div>
+      </div>
+      <div class="mobile-field">
+        <div class="mobile-label">Job Count</div>
+        <div class="mobile-count">{{ row.job_count }}</div>
+      </div>
+      <div class="mobile-field full">
+        <div class="mobile-label">Current Status</div>
+        <div class="mobile-value"><span class="mobile-status" {% if row.status_text|string|trim %}style="background:{{ row.status_color }}"{% endif %}>{{ row.status_text or '-' }}</span></div>
+      </div>
+      <div class="mobile-field full">
+        <div class="mobile-label">Contact / เบอร์ติดต่อ</div>
+        <input class="input contact-input" value="{{ row.contact|e }}" data-user="{{ row.user|e }}" placeholder="ชื่อ / เบอร์โทร" readonly title="คลิกเพื่อใส่รหัสก่อนแก้ไข Contact">
+        <span class="save-state mobile-contact-state"></span>
+      </div>
+      <div class="mobile-field full">
+        <div class="mobile-label">Remark</div>
+        <textarea class="input remark-input" rows="2" data-user="{{ row.user|e }}" readonly title="คลิกเพื่อใส่รหัสก่อนแก้ไข Remark">{{ row.remark|e }}</textarea>
+        <span class="save-state mobile-remark-state"></span>
+      </div>
+      <div class="mobile-field full">
+        <div class="mobile-label">Area</div>
+        <div class="mobile-value">{{ row.area or '-' }}</div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endfor %}
+</div>
 
 <script>
 
@@ -815,10 +928,8 @@ document
         () => {
 
           const state =
-            document.getElementById(
-              'contact-state-' +
-              (index + 1)
-            );
+            element.closest('.mobile-card')?.querySelector('.mobile-contact-state') ||
+            document.getElementById('contact-state-' + (index + 1));
 
           saveTeamField(
             '/save_contact',
