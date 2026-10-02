@@ -91,20 +91,6 @@ ASSIGN_ORDER = [
     "Extrcwt G",
     "Extrcwt H",
     "Exspare A",
-    "Kitsada Wiraphan",
-    "Poolsak Saenmee",
-    "Chawalit Bunrod",
-    "Sittikorn Pantanoo",
-    "Phongsakron Topradit",
-    "Preecha Ruamsungneon",
-    "Piriya Sripoon",
-    "Cherdchai Wandee",
-    "Piyanut Wattanonda",
-    "Ruj Chalanun",
-    "Parinya Khoonkrong",
-    "Songwat Sintanarot",
-    "Boonsom Duangjun",
-    "Nares Vongkasigum",
     "Workforce BKK Pool"
 ]
 TEAM_DATA = [
@@ -158,23 +144,7 @@ TEAM_DATA = [
 
     {"zone": "Team Spare", "user": "Exspare A"},
 
-    {"zone": "BKK2", "user": "Kitsada Wiraphan"},
-    {"zone": "BKK2", "user": "Poolsak Saenmee"},
-    {"zone": "BKK2", "user": "Chawalit Bunrod"},
-
-    {"zone": "SPK", "user": "Sittikorn Pantanoo"},
-    {"zone": "SPK", "user": "Phongsakron Topradit"},
-    {"zone": "SPK", "user": "Preecha Ruamsungneon"},
-
-    {"zone": "NTB", "user": "Piriya Sripoon"},
-    {"zone": "NTB", "user": "Cherdchai Wandee"},
-    {"zone": "NTB", "user": "Piyanut Wattanonda"},
-
-    {"zone": "AIS", "user": "Ruj Chalanun"},
-    {"zone": "AIS", "user": "Parinya Khoonkrong"},
-    {"zone": "AIS", "user": "Songwat Sintanarot"},
-    {"zone": "AIS", "user": "Boonsom Duangjun"},
-    {"zone": "AIS", "user": "Nares Vongkasigum"},
+    {"zone": "WF", "user": "Workforce BKK Pool"},
 ]
 
 AREA_DATA = {

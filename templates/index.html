@@ -6,311 +6,377 @@
 <title>Job Dashboard</title>
 
 <style>
-*{
-  box-sizing:border-box;
-}
-
-html,
-body{
+*{box-sizing:border-box}
+html,body{
   margin:0;
-  font-family:Arial,sans-serif;
-  background:#f4f6f8;
-  color:#222;
+  min-height:100%;
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+  background:#f4f8f5;
+  color:#24384d;
 }
-
-body{
-  padding:14px;
-}
+body{padding:0}
 
 /* =========================
-   TOP / HEADER
+   HEADER / REFERENCE WAVE
 ========================= */
 .top{
+  position:relative;
+  overflow:hidden;
+  min-height:0;
+  padding:8px 14px 0;
+  border:0;
+  border-radius:0;
+  background:
+    linear-gradient(155deg,#ffffff 0%,#ffffff 34%,#f5faee 35%,#c7e994 54%,#eaf7dd 68%,#ffffff 84%,#f8fbf5 100%);
+}
+.top:before{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  height:82px;
+  background:
+    linear-gradient(158deg,transparent 0 30%,rgba(174,222,99,.58) 30.2% 46%,rgba(204,236,154,.55) 46.2% 61%,rgba(117,187,50,.18) 61.2% 73%,transparent 73.2%),
+    linear-gradient(164deg,transparent 0 47%,rgba(232,247,215,.82) 47.2% 63%,rgba(178,222,102,.24) 63.2% 77%,transparent 77.2%);
+  pointer-events:none;
+}
+.top:after{
+  content:"";
+  position:absolute;
+  right:-120px;
+  top:-40px;
+  width:72%;
+  height:112px;
+  transform:rotate(-7deg);
+  background:linear-gradient(160deg,transparent 12%,rgba(176,225,96,.28) 13% 42%,rgba(117,185,48,.16) 43% 55%,transparent 56%);
+  pointer-events:none;
+}
+.header-main{
   display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-  flex-wrap:wrap;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:0;
+  position:relative;
+  z-index:2;
 }
-
+.brand{
+  display:flex;
+  align-items:center;
+  gap:0;
+  height:46px;
+  position:relative;
+  z-index:3;
+}
+.brand-mark{
+  position:relative;
+  width:145px;
+  height:54px;
+  flex:none;
+}
+.brand-mark:before{
+  content:"";
+  position:absolute;
+  left:12px;
+  top:6px;
+  width:125px;
+  height:41px;
+  background:linear-gradient(160deg,#b8df31 0%,#72b720 58%,#56a51b 100%);
+  border-radius:100% 10% 100% 10%;
+  transform:skewX(-23deg) rotate(-7deg);
+  clip-path:polygon(0 46%,100% 0,77% 49%,55% 73%,22% 95%);
+}
+.brand-mark:after{
+  content:"";
+  position:absolute;
+  left:28px;
+  top:31px;
+  width:91px;
+  height:8px;
+  background:#fff;
+  border-radius:100%;
+  transform:rotate(-8deg);
+  opacity:.98;
+}
 .title{
-  font-size:24px;
+  font-size:36px;
+  line-height:38px;
   font-weight:800;
-  color:#b40000;
+  letter-spacing:-1.1px;
+  color:#303b45;
+  white-space:nowrap;
 }
-
+.title::first-letter{color:#58a81d}
+.subtitle{
+  margin-top:2px;
+  color:#7e8b95;
+  font-size:16px;
+  line-height:19px;
+  white-space:nowrap;
+}
 .top-meta{
   display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:4px;
+  align-items:stretch;
+  gap:8px;
+  flex-wrap:nowrap;
+  margin:0;
+  width:100%;
 }
-
-.actions{
-  display:flex;
+.meta-box{
+  display:inline-flex;
   align-items:center;
   gap:8px;
-  flex-wrap:wrap;
+  min-height:44px;
+  height:44px;
+  padding:4px 10px;
+  border:1px solid #dfe9e3;
+  border-radius:12px;
+  background:rgba(255,255,255,.95);
+  color:#167b40;
+  font-size:13px;
+  line-height:16px;
+  white-space:nowrap;
+  box-shadow:0 3px 11px rgba(49,100,67,.10);
 }
-
-/* =========================
-   BUTTONS
-========================= */
+.meta-box:first-child{width:200px}
+.meta-box:first-child>span:first-child{
+  font-size:25px;
+  line-height:1;
+  color:#16934f;
+}
+.meta-box b{color:#078441;font-size:13px}
+.upload-inline{
+  display:flex;
+  align-items:center;
+  margin:0;
+  width:500px;
+}
+.upload-inline .meta-box{
+  width:100%;
+  padding-left:10px;
+}
+.upload-inline .meta-box>span:first-child{
+  font-size:24px;
+  color:#168d4b;
+}
+.upload-inline input[type=file]{
+  width:170px;
+  max-width:170px;
+  height:30px;
+  padding:4px 6px;
+  border:1px solid #d5dfe4;
+  border-radius:8px;
+  background:#f8fafb;
+  color:#77838d;
+  font-size:13px;
+}
+.actions{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+  flex:1;
+  flex-wrap:nowrap;
+  position:relative;
+  z-index:3;
+}
 .btn{
   border:0;
-  border-radius:7px;
-  padding:8px 12px;
-  font-size:12px;
-  font-weight:700;
+  border-radius:9px;
+  padding:0 13px;
+  min-height:44px;
+  height:44px;
+  font-size:13px;
+  font-weight:800;
   cursor:pointer;
   text-decoration:none;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:32px;
   white-space:nowrap;
+  box-shadow:0 3px 8px rgba(44,101,54,.13);
 }
-
-.btn-blue{
-  background:#0d6efd;
+.btn-blue,.btn-green{
+  background:linear-gradient(180deg,#28a153 0%,#087a3e 100%);
   color:#fff;
 }
-
-.btn-green{
-  background:#198754;
-  color:#fff;
-}
-
-.btn-dark{
-  background:#343a40;
-  color:#fff;
-}
-
-.btn-orange{
-  background:#fd7e14;
-  color:#fff;
-}
-
-/* Header buttons */
-.dashboard-actions .btn{
-  min-width:105px;
-  text-align:center;
-}
-
-/* Export buttons */
-.dashboard-actions a[href="/export_dashboard_excel"],
-.dashboard-actions a[href="/export_excel"]{
-  min-width:125px;
-  padding:8px 10px;
-  font-size:12px;
-}
-
-/* =========================
-   UPLOAD
-========================= */
-.upload-inline{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin:0;
-}
-
-.upload-inline b{
-  white-space:nowrap;
-}
-
-.upload-inline input[type=file]{
-  max-width:260px;
-}
-
-/* =========================
-   REFRESH
-========================= */
+.btn-blue{min-height:34px;height:34px;padding:0 14px;border-radius:7px}
+.btn-dark{background:#243541;color:#fff}
+.dashboard-actions .btn{min-width:118px}
 .refreshbar{
   display:flex;
   align-items:center;
-  gap:8px;
+  justify-content:space-between;
+  gap:6px;
+  width:138px;
+  min-width:138px;
+  max-width:138px;
+  flex:0 0 138px;
   margin-left:auto;
+  padding:3px 4px 3px 9px;
+  border:2px solid #b8df88;
+  border-radius:10px;
+  background:rgba(255,255,255,.96);
+  color:#188043;
+  font-size:9px;
+  line-height:10px;
+  box-shadow:0 3px 10px rgba(67,118,49,.08);
 }
+.refreshbar b{font-variant-numeric:tabular-nums;color:#087a3e;font-size:10px}
+.refreshbar .btn{min-width:50px;min-height:28px;height:28px;padding:0 7px;border-radius:7px;font-size:9px}
+.paused{background:#66727a!important}
 
-.refresh{
-  background:#fff;
-  border:1px solid #ddd;
-  border-radius:8px;
-  padding:4px 6px 4px 10px;
-  font-size:12px;
-}
-
-.refresh b{
-  font-variant-numeric:tabular-nums;
-}
-
-.refresh .btn{
-  min-width:72px;
-}
-
-.paused{
-  background:#6c757d!important;
-}
-
-/* =========================
-   FLASH MESSAGE
-========================= */
+/* flash */
 .flash{
-  padding:9px 12px;
-  border-radius:7px;
-  margin:8px 0;
+  padding:8px 12px;
+  border-radius:8px;
+  margin:6px 16px;
   font-weight:700;
   font-size:13px;
 }
-
-.flash.success{
-  background:#d1e7dd;
-  color:#0f5132;
-}
-
-.flash.error{
-  background:#f8d7da;
-  color:#842029;
-}
+.flash.success{background:#e6f5e9;color:#317b3e}
+.flash.error{background:#f8d7da;color:#842029}
 
 /* =========================
-   TABLE
+   TABLE - 1:1 REFERENCE
 ========================= */
 .table-wrap{
-  background:#fff;
-  border-radius:10px;
+  margin:0 16px;
+  height:calc(100vh - 78px);
+  max-height:none;
+  min-height:0;
+  background:rgba(255,255,255,.98);
+  border:1px solid #dce8e2;
+  border-radius:14px;
   overflow:auto;
-  max-height:calc(100vh - 110px);
-  border:1px solid #ddd;
+  box-shadow:0 3px 14px rgba(40,90,50,.08);
 }
-
 table{
-  border-collapse:collapse;
-  width:max-content;
-  min-width:100%;
-  font-size:12px;
+  border-collapse:separate;
+  border-spacing:0;
+  width:100%;
+  min-width:1690px;
+  table-layout:fixed;
+  font-size:14px;
 }
-
 th{
   position:sticky;
   top:0;
   z-index:5;
-  background:#4f81bd;
+  height:43px;
+  background:linear-gradient(180deg,#2e9c35 0%,#08723f 100%);
   color:#fff;
-  padding:3px 6px;
-  border:1px solid #c7c7c7;
+  padding:8px 12px;
+  border-right:1px solid rgba(255,255,255,.18);
   white-space:nowrap;
-  line-height:14px;
+  line-height:18px;
+  font-size:14px;
+  font-weight:800;
+  text-align:left;
 }
-
+th:first-child{border-radius:12px 0 0 0}
+th:last-child{border-radius:0 12px 0 0}
 td{
-  border:1px solid #d2d2d2;
-  padding:2px 6px;
+  border-right:1px solid #e0e8e4;
+  border-bottom:1px solid #e1e9e5;
+  padding:4px 16px;
   vertical-align:middle;
   white-space:nowrap;
-  line-height:14px;
+  line-height:20px;
+  height:29px;
+  color:#29405a;
+  background:rgba(255,255,255,.72);
 }
+tbody tr:nth-child(even) td{background:#f8fbfc}
+tbody tr:hover td{background:#f0f8f2}
 
-tbody tr:nth-child(even){
-  background:#fafafa;
-}
+/* exact-ish column proportions */
+th:nth-child(1),td:nth-child(1){width:127px}
+th:nth-child(2),td:nth-child(2){width:180px}
+th:nth-child(3),td:nth-child(3){width:190px}
+th:nth-child(4),td:nth-child(4){width:145px}
+th:nth-child(5),td:nth-child(5){width:125px}
+th:nth-child(6),td:nth-child(6){width:187px}
+th:nth-child(7),td:nth-child(7){width:300px}
+th:nth-child(8),td:nth-child(8){width:460px}
 
-/* =========================
-   TABLE COLUMNS
-========================= */
 .zone{
   font-weight:800;
   text-align:center;
-  min-width:80px;
+  color:#193149;
+  font-size:16px;
+  padding:4px 8px;
 }
-
 .user{
-  font-weight:700;
-  min-width:200px;
-  max-width:250px;
+  font-weight:500;
   overflow:hidden;
   text-overflow:ellipsis;
 }
-
-.area{
-  min-width:220px;
-  max-width:500px;
-  white-space:nowrap;
-  overflow:visible;
-  text-overflow:clip;
-}
-
+.contact{font-weight:500}
 .count{
   text-align:center;
-  font-weight:800;
-  min-width:120px;
+  font-weight:700;
 }
-
 .status{
-  min-width:250px;
   text-align:center!important;
   vertical-align:middle!important;
   font-weight:700;
   white-space:nowrap;
+  border-radius:7px;
+  padding-left:9px!important;
+  padding-right:9px!important;
+  background-clip:padding-box;
 }
-
 .work-status{
-  min-width:150px;
-  width:150px;
   text-align:center!important;
   vertical-align:middle!important;
   font-weight:800;
+  border-radius:7px;
+  padding-left:8px!important;
+  padding-right:8px!important;
 }
-
 .working{
-  color:#dc3545;
-  background:#fff;
+  color:#9b2027;
+  background:#ffc9cf!important;
 }
-
 .free{
-  color:#000;
-  background:#c6efce;
+  color:#16743d;
+  background:#c7efd2!important;
 }
-
 .status-empty{
-  background:#fff!important;
-  color:#000!important;
+  background:transparent!important;
+  color:#51606c!important;
 }
 
-/* =========================
-   INPUTS
-========================= */
-.contact{
-  min-width:250px;
-}
-
-.remark{
-  min-width:400px;
-}
-
+/* inputs */
 .input{
   width:100%;
-  height:24px;
-  border:1px solid #bbb;
+  height:25px;
+  border:1px solid #d7e0e5;
   border-radius:5px;
-  padding:3px 5px;
-  font-size:12px;
-  line-height:14px;
+  padding:2px 7px;
+  font-size:13px;
+  line-height:18px;
   overflow:hidden;
   white-space:nowrap;
   text-overflow:ellipsis;
+  background:#fff;
 }
-
-.contact .input,
-.remark .input{
+.contact .input,.remark .input{
   font-family:Arial,sans-serif;
   font-size:13px;
-  font-weight:600;
-  color:#222;
+  font-weight:500;
+  color:#29405a;
 }
-
+.remark{min-width:235px;width:235px}
+.area{
+  min-width:460px;
+  width:460px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:#40556a;
+}
 .save-state{
   display:block;
   position:relative;
@@ -319,113 +385,35 @@ tbody tr:nth-child(even){
   min-height:0;
   margin:0;
   overflow:visible;
-  font-size:10px;
+  font-size:9px;
   line-height:0;
   color:#198754;
 }
+.save-error{color:#dc3545!important}
 
-.save-error{
-  color:#dc3545!important;
-}
+/* zone palette from reference */
+.zone-DMP{background:#f7dfc7!important}
+.zone-Origin{background:#d4eafa!important}
+.zone-EDS{background:#ffed91!important}
+.zone-SCT{background:#f8cbb3!important}
+.zone-BPL{background:#bfe7bd!important}
+.zone-TLC{background:#f5e7a5!important}
+.zone-CWT{background:#d4e2f4!important}
+.zone-Team{background:#ead5ec!important}
+.zone-BKK2{background:#f2d7c3!important}
+.zone-SPK{background:#d8e1f3!important}
+.zone-NTB{background:#f5df83!important}
+.zone-AIS{background:#d7efbd!important}
 
-/* =========================
-   ZONE COLORS
-========================= */
-.zone-DMP{
-  background:#ead7cc;
-}
-
-.zone-Origin{
-  background:#c7cfde;
-}
-
-.zone-EDS{
-  background:#ecd991;
-}
-
-.zone-SCT{
-  background:#ebc5a7;
-}
-
-.zone-BPL{
-  background:#a9c98e;
-}
-
-.zone-TLC{
-  background:#eedb95;
-}
-
-.zone-CWT{
-  background:#aab9d8;
-}
-
-.zone-Team{
-  background:#d984dc;
-}
-
-.zone-BKK2{
-  background:#e9c4a9;
-}
-
-.zone-SPK{
-  background:#aab9d8;
-}
-
-.zone-NTB{
-  background:#ffc000;
-}
-
-.zone-AIS{
-  background:#92d050;
-}
-
-/* =========================
-   MOBILE
-========================= */
-@media(max-width:768px){
-
-  body{
-    padding:8px;
-  }
-
-  .title{
-    font-size:20px;
-  }
-
-  .top{
-    gap:8px;
-  }
-
-  .actions{
-    width:100%;
-  }
-
-  .dashboard-actions .btn{
-    min-width:auto;
-    flex:1;
-  }
-
-  .dashboard-actions a[href="/export_dashboard_excel"],
-  .dashboard-actions a[href="/export_excel"]{
-    min-width:110px;
-  }
-
-  .upload-inline{
-    width:100%;
-  }
-
-  .upload-inline input[type=file]{
-    max-width:180px;
-    width:100%;
-  }
-
-  .refreshbar{
-    margin-left:0;
-  }
-
-  .table-wrap{
-    max-height:calc(100vh - 150px);
-  }
+/* mobile */
+@media(max-width:1100px){
+  .top{min-height:auto}
+  .brand{height:62px}
+  .title{font-size:34px;line-height:36px}
+  .subtitle{font-size:15px}
+  .refreshbar{flex:0 0 138px;min-width:138px;max-width:138px}
+  .top-meta{overflow-x:auto;padding-bottom:3px}
+  .table-wrap{height:calc(100vh - 78px);max-height:none}
 }
 </style>
 </head>
@@ -437,82 +425,39 @@ tbody tr:nth-child(even){
 ========================= -->
 <div class="top">
 
-  <div>
-    <div class="title">📊 Job Dashboard</div>
+  <div class="header-main">
+
+    <div class="brand">
+      <div>
+        <div class="title">Job Dashboard</div>
+        <div class="subtitle">ภาพรวมการปฏิบัติงานภาคสนาม</div>
+      </div>
+    </div>
 
     <div class="top-meta">
 
-      <span>
-        Last Update:
-        <b>{{ last_update }}</b>
-      </span>
+      <div class="meta-box">
+        <span>◷</span>
+        <span>Last Update<br><b>{{ last_update }}</b></span>
+      </div>
 
-      <form
-        class="upload-inline"
-        method="post"
-        enctype="multipart/form-data"
-      >
-        <b>Upload Excel:</b>
-
-        <input
-          type="file"
-          name="file"
-          accept=".xlsx,.xls"
-          required
-        >
-
-        <button
-          class="btn btn-blue"
-          type="submit"
-        >
-          Upload / Update
-        </button>
+      <form class="upload-inline" method="post" enctype="multipart/form-data">
+        <div class="meta-box">
+          <span>▣</span>
+          <span>Upload Excel:</span>
+          <input type="file" name="file" accept=".xlsx,.xls" required>
+          <button class="btn btn-blue" type="submit">⬆ Upload / Update</button>
+        </div>
       </form>
 
-    </div>
-  </div>
+      <div class="actions dashboard-actions">
+        <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
 
-
-  <!-- =========================
-       ACTION BUTTONS
-  ========================= -->
-  <div class="actions dashboard-actions">
-
-    <a
-      class="btn btn-blue"
-      href="/job_monitor"
-    >
-      📋 Job Monitor
-    </a>
-
-    <a
-      class="btn btn-green"
-      href="/export_dashboard_excel"
-    >
-      ⬇ Export Dashboard
-    </a>
-
-    <a
-      class="btn btn-green"
-      href="/export_excel"
-    >
-      ⬇ Export Jobs
-    </a>
-
-    <div class="refreshbar refresh">
-
-      <span>
-        Auto Refresh:
-        <b id="refreshCountdown">05:00</b>
-      </span>
-
-      <button
-        id="refreshToggle"
-        class="btn btn-dark"
-        type="button"
-      >
-        ⏸ หยุด
-      </button>
+        <div class="refreshbar">
+          <span>⟳ Auto Refresh:<br><b id="refreshCountdown">05:00</b></span>
+          <button id="refreshToggle" class="btn btn-dark" type="button">⏸ หยุด</button>
+        </div>
+      </div>
 
     </div>
 
@@ -576,13 +521,13 @@ tbody tr:nth-child(even){
 
 
   <!-- USER -->
-  <td class="user">
+  <td class="user zone-user zone-{{ row.zone|replace(' ','-') }}">
     {{ row.user }}
   </td>
 
 
   <!-- CONTACT -->
-  <td class="contact">
+  <td class="contact zone-contact zone-{{ row.zone|replace(' ','-') }}">
 
     <input
       class="input contact-input"
@@ -647,7 +592,7 @@ tbody tr:nth-child(even){
 
 
   <!-- AREA -->
-  <td class="area">
+  <td class="area zone-area zone-{{ row.zone|replace(' ','-') }}">
     {{ row.area }}
   </td>
 
