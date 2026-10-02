@@ -16,8 +16,8 @@ body{
   height:100%;
   margin:0;
   font-family:Arial,sans-serif;
-  background:#f3f8f1;
-  color:#18351f
+  background:linear-gradient(180deg,#f7fbf3 0%,#eef7e9 100%);
+  color:#20351f
 }
 
 body{
@@ -27,10 +27,10 @@ body{
 }
 
 .header{
-  padding:8px 10px;
+  padding:10px 14px;
   background:linear-gradient(180deg,#ffffff 0%,#f5faf3 100%);
-  border-bottom:1px solid #d7e8d0;
-  box-shadow:0 2px 10px rgba(73,128,37,.08)
+  border-bottom:1px solid #cfe3bf;
+  box-shadow:0 3px 14px rgba(73,128,37,.10)
 }
 
 .header-row{
@@ -44,13 +44,14 @@ body{
 .left{
   display:flex;
   align-items:center;
-  gap:10px
+  gap:12px
 }
 
 .title{
   margin:0;
-  color:#4d8f18;
+  color:#4f8f18;
   font-size:22px;
+  font-weight:800;
   letter-spacing:.2px
 }
 
@@ -63,20 +64,20 @@ body{
 
 .btn{
   border:0;
-  border-radius:6px;
-  padding:8px 12px;
+  border-radius:9px;
+  padding:8px 13px;
   font-weight:700;
   cursor:pointer;
   text-decoration:none
 }
 
 .blue{
-  background:#68a520;
+  background:linear-gradient(135deg,#6fae24,#5b9819);
   color:#fff
 }
 
 .green{
-  background:#6fae24;
+  background:linear-gradient(135deg,#8fca32,#6aa91f);
   color:#fff
 }
 
@@ -175,7 +176,8 @@ thead th{
   position:sticky;
   top:0;
   z-index:10;
-  background:linear-gradient(180deg,#78b82d 0%,#5f9f20 100%);
+  background:linear-gradient(180deg,#8fca32 0%,#5f9f20 100%);
+  box-shadow:inset 0 -1px rgba(0,0,0,.08)
   color:#fff;
   border:1px solid #ccc;
   padding:5px;
@@ -183,17 +185,17 @@ thead th{
 }
 
 td{
-  border:1px solid #dbe5d7;
+  border:1px solid #d7e6d0;
   padding:5px 6px;
   white-space:nowrap
 }
 
 tbody tr:nth-child(even){
-  background:#fbfdf9
+  background:#fcfefb
 }
 
 tbody tr:hover{
-  background:#eef8e8!important
+  background:#edf8e5!important
 }
 
 .col-age{
@@ -220,6 +222,19 @@ tbody tr:hover{
   min-width:125px;
   text-align:center
 }
+.subsystem-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:110px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:#edf8df;
+  color:#47751e;
+  border:1px solid #cfe5b8;
+  font-weight:800;
+}
+
 
 .col-priority{
   min-width:90px;
@@ -458,6 +473,61 @@ tbody tr:hover{
 
 
 /* =========================
+   BRAND / FILTER UX
+========================= */
+.brand-logo{
+  width:78px;
+  height:40px;
+  object-fit:contain;
+  object-position:left center;
+  border-radius:8px;
+  background:#fff;
+  padding:2px 4px;
+  border:1px solid #dcebd4;
+}
+.filter-help{
+  font-size:11px;
+  color:#6a8064;
+  margin-left:2px;
+}
+.subsystem-filter{
+  position:relative;
+  min-height:38px;
+  padding:6px 13px;
+  border-radius:10px;
+  border:1px solid #cfe4bd;
+  box-shadow:0 1px 4px rgba(73,128,37,.08);
+}
+.subsystem-filter .filter-name{
+  font-size:13px;
+  font-weight:900;
+}
+.subsystem-filter .filter-desc{
+  display:block;
+  font-size:10px;
+  font-weight:600;
+  opacity:.72;
+  margin-top:1px;
+}
+.subsystem-filter.active{
+  background:#5f9f20!important;
+  color:#fff!important;
+  border-color:#4d8f18;
+}
+.active-filter{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:5px 9px;
+  border-radius:8px;
+  background:#eef8e7;
+  color:#4d7d31;
+  font-size:11px;
+  font-weight:800;
+  border:1px solid #d7e8ca;
+}
+
+/* =========================
    HEADER CONTROLS
 ========================= */
 
@@ -502,9 +572,9 @@ tbody tr:hover{
 
 .subsystem-summary{
   padding:4px 6px;
-  border:1px solid #e0edd9;
+  border:1px solid #d7e8ca;
   border-radius:11px;
-  background:#f7fbf4
+  background:#f8fcf5
 }
 
 .priority-filter{
@@ -543,6 +613,8 @@ tbody tr:hover{
 
     <div class="left">
 
+      <img class="brand-logo" src="{{ url_for('static', filename='ais_logo.png') }}" alt="AIS">
+
       <a
         class="btn blue"
         href="/"
@@ -550,9 +622,10 @@ tbody tr:hover{
         🏠 Dashboard
       </a>
 
-      <h2 class="title">
-        📋 Job Monitor
-      </h2>
+      <div>
+        <h2 class="title">📋 Job Monitor</h2>
+        <div class="filter-help">ติดตามงานและกรอง Sub System ได้จากปุ่มด้านล่าง</div>
+      </div>
 
     </div>
 
@@ -660,31 +733,19 @@ tbody tr:hover{
 
       <span class="muted filter-label">Sub System:</span>
 
-      <button
-        type="button"
-        class="box subsystem-filter"
-        data-subsystem-group="mbb"
-        style="background:#d9efb8"
-      >
-        MBB <span class="filter-count" id="mbbCount">0</span>
+      <button type="button" class="box subsystem-filter" data-subsystem-group="mbb">
+        <span class="filter-name">MBB <span class="filter-count" id="mbbCount">0</span></span>
+        <span class="filter-desc">Transmission-OSP</span>
       </button>
 
-      <button
-        type="button"
-        class="box subsystem-filter"
-        data-subsystem-group="eds"
-        style="background:#c9e79b"
-      >
-        EDS <span class="filter-count" id="edsCount">0</span>
+      <button type="button" class="box subsystem-filter" data-subsystem-group="eds">
+        <span class="filter-name">EDS <span class="filter-count" id="edsCount">0</span></span>
+        <span class="filter-desc">4 Sub Systems</span>
       </button>
 
-      <button
-        type="button"
-        class="box subsystem-filter"
-        data-subsystem-group="fbb"
-        style="background:#b8df7a"
-      >
-        FBB <span class="filter-count" id="fbbCount">0</span>
+      <button type="button" class="box subsystem-filter" data-subsystem-group="fbb">
+        <span class="filter-name">FBB <span class="filter-count" id="fbbCount">0</span></span>
+        <span class="filter-desc">4 Sub Systems</span>
       </button>
 
       <span class="filter-divider"></span>
@@ -725,12 +786,14 @@ tbody tr:hover{
       </span>
 
 
+      <span id="activeFilterText" class="active-filter">แสดงทั้งหมด</span>
+
       <button
         class="box blue"
         id="showAllBtn"
         type="button"
       >
-        Show All
+        ↺ ล้างตัวกรอง
       </button>
 
     </div>
@@ -1014,7 +1077,8 @@ tbody tr:hover{
 
 
 <td class="col-subsystem">
-  {{ row.get('Sub System','') }}
+  {% set ss = row.get('Sub System','')|string %}
+  <span class="subsystem-badge">{{ ss }}</span>
 </td>
 
 
@@ -1843,6 +1907,19 @@ document
 ========================================== */
 
 function updateActiveFilters(){
+
+  const activeText = document.getElementById('activeFilterText');
+  if(activeText){
+    const parts = [];
+    if(filterState.subsystem){
+      const names = {mbb:'MBB', eds:'EDS', fbb:'FBB'};
+      parts.push('Sub System: ' + (names[filterState.subsystem] || filterState.subsystem));
+    }
+    if(filterState.priority) parts.push('Priority: ' + filterState.priority.toUpperCase());
+    if(filterState.zone) parts.push('Zone: ' + filterState.zone);
+    if(filterState.search) parts.push('ค้นหา: ' + filterState.search);
+    activeText.textContent = parts.length ? 'กรอง: ' + parts.join(' • ') : 'แสดงทั้งหมด';
+  }
 
   document
     .querySelectorAll(

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Job OSP Remain</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:linear-gradient(180deg,#f7fbf4,#edf7e8);color:#24384d}
+body{display:flex;flex-direction:column;overflow:hidden}
+.header{position:relative;padding:10px 14px 9px;background:linear-gradient(135deg,#fff 0%,#f7fbf4 46%,#dff1c9 100%);border-bottom:1px solid #cfe3bf;box-shadow:0 3px 14px rgba(73,128,37,.10);overflow:hidden}
+.header:after{content:"";position:absolute;right:-100px;top:-50px;width:55%;height:130px;background:linear-gradient(155deg,transparent 18%,rgba(117,187,50,.18) 19% 46%,rgba(174,222,99,.18) 47% 63%,transparent 64%);transform:rotate(-5deg);pointer-events:none}
+.header-row{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.left{display:flex;align-items:center;gap:10px}.title{margin:0;color:#4f8f18;font-size:25px;font-weight:800}.subtitle{margin-top:2px;color:#718078;font-size:13px}
+.actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:8px 12px;font-weight:800;text-decoration:none;cursor:pointer;white-space:nowrap}.btn-green{background:linear-gradient(135deg,#79bd2d,#4f9517);color:#fff}.btn-dark{background:#293841;color:#fff}.btn-light{background:#fff;border:1px solid #cfe0c5;color:#397817}.btn-danger{background:#dc3545;color:#fff}
+.content{flex:1;min-height:0;overflow:auto;padding:10px 14px 14px}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:10px}.card{border-radius:12px;padding:10px 13px;background:#fff;border:1px solid #dbe8d4;box-shadow:0 3px 10px rgba(55,105,46,.07)}.card .label{font-size:12px;font-weight:700;color:#6c7d72}.card .value{font-size:26px;font-weight:900;margin-top:1px}.critical .value{color:#c62828}.major .value{color:#e66a00}.minor .value{color:#a18b00}.total .value{color:#21864a}
+.panel{background:#fff;border:1px solid #dbe8d4;border-radius:13px;box-shadow:0 3px 12px rgba(55,105,46,.07);margin-bottom:10px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid #e2ebde;background:#f8fcf5}.panel-title{font-weight:900;color:#397817}.muted{color:#738078;font-size:12px}
+.table-wrap{overflow:auto;max-height:330px}table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px;font-size:13px}th{position:sticky;top:0;background:#edf7e8;color:#315a28;text-align:center;padding:8px 6px;border-bottom:1px solid #cfe0c5;z-index:2}td{padding:7px 6px;text-align:center;border-bottom:1px solid #edf1ed;border-right:1px solid #f0f3ef}td:first-child{text-align:left;font-weight:700}.num{font-variant-numeric:tabular-nums;font-weight:800}.sub-total{background:#f7fbf5}
+.chart-wrap{min-height:380px;padding:8px 12px 12px}
+.chart-scroll{width:100%;height:350px;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;border-radius:8px}
+.chart-scroll::-webkit-scrollbar{height:10px}
+.chart-scroll::-webkit-scrollbar-track{background:#edf4e9;border-radius:10px}
+.chart-scroll::-webkit-scrollbar-thumb{background:#9fc58a;border-radius:10px}
+.chart-scroll::-webkit-scrollbar-thumb:hover{background:#6fa34f}
+.chart-inner{height:330px;width:100%;min-width:100%}
+canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:7px 10px 2px;font-size:11px;color:#56665d}.legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.legend-line{width:18px;height:3px;border-radius:3px;display:inline-block}.legend-bar{width:14px;height:10px;border-radius:2px;display:inline-block}
+.history-wrap{overflow:auto;max-height:280px}.history-table{min-width:720px}.slot{font-weight:800}.slot.auto{color:#397817}.slot.manual{color:#66727a}
+.empty{padding:28px;text-align:center;color:#7a867e}.note{font-size:11px;color:#718078;margin-top:6px}
+@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.header-row{align-items:flex-start}.title{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-row">
+    <div class="left">
+      <div>
+        <div class="title">Daily Job OSP Remain</div>
+        <div class="subtitle">สรุปงาน OSP คงเหลือตามช่วงเวลา 06:00 และ 18:00</div>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn btn-light" href="/">🏠 Dashboard</a>
+      <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
+      <button class="btn btn-green" id="snapshotBtn" type="button">＋ บันทึก Snapshot ตอนนี้</button>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  {% if latest %}
+  <div class="summary">
+    <div class="card critical"><div class="label">Critical</div><div class="value">{{ latest.totals.critical }}</div></div>
+    <div class="card major"><div class="label">Major</div><div class="value">{{ latest.totals.major }}</div></div>
+    <div class="card minor"><div class="label">Minor</div><div class="value">{{ latest.totals.minor }}</div></div>
+    <div class="card total"><div class="label">Grand Total</div><div class="value">{{ latest.totals.grand_total }}</div></div>
+  </div>
+  {% endif %}
+
+  <div class="panel">
+    <div class="panel-head">
+      <div><span class="panel-title">Latest OSP Remain</span> <span class="muted">{{ latest.timestamp if latest else 'ยังไม่มี Snapshot' }}</span></div>
+      <div class="muted">Source Update: {{ latest.last_update if latest else last_update }}</div>
+    </div>
+    {% if latest %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Sub System</th><th>Critical</th><th>Major</th><th>Minor</th><th>Grand Total</th></tr></thead>
+        <tbody>
+        {% for row in latest.subsystems %}
+          <tr class="{% if row.total %}sub-total{% endif %}">
+            <td>{{ row.subsystem }}</td><td class="num">{{ row.critical }}</td><td class="num">{{ row.major }}</td><td class="num">{{ row.minor }}</td><td class="num">{{ row.total }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<div class="empty">ยังไม่มีข้อมูล Snapshot — Upload Excel แล้วกด “บันทึก Snapshot ตอนนี้”</div>{% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">OSP Remain Trend</span><span class="muted">เส้น = แต่ละ Sub System · แท่ง = Grand Total</span></div>
+    <div class="chart-wrap"><div class="chart-scroll"><div class="chart-inner"><canvas id="trendChart"></canvas></div></div><div id="trendLegend" class="trend-legend"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">Snapshot History</span><span class="muted">ย้อนหลังสูงสุด 730 รายการ</span></div>
+    {% if records %}
+    <div class="history-wrap">
+      <table class="history-table">
+        <thead><tr><th>เวลา</th><th>Slot</th><th>Critical</th><th>Major</th><th>Minor</th><th>Grand Total</th><th>Source Update</th></tr></thead>
+        <tbody>
+        {% for row in records %}
+          <tr>
+            <td>{{ row.timestamp }}</td>
+            <td class="slot {{ 'auto' if row.slot in ['06:00','18:00'] else 'manual' }}">{{ row.slot }}</td>
+            <td class="num">{{ row.totals.critical }}</td><td class="num">{{ row.totals.major }}</td><td class="num">{{ row.totals.minor }}</td><td class="num">{{ row.totals.grand_total }}</td><td>{{ row.last_update }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}<div class="empty">ยังไม่มีประวัติ Snapshot</div>{% endif %}
+  </div>
+
+  <div class="note">ระบบจะบันทึกอัตโนมัติทุกวันเวลา 06:00 และ 18:00 ตามเวลา Asia/Bangkok เมื่อ Flask ทำงานอยู่</div>
+</div>
+
+<script>
+const records = {{ records|tojson }};
+const btn = document.getElementById('snapshotBtn');
+if(btn){
+  btn.addEventListener('click', async () => {
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+    try{
+      const res = await fetch('/daily_osp_snapshot',{method:'POST'});
+      const data = await res.json();
+      if(!res.ok || !data.success) throw new Error(data.message || 'บันทึกไม่สำเร็จ');
+      location.reload();
+    }catch(err){
+      alert(err.message || 'บันทึก Snapshot ไม่สำเร็จ');
+      btn.disabled = false; btn.textContent = old;
+    }
+  });
+}
+
+function drawChart(){
+  const canvas=document.getElementById('trendChart');
+  const legend=document.getElementById('trendLegend');
+  if(!canvas || !records.length) {
+    if(legend) legend.innerHTML='';
+    return;
+  }
+
+  const parent=canvas.parentElement;
+  const scroll=document.querySelector('.chart-scroll');
+  const dpr=window.devicePixelRatio||1;
+  const data=[...records].reverse();
+
+  // ให้แต่ละ Snapshot มีพื้นที่ของตัวเอง เพื่อไม่ให้วันที่/เวลา/จุดกราฟซ้อนกัน
+  // เมื่อมีข้อมูลจำนวนมาก ให้ขยายกราฟและใช้ scrollbar แนวนอน
+  const minPointWidth=110;
+  const chartWidth=Math.max((scroll ? scroll.clientWidth : 1100), data.length*minPointWidth);
+  parent.style.width=chartWidth+'px';
+  const names={{ subsystem_names|tojson }};
+  const palette=['#2f7d32','#1976a8','#8e5bb7','#d27b20','#00897b','#c04b6e','#6b7c93','#8a6d3b','#5c6bc0'];
+
+  const barColor='#4f9517';
+  const w=Math.max(parent.clientWidth,1100), h=Math.max(parent.clientHeight,330);
+  canvas.width=w*dpr; canvas.height=h*dpr;
+  canvas.style.width=w+'px'; canvas.style.height=h+'px';
+
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+
+  // Hover tooltip
+  let hoverIndex=-1, hoverSeries=null;
+  const tooltip=document.getElementById('chartTooltip') || (()=>{
+    const el=document.createElement('div');
+    el.id='chartTooltip';
+    el.style.cssText='position:fixed;display:none;pointer-events:none;z-index:9999;background:rgba(35,48,40,.96);color:#fff;border-radius:8px;padding:8px 10px;font:12px Segoe UI,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.2);line-height:1.5;white-space:nowrap;';
+    document.body.appendChild(el); return el;
+  })();
+
+  const left=55,right=24,top=24,bottom=52;
+  const cw=w-left-right, ch=h-top-bottom;
+  const totals=data.map(r=>Number((r.totals||{}).grand_total||0));
+  const lines=names.map((name,idx)=>({
+    name,
+    color:palette[idx%palette.length],
+    values:data.map(r=>{
+      const row=(r.subsystems||[]).find(x=>x.subsystem===name);
+      return row && Number(row.total) > 0 ? Number(row.total) : null;
+    })
+  })).filter(series=>series.values.some(v=>v!==null));
+
+  const maxValue=Math.max(1,...totals,...lines.flatMap(x=>x.values.filter(v=>v!==null)));
+  const niceMax=Math.ceil(maxValue/10)*10 || 10;
+
+  // Grid + Y axis
+  ctx.font='11px Segoe UI, Arial';
+  ctx.textAlign='right';
+  ctx.textBaseline='middle';
+  ctx.strokeStyle='#dfe9dc';
+  ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const value=niceMax*(5-i)/5;
+    const y=top+ch*i/5;
+    ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();
+    ctx.fillStyle='#718078';ctx.fillText(String(Math.round(value)),left-8,y);
+  }
+
+  // X labels
+  ctx.textAlign='center';
+  ctx.textBaseline='top';
+  const step=data.length>1 ? cw/(data.length-1) : 0;
+  data.forEach((r,i)=>{
+    const x=data.length===1 ? left+cw/2 : left+step*i;
+    ctx.fillStyle='#718078';
+    const label=(r.timestamp||'').slice(0,16);
+    ctx.fillText(label,x,h-38);
+  });
+
+  // Grand Total bars
+  const barWidth=Math.min(34, Math.max(10, cw/Math.max(data.length*1.8,8)));
+  ctx.globalAlpha=.28;
+  totals.forEach((v,i)=>{
+    const x=data.length===1 ? left+cw/2 : left+step*i;
+    const bh=(v/niceMax)*ch;
+    ctx.fillStyle=barColor;
+    ctx.fillRect(x-barWidth/2,top+ch-bh,barWidth,bh);
+  });
+  ctx.globalAlpha=1;
+
+  // Sub System lines
+  lines.forEach(series=>{
+    ctx.beginPath();
+    let started=false;
+    series.values.forEach((v,i)=>{
+      const x=data.length===1 ? left+cw/2 : left+step*i;
+      if(v===null){ started=false; return; }
+      const y=top+ch-(v/niceMax)*ch;
+      if(!started){ ctx.moveTo(x,y); started=true; } else { ctx.lineTo(x,y); }
+    });
+    ctx.strokeStyle=series.color;
+    ctx.lineWidth=2.2;
+    ctx.stroke();
+
+    series.values.forEach((v,i)=>{
+      const x=data.length===1 ? left+cw/2 : left+step*i;
+      if(v===null){ return; }
+      const y=top+ch-(v/niceMax)*ch;
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
+      ctx.fillStyle=series.color;ctx.fill();
+    });
+  });
+
+  // Hover highlight + tooltip
+  function showTooltip(clientX, clientY, index, seriesIndex){
+    if(index < 0 || index >= data.length){ tooltip.style.display='none'; return; }
+    const r=data[index];
+    const total=Number((r.totals||{}).grand_total||0);
+    let html='<b>'+((r.timestamp||'').replace(' ',' &nbsp; '))+'</b><br>';
+    if(seriesIndex===-1){
+      html += '<span style=\"color:#b8e986\">Grand Total</span> : <b>'+total+'</b>';
+    }else{
+      const series=lines[seriesIndex];
+      const value=Number(series.values[index]||0);
+      html += '<span style=\"color:'+series.color+'\">●</span> '+series.name+' : <b>'+value+'</b>';
+    }
+    tooltip.innerHTML=html;
+    tooltip.style.display='block';
+    tooltip.style.left=(clientX+14)+'px';
+    tooltip.style.top=(clientY+14)+'px';
+  }
+
+  canvas.onmousemove=function(e){
+    const rect=canvas.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*(w/rect.width);
+    const my=(e.clientY-rect.top)*(h/rect.height);
+    const stepX=data.length>1 ? cw/(data.length-1) : 0;
+    let idx=data.length===1 ? 0 : Math.round((mx-left)/stepX);
+    if(idx<0 || idx>=data.length || mx<left-10 || mx>w-right+10){ tooltip.style.display='none'; return; }
+    const x=data.length===1 ? left+cw/2 : left+stepX*idx;
+    const totalY=top+ch-(totals[idx]/niceMax)*ch;
+    let nearest=Math.abs(my-totalY);
+    let nearestSeries=-1;
+    lines.forEach((series,si)=>{
+      const y=top+ch-(series.values[idx]/niceMax)*ch;
+      const d=Math.abs(my-y);
+      if(d<nearest){nearest=d; nearestSeries=si;}
+    });
+    if(nearest<=16){
+      showTooltip(e.clientX,e.clientY,idx,nearestSeries);
+    }else{
+      tooltip.style.display='none';
+    }
+  };
+  canvas.onmouseleave=function(){ tooltip.style.display='none'; };
+
+  // Total labels
+  ctx.font='10px Segoe UI, Arial';
+  ctx.textAlign='center';
+  ctx.textBaseline='bottom';
+  totals.forEach((v,i)=>{
+    const x=data.length===1 ? left+cw/2 : left+step*i;
+    const y=top+ch-(v/niceMax)*ch;
+    ctx.fillStyle='#397817';
+    ctx.fillText(String(v),x,y-3);
+  });
+
+  // Legend
+  if(legend){
+    legend.innerHTML=
+      '<span class="legend-item"><span class="legend-bar" style="background:'+barColor+'"></span>Grand Total</span>'+
+      lines.map(x=>'<span class="legend-item"><span class="legend-line" style="background:'+x.color+'"></span>'+x.name+'</span>').join('');
+  }
+}
+window.addEventListener('resize',drawChart);drawChart();
+</script>
+</body>
+</html>

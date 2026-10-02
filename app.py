@@ -91,6 +91,20 @@ ASSIGN_ORDER = [
     "Extrcwt G",
     "Extrcwt H",
     "Exspare A",
+    "Kitsada Wiraphan",
+    "Poolsak Saenmee",
+    "Chawalit Bunrod",
+    "Sittikorn Pantanoo",
+    "Phongsakron Topradit",
+    "Preecha Ruamsungneon",
+    "Piriya Sripoon",
+    "Cherdchai Wandee",
+    "Piyanut Wattanonda",
+    "Ruj Chalanun",
+    "Parinya Khoonkrong",
+    "Songwat Sintanarot",
+    "Boonsom Duangjun",
+    "Nares Vongkasigum",
     "Workforce BKK Pool"
 ]
 TEAM_DATA = [
@@ -144,7 +158,23 @@ TEAM_DATA = [
 
     {"zone": "Team Spare", "user": "Exspare A"},
 
-    {"zone": "WF", "user": "Workforce BKK Pool"},
+    {"zone": "BKK2", "user": "Kitsada Wiraphan"},
+    {"zone": "BKK2", "user": "Poolsak Saenmee"},
+    {"zone": "BKK2", "user": "Chawalit Bunrod"},
+
+    {"zone": "SPK", "user": "Sittikorn Pantanoo"},
+    {"zone": "SPK", "user": "Phongsakron Topradit"},
+    {"zone": "SPK", "user": "Preecha Ruamsungneon"},
+
+    {"zone": "NTB", "user": "Piriya Sripoon"},
+    {"zone": "NTB", "user": "Cherdchai Wandee"},
+    {"zone": "NTB", "user": "Piyanut Wattanonda"},
+
+    {"zone": "AIS", "user": "Ruj Chalanun"},
+    {"zone": "AIS", "user": "Parinya Khoonkrong"},
+    {"zone": "AIS", "user": "Songwat Sintanarot"},
+    {"zone": "AIS", "user": "Boonsom Duangjun"},
+    {"zone": "AIS", "user": "Nares Vongkasigum"},
 ]
 
 AREA_DATA = {
@@ -220,7 +250,7 @@ def get_status_color(status_text):
 # Persistent team information
 # -----------------------------------------------------------------------------
 from io import BytesIO
-from threading import Lock
+from threading import Lock, RLock, Thread, Event
 from werkzeug.utils import secure_filename
 from flask import flash, send_file
 
@@ -228,6 +258,10 @@ CONTACTS = {}
 CONTACT_FILE = "contacts.json"
 REMARK_LOCK = Lock()
 CONTACT_LOCK = Lock()
+OSP_LOCK = RLock()
+DAILY_OSP_FILE = "daily_osp_remain.json"
+DAILY_OSP_MAX_RECORDS = 730
+DAILY_OSP_STOP = Event()
 
 
 def load_json_file(path, default=None):
@@ -427,6 +461,200 @@ def empty_dashboard_data():
     return apply_group_rowspans(rows)
 
 
+# -----------------------------------------------------------------------------
+# Daily Job OSP Remain
+# -----------------------------------------------------------------------------
+DAILY_OSP_SUBSYSTEMS = [
+    "EDS-OSP",
+    "ETS-OSP",
+    "FTTB-OSP",
+    "FTTH-OSP",
+    "FTTX-OSP",
+    "Splitter-OSP",
+    "Transmission-OSP",
+    "EDS SW NODE-OSP",
+    "EDS IPLC-OSP",
+]
+
+
+def load_daily_osp_history():
+    try:
+        if not os.path.exists(DAILY_OSP_FILE):
+            return []
+        with open(DAILY_OSP_FILE, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        if isinstance(payload, dict):
+            records = payload.get("records", [])
+        else:
+            records = payload
+        return records if isinstance(records, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+DAILY_OSP_HISTORY = load_daily_osp_history()
+
+
+def save_daily_osp_history():
+    payload = {
+        "version": 1,
+        "updated_at": datetime.now(ZoneInfo("Asia/Bangkok")).isoformat(),
+        "records": DAILY_OSP_HISTORY[-DAILY_OSP_MAX_RECORDS:],
+    }
+    temp_path = f"{DAILY_OSP_FILE}.tmp"
+    with OSP_LOCK:
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, DAILY_OSP_FILE)
+
+
+def get_latest_upload_path():
+    candidates = []
+    try:
+        for name in os.listdir(UPLOAD_FOLDER):
+            if name.lower().endswith((".xlsx", ".xls")):
+                path = os.path.join(UPLOAD_FOLDER, name)
+                if os.path.isfile(path):
+                    candidates.append(path)
+    except OSError:
+        return None
+    return max(candidates, key=os.path.getmtime) if candidates else None
+
+
+def load_latest_excel_into_memory():
+    path = get_latest_upload_path()
+    if not path:
+        return False
+    try:
+        df = pd.read_excel(path)
+        update_global_data(df)
+        return True
+    except Exception:
+        return False
+
+
+def build_daily_osp_snapshot(slot="Manual"):
+    """Create one OSP remain snapshot from the currently loaded job data."""
+    if not RAW_DATA:
+        load_latest_excel_into_memory()
+    if not RAW_DATA:
+        raise ValueError("ยังไม่มีข้อมูล Job สำหรับสร้าง Daily Job OSP Remain")
+
+    now = datetime.now(ZoneInfo("Asia/Bangkok"))
+    job_df = pd.DataFrame(RAW_DATA)
+    subsystem_series = job_df["Sub System"].fillna("").astype(str).str.strip()
+    priority_series = normalize_priority_series(job_df)
+
+    rows = []
+    for subsystem in DAILY_OSP_SUBSYSTEMS:
+        mask = subsystem_series.eq(subsystem)
+        rows.append({
+            "subsystem": subsystem,
+            "critical": int((mask & priority_series.eq("critical")).sum()),
+            "major": int((mask & priority_series.eq("major")).sum()),
+            "minor": int((mask & priority_series.eq("minor")).sum()),
+            "total": int(mask.sum()),
+        })
+
+    total_critical = sum(r["critical"] for r in rows)
+    total_major = sum(r["major"] for r in rows)
+    total_minor = sum(r["minor"] for r in rows)
+    grand_total = sum(r["total"] for r in rows)
+
+    return {
+        "timestamp": now.strftime("%d/%m/%Y %H:%M:%S"),
+        "iso_timestamp": now.isoformat(),
+        "date": now.strftime("%Y-%m-%d"),
+        "slot": slot,
+        "last_update": LAST_UPDATE,
+        "totals": {
+            "critical": total_critical,
+            "major": total_major,
+            "minor": total_minor,
+            "grand_total": grand_total,
+        },
+        "subsystems": rows,
+    }
+
+
+def snapshot_key(record):
+    return f"{record.get('date','')}|{record.get('slot','')}"
+
+
+def save_daily_osp_snapshot(slot="Manual", allow_duplicate=False):
+    global DAILY_OSP_HISTORY
+    record = build_daily_osp_snapshot(slot)
+    key = snapshot_key(record)
+
+    with OSP_LOCK:
+        if not allow_duplicate and slot in ("06:00", "18:00"):
+            for old in DAILY_OSP_HISTORY:
+                if snapshot_key(old) == key:
+                    return old, False
+        DAILY_OSP_HISTORY.append(record)
+        DAILY_OSP_HISTORY = DAILY_OSP_HISTORY[-DAILY_OSP_MAX_RECORDS:]
+        save_daily_osp_history()
+    return record, True
+
+
+def scheduled_osp_slot(now):
+    if now.hour == 6 and now.minute == 0:
+        return "06:00"
+    if now.hour == 18 and now.minute == 0:
+        return "18:00"
+    return None
+
+
+def daily_osp_scheduler():
+    last_checked_minute = None
+    while not DAILY_OSP_STOP.wait(15):
+        now = datetime.now(ZoneInfo("Asia/Bangkok"))
+        minute_key = now.strftime("%Y-%m-%d %H:%M")
+        if minute_key == last_checked_minute:
+            continue
+        last_checked_minute = minute_key
+        slot = scheduled_osp_slot(now)
+        if not slot:
+            continue
+        try:
+            save_daily_osp_snapshot(slot)
+        except Exception as exc:
+            print(f"[Daily OSP] snapshot failed: {exc}")
+
+
+@app.route("/daily_osp_remain")
+def daily_osp_remain():
+    if not RAW_DATA:
+        load_latest_excel_into_memory()
+
+    records = list(reversed(DAILY_OSP_HISTORY))
+    latest = records[0] if records else None
+    return render_template(
+        "daily_osp_remain.html",
+        records=records,
+        latest=latest,
+        subsystem_names=DAILY_OSP_SUBSYSTEMS,
+        current_jobs=TOTAL_JOBS,
+        last_update=LAST_UPDATE,
+    )
+
+
+@app.route("/daily_osp_snapshot", methods=["POST"])
+def daily_osp_snapshot():
+    try:
+        record, created = save_daily_osp_snapshot("Manual", allow_duplicate=True)
+        return jsonify({
+            "success": True,
+            "created": created,
+            "message": "บันทึก Snapshot สำเร็จ",
+            "record": record,
+        })
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+
+
 @app.route("/export_excel")
 def export_excel():
     if not RAW_DATA:
@@ -539,5 +767,8 @@ def job_monitor():
 
 
 if __name__ == "__main__":
+    load_latest_excel_into_memory()
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("FLASK_DEBUG") != "1":
+        Thread(target=daily_osp_scheduler, name="daily-osp-scheduler", daemon=True).start()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
