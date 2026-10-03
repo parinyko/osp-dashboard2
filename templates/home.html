@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard OSP BKK</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Arial,"Noto Sans Thai",sans-serif;background:#f3f7f1;color:#243629}
+body{padding:12px}
+.shell{max-width:1500px;margin:0 auto}
+.header{background:linear-gradient(135deg,#ffffff,#edf7e8);border:1px solid #d6e6ce;border-radius:14px;padding:14px 16px;box-shadow:0 4px 18px rgba(50,100,40,.08)}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4px;color:#637361;font-size:13px}.update{font-size:12px;color:#61705f;background:#fff;border:1px solid #dce8d7;border-radius:8px;padding:7px 10px;white-space:nowrap}
+.section-title{margin:14px 2px 7px;font-size:16px;font-weight:900;color:#416c32}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px}.card{background:#fff;border:1px solid #dce8d7;border-radius:12px;padding:11px 13px;box-shadow:0 2px 10px rgba(50,90,40,.05)}.card .label{font-size:12px;color:#697766;font-weight:700}.card .value{font-size:27px;font-weight:900;margin-top:2px;color:#355e27}.card.total{border-left:5px solid #69a91f}.card.critical{border-left:5px solid #dc3545}.card.major{border-left:5px solid #f28c28}.card.minor{border-left:5px solid #f0c900}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.nav-card{display:flex;justify-content:space-between;align-items:center;gap:10px;text-decoration:none;background:#fff;border:1px solid #d7e7d1;border-radius:12px;padding:12px;color:#29472c;box-shadow:0 2px 10px rgba(50,90,40,.05)}.nav-card:hover{border-color:#8fca32;background:#fbfff9}.icon{font-size:20px}.nav-title{font-size:15px;font-weight:900;color:#355e27}.nav-desc{font-size:11px;color:#70806f;margin-top:2px}.go{font-size:11px;font-weight:900;color:#fff;background:#69a91f;border-radius:8px;padding:7px 9px;white-space:nowrap}
+.grid-2{display:grid;grid-template-columns:minmax(0,820px) minmax(500px,1fr);gap:10px;align-items:start}.panel{background:#fff;border:1px solid #d8e7d2;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(50,90,40,.05)}.panel-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f2f8ef;border-bottom:1px solid #dce8d7}.panel-title{font-weight:900;color:#355e27}.panel-note{font-size:11px;color:#71806f}
+.table-scroll{overflow:auto;-webkit-overflow-scrolling:touch}table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px}th{background:#70a92d;color:#fff;padding:7px 8px;text-align:center;white-space:nowrap}td{padding:6px 8px;border-bottom:1px solid #e7eee4;white-space:nowrap}tbody tr:nth-child(even){background:#fafcf9}td.num{text-align:center;font-weight:800}td.total{font-weight:900;background:#f0f7ec}.priority-critical{color:#b4232e}.priority-major{color:#c96812}.priority-minor{color:#7b6a00}.zone-chip{font-weight:900}.team-total{color:#355e27}
+.team-cards{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(110px,1fr));
+    gap:8px;
+    padding:10px;
+}.team-stat{border:1px solid #dce8d7;border-radius:10px;padding:10px;background:#fafcf9}.team-stat .label{font-size:11px;color:#6d7a6a;font-weight:700}.team-stat .value{
+    font-size:24px;
+    font-weight:900;
+    margin-top:2px;
+    white-space:nowrap;
+}.working{color:#b4232e}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
+.zone-summary-panel{max-width:900px}
+.zone-summary-panel .team-cards{grid-template-columns:repeat(5,minmax(105px,1fr));padding:10px}
+.zone-summary-panel .team-stat{padding:8px 10px}
+.zone-summary-panel .team-stat .value{font-size:23px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:0 10px 10px;font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.dot.work{background:#dc3545}.dot.free{background:#5aa66a}.dot.missing{background:#e0a600}.dot.late{background:#7b4ab5}
+.osp{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;padding:12px}.osp-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.osp-title{font-weight:900;color:#355e27}.osp-meta{font-size:11px;color:#6f7c6d}.osp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}.osp-item{background:#f5f9f2;border:1px solid #e0eadb;border-radius:9px;padding:8px}.osp-item b{display:block;font-size:19px;color:#355e27;margin-top:2px}.empty{color:#777;font-size:12px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.nav{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}.team-cards{grid-template-columns:repeat(2,1fr)}.ready-total{
+    font-size:18px !important;
+    white-space:nowrap;
+}
+.zone-cards{grid-template-columns:repeat(2,1fr)}
+.total-zone{grid-column:1/-1;background:#f1f8ed}
+.zone-click{width:100%;border:1px solid #d9e6d3;text-align:left;font:inherit;cursor:default}
+}
+.zone-cards .team-stat:nth-child(1){background:#eaf4ff;border-color:#9ec5e8}.zone-cards .team-stat:nth-child(2){background:#eaf8f0;border-color:#9ed2b2}.zone-cards .team-stat:nth-child(3){background:#fff4df;border-color:#e5bf72}.zone-cards .team-stat:nth-child(4){background:#f2ecff;border-color:#b9a2e6}.zone-cards .total-zone{background:#eef5e8;border-color:#a8c98d}.osp-item:nth-child(1){background:#fff0f0;border-color:#efb0b0}.osp-item:nth-child(1) b{color:#d64545}.osp-item:nth-child(2){background:#fff4e5;border-color:#edc27a}.osp-item:nth-child(2) b{color:#d88919}.osp-item:nth-child(3){background:#fffbe5;border-color:#e3d26a}.osp-item:nth-child(3) b{color:#b39a00}.osp-item:nth-child(4){background:#eaf5e8;border-color:#a8c98d}.osp-item:nth-child(4) b{color:#4e8f2d}
+@media(max-width:600px){body{padding:7px}.header{padding:12px}.header-row{align-items:flex-start;flex-direction:column}h1{font-size:23px}.update{white-space:normal}.cards{gap:7px}.card{padding:9px}.card .value{font-size:23px}.nav-card{padding:10px}.go{display:none}.osp-grid{grid-template-columns:repeat(2,1fr)}.panel-head{align-items:flex-start;flex-direction:column;gap:3px}}
+
+.subsystem-chart-panel{overflow:hidden}
+.subsystem-chart{padding:4px 10px 12px}
+.subsystem-group{padding:10px 0 12px;border-bottom:1px solid #e4ece0}
+.subsystem-group:last-child{border-bottom:0}
+.subsystem-name{font-weight:900;color:#355e27;margin-bottom:7px;display:flex;justify-content:space-between;gap:10px}
+.subsystem-total{font-size:11px;font-weight:700;color:#7b8777}
+.bar-row{display:grid;grid-template-columns:70px minmax(80px,1fr) 38px;align-items:center;gap:8px;margin:5px 0}
+.bar-label{font-size:11px;font-weight:800}
+.critical-label{color:#c62828}.major-label{color:#d97706}.minor-label{color:#9a8b00}
+.bar-track{height:18px;background:#edf3e9;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;width:0;border-radius:999px;transition:width .25s ease}
+.critical-fill{background:#d9534f}.major-fill{background:#f0a22e}.minor-fill{background:#e0c341}
+.bar-value{text-align:right;font-size:12px;color:#35412f}
+.zone-cards .team-stat:nth-child(1){background:#eaf4ff;border-color:#9ec5e8}.zone-cards .team-stat:nth-child(2){background:#eaf8f0;border-color:#9ed2b2}.zone-cards .team-stat:nth-child(3){background:#fff4df;border-color:#e5bf72}.zone-cards .team-stat:nth-child(4){background:#f2ecff;border-color:#b9a2e6}.zone-cards .total-zone{background:#eef5e8;border-color:#a8c98d}.osp-item:nth-child(1){background:#fff0f0;border-color:#efb0b0}.osp-item:nth-child(1) b{color:#d64545}.osp-item:nth-child(2){background:#fff4e5;border-color:#edc27a}.osp-item:nth-child(2) b{color:#d88919}.osp-item:nth-child(3){background:#fffbe5;border-color:#e3d26a}.osp-item:nth-child(3) b{color:#b39a00}.osp-item:nth-child(4){background:#eaf5e8;border-color:#a8c98d}.osp-item:nth-child(4) b{color:#4e8f2d}
+@media(max-width:600px){
+ .subsystem-chart{padding-left:7px;padding-right:7px}
+ .bar-row{grid-template-columns:62px minmax(60px,1fr) 32px;gap:6px}
+ .bar-track{height:16px}
+ .subsystem-name{font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="header"><div class="header-row"><div><h1>Dashboard OSP BKK</h1><div class="subtitle">หน้าสรุปภาพรวมการปฏิบัติงาน OSP กรุงเทพมหานคร</div></div><div class="update">Last Update: <b>{{ last_update or '-' }}</b></div></div></header>
+
+<section class="cards">
+<div class="card total"><div class="label">Total Jobs</div><div class="value">{{ total_jobs }}</div></div>
+<div class="card critical"><div class="label">Critical</div><div class="value">{{ total_critical }}</div></div>
+<div class="card major"><div class="label">Major</div><div class="value">{{ total_major }}</div></div>
+<div class="card minor"><div class="label">Minor</div><div class="value">{{ total_minor }}</div></div>
+</section>
+
+<div class="section-title">เมนูหลัก</div>
+<section class="nav">
+<a class="nav-card" href="/dashboard"><div><div class="icon">📊</div><div class="nav-title">Job Dashboard</div><div class="nav-desc">ภาพรวมทีมงาน User, Job Count, Status, Contact และ Remark</div></div><span class="go">เข้าสู่ Dashboard →</span></a>
+<a class="nav-card" href="/job_monitor"><div><div class="icon">📋</div><div class="nav-title">Job Monitor</div><div class="nav-desc">รายการ Job และตัวกรอง Sub System, Priority และ Zone</div></div><span class="go">เข้าสู่ Job Monitor →</span></a>
+<a class="nav-card" href="/daily_osp_remain"><div><div class="icon">📈</div><div class="nav-title">Daily Job OSP Remain</div><div class="nav-desc">OSP Remain, Snapshot History และแนวโน้มรายช่วงเวลา</div></div><span class="go">เข้าสู่ Daily OSP →</span></a>
+</section>
+
+<div class="section-title">จำนวน Job แยกตาม Sub System และ Priority</div>
+<section class="panel subsystem-chart-panel">
+<div class="panel-head"><div class="panel-title">Sub System Summary</div><div class="panel-note">แสดงเฉพาะ Priority ที่มีจำนวน Job มากกว่า 0</div></div>
+<div class="subsystem-chart">
+{% for r in subsystem_summary %}
+  {% if r.total > 0 %}
+  <div class="subsystem-group">
+    <div class="subsystem-name">{{ r.subsystem }} <span class="subsystem-total">Total {{ r.total }}</span></div>
+    <div class="bars">
+      {% if r.critical > 0 %}<div class="bar-row"><span class="bar-label critical-label">Critical</span><div class="bar-track"><div class="bar-fill critical-fill" data-value="{{ r.critical }}"></div></div><b class="bar-value">{{ r.critical }}</b></div>{% endif %}
+      {% if r.major > 0 %}<div class="bar-row"><span class="bar-label major-label">Major</span><div class="bar-track"><div class="bar-fill major-fill" data-value="{{ r.major }}"></div></div><b class="bar-value">{{ r.major }}</b></div>{% endif %}
+      {% if r.minor > 0 %}<div class="bar-row"><span class="bar-label minor-label">Minor</span><div class="bar-track"><div class="bar-fill minor-fill" data-value="{{ r.minor }}"></div></div><b class="bar-value">{{ r.minor }}</b></div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% if not subsystem_summary|selectattr('total','gt',0)|list %}
+<div class="empty">ขณะนี้ไม่มี Job ที่มีจำนวนมากกว่า 0</div>
+{% endif %}
+</div>
+</section>
+
+<div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
+<section class="grid-2">
+<div class="panel zone-summary-panel"><div class="panel-head"><div class="panel-title">Zone Summary</div><div class="panel-note">จำนวน Job ตาม Zone</div></div><div class="team-cards zone-cards">{% for r in zone_summary if r.zone != 'Total' %}<div class="team-stat zone-click"><div class="label">{{ r.zone }}</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}{% for r in zone_summary if r.zone == 'Total' %}<div class="team-stat total-zone"><div class="label">Total</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}</div></div>
+<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
+    {{ team_summary.ready }} / {{ team_summary.total }}
+</div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
+</section>
+
+<div class="section-title">สรุป OSP ล่าสุด</div>
+<section class="osp">{% if latest_osp %}<div class="osp-head"><div class="osp-title">Snapshot {{ latest_osp.get('slot','-') }}</div><div class="osp-meta">{{ latest_osp.get('timestamp','-') }}</div></div><div class="osp-grid"><div class="osp-item">Critical<b>{{ latest_osp.get('totals',{}).get('critical',0) }}</b></div><div class="osp-item">Major<b>{{ latest_osp.get('totals',{}).get('major',0) }}</b></div><div class="osp-item">Minor<b>{{ latest_osp.get('totals',{}).get('minor',0) }}</b></div><div class="osp-item">Grand Total<b>{{ latest_osp.get('totals',{}).get('grand_total',0) }}</b></div></div>{% else %}<div class="empty">ยังไม่มีข้อมูล Snapshot Daily OSP</div>{% endif %}</section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const bars = Array.from(document.querySelectorAll('.bar-fill'));
+  const values = bars.map(el => Number(el.dataset.value || 0)).filter(v => v > 0);
+  const max = Math.max(1, ...values);
+  bars.forEach(el => {
+    const value = Number(el.dataset.value || 0);
+    el.style.width = ((value / max) * 100) + '%';
+  });
+});
+</script>
+</body>
+</html>

@@ -474,6 +474,40 @@ th:nth-child(8),td:nth-child(8){width:460px}
 }
 
 /* mobile */
+/* =========================
+   SMARTPHONE VIEW
+   Keep the original table; reduce/hide controls so they do not obstruct data.
+========================= */
+@media(max-width:700px){
+  body{padding:4px 4px 0!important;}
+  .top{min-height:0!important;padding:4px 6px!important;margin:0!important;}
+  .header-main{width:100%;}
+  .brand{height:auto!important;min-height:38px!important;padding:4px 2px!important;}
+  .title{font-size:20px!important;line-height:24px!important;}
+  .subtitle{font-size:10px!important;line-height:14px!important;}
+
+  /* Hide dashboard menus, upload, status boxes and refresh controls on phones. */
+  .top-meta{display:none!important;}
+  .actions,.dashboard-actions,.upload-inline,.refreshbar{display:none!important;}
+
+  /* Preserve the original table and make it the main mobile viewport. */
+  .table-wrap{
+    display:block!important;
+    width:100%!important;
+    height:calc(100vh - 48px)!important;
+    max-height:none!important;
+    margin:0!important;
+    border-radius:6px!important;
+    overflow:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .table-wrap table{
+    display:table!important;
+    width:max-content!important;
+    min-width:100%!important;
+  }
+}
+
 @media(max-width:1100px){
   .top{min-height:auto}
   .brand{height:62px}
@@ -482,6 +516,20 @@ th:nth-child(8),td:nth-child(8){width:460px}
   .refreshbar{flex:0 0 138px;min-width:138px;max-width:138px}
   .top-meta{overflow-x:auto;padding-bottom:3px}
   .table-wrap{height:calc(100vh - 78px);max-height:none}
+}
+/* Smartphone: keep the real table. Do not replace it with cards.
+   The user can swipe/zoom the full table as needed. */
+@media(max-width:700px){
+  body{overflow:hidden!important;padding:4px!important}
+  .top{padding:5px 7px!important;gap:4px!important}
+  .top > div:first-child{min-width:0!important}
+  .title{font-size:18px!important;line-height:22px!important}
+  .top-meta{display:none!important}
+  .actions{display:none!important}
+  .table-wrap{display:block!important;width:100%!important;max-height:calc(100vh - 44px)!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important}
+  .table-wrap table{display:table!important;width:max-content!important;min-width:1100px!important}
+  .table-wrap th,.table-wrap td{white-space:nowrap!important}
+  .mobile-dashboard{display:none!important}
 }
 </style>
 </head>
@@ -519,6 +567,7 @@ th:nth-child(8),td:nth-child(8){width:460px}
       </form>
 
       <div class="actions dashboard-actions">
+        <a class="btn btn-green" href="/">⌂ Dashboard OSP BKK</a>
         <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
         <a class="btn btn-green" href="/daily_osp_remain">▤ Daily Job OSP Remain</a>
 
