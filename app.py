@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, jsonify
 import pandas as pd
 import os
+import re
 import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -176,6 +177,13 @@ TEAM_DATA = [
     {"zone": "AIS", "user": "Boonsom Duangjun"},
     {"zone": "AIS", "user": "Nares Vongkasigum"},
 ]
+
+# Teams shown/managed on the BKK dashboard. These legacy groups are intentionally excluded.
+DASHBOARD_EXCLUDED_ZONES = {"BKK2", "SPK", "NTB", "AIS"}
+
+def dashboard_teams():
+    return [team for team in TEAM_DATA if team.get("zone") not in DASHBOARD_EXCLUDED_ZONES]
+
 
 AREA_DATA = {
 
@@ -380,7 +388,7 @@ def build_dashboard_data(df):
     status_series = normalize_status_series(df)
     priority_series = normalize_priority_series(df)
 
-    for team in TEAM_DATA:
+    for team in dashboard_teams():
         zone = team["zone"]
         user = team["user"]
         assign_series = df["Assign to"].fillna("").astype(str).str.strip().str.casefold()
@@ -446,7 +454,7 @@ def update_global_data(df):
 
 def empty_dashboard_data():
     rows = []
-    for team in TEAM_DATA:
+    for team in dashboard_teams():
         rows.append({
             "zone": team["zone"],
             "user": team["user"],
@@ -713,18 +721,167 @@ def export_dashboard_excel():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
-@app.route("/", methods=["GET", "POST"])
+
+def parse_available_on(remark, now=None):
+    """Return the datetime when a team becomes available from Remark.
+
+    Supported examples:
+      - Available on 22:00
+      - Available on 22.00
+      - Available on 03/10/2026 22:00
+      - Available on 03-10-2026 22:00
+      - Available on 03/10/26 22:00
+
+    If no date is supplied, today's date in Asia/Bangkok is used.
+    Returns None when the remark does not contain a usable Available on time.
+    """
+    text = clean_text(remark)
+    if not text:
+        return None
+
+    now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
+
+    m = re.search(
+        r"available\s+on\s+"
+        r"(?:(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\s+)?"
+        r"(\d{1,2})[:.](\d{2})",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not m:
+        return None
+
+    day, month, year, hour, minute = m.groups()
+    hour = int(hour)
+    minute = int(minute)
+    if hour > 23 or minute > 59:
+        return None
+
+    if day and month and year:
+        year = int(year)
+        if year < 100:
+            year += 2000
+        try:
+            return datetime(
+                year, int(month), int(day), hour, minute,
+                tzinfo=ZoneInfo("Asia/Bangkok")
+            )
+        except ValueError:
+            return None
+
+    return datetime(
+        now.year, now.month, now.day, hour, minute,
+        tzinfo=ZoneInfo("Asia/Bangkok")
+    )
+
+
+def build_home_summary():
+    """Build the summary tables/cards used by Dashboard OSP BKK."""
+    job_df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
+    priority_names = ["Critical", "Major", "Minor"]
+
+    subsystem_summary = []
+    if not job_df.empty and "Sub System" in job_df.columns:
+        subsystem_series = job_df["Sub System"].fillna("").astype(str).str.strip()
+        priority_series = normalize_priority_series(job_df)
+        for subsystem in VALID_SUBSYSTEMS:
+            counts = {name: int(((subsystem_series.eq(subsystem)) & (priority_series.eq(name.lower()))).sum()) for name in priority_names}
+            counts["total"] = sum(counts.values())
+            subsystem_summary.append({"subsystem": subsystem, **{k.lower(): v for k, v in counts.items()}})
+    else:
+        subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
+
+    # Keep the same Zone definitions already used by Job Monitor totals.
+    zone_rules = [
+        ("SCT", "Bangkok-ST2"),
+        ("CWT", "Bangkok-CWT"),
+        ("ONT", "Bangkok-ONT"),
+        ("TLC", "Bangkok-TLC"),
+    ]
+    zone_summary = []
+    if not job_df.empty and "Zone" in job_df.columns:
+        zone_series = job_df["Zone"].fillna("").astype(str)
+        for name, token in zone_rules:
+            zone_summary.append({"zone": name, "jobs": int(zone_series.str.contains(token, case=False, na=False).sum())})
+    else:
+        zone_summary = [{"zone": name, "jobs": 0} for name, _ in zone_rules]
+    zone_summary.append({"zone": "Total", "jobs": sum(x["jobs"] for x in zone_summary)})
+
+    team_rows = build_dashboard_data(job_df) if not job_df.empty else empty_dashboard_data()
+    missing_keywords = ("ลา", "ไม่มีทีม", "รถเสีย")
+    working = free = missing = late = 0
+    team_status_rows = []
+    now = datetime.now(ZoneInfo("Asia/Bangkok"))
+
+    for row in team_rows:
+        remark = clean_text(row.get("remark", ""))
+        remark_cf = remark.casefold()
+
+        # "ลา / ไม่มีทีม / รถเสีย" always wins over other states.
+        if any(word in remark_cf for word in missing_keywords):
+            status = "ทีมขาด"
+            missing += 1
+        else:
+            available_at = parse_available_on(remark, now)
+            if available_at is not None and available_at > now:
+                status = "ทีมเลิกดึก"
+                late += 1
+            elif row.get("work_status") == "Working":
+                status = "Working"
+                working += 1
+            else:
+                status = "ว่าง"
+                free += 1
+
+        team_status_rows.append({
+            "zone": row.get("zone", ""),
+            "user": row.get("user", ""),
+            "status": status,
+        })
+
+    total_teams = len(team_status_rows)
+    return {
+        "subsystem_summary": subsystem_summary,
+        "zone_summary": zone_summary,
+        "team_summary": {
+            "working": working,
+            "free": free,
+            "missing": missing,
+            "late": late,
+            "ready": working + free,
+            "total": total_teams,
+        },
+    }
+
+
+@app.route("/", methods=["GET"])
 def index():
+    latest_osp = DAILY_OSP_HISTORY[-1] if DAILY_OSP_HISTORY else None
+    summary = build_home_summary()
+    return render_template(
+        "home.html",
+        total_jobs=TOTAL_JOBS,
+        total_critical=TOTAL_CRITICAL,
+        total_major=TOTAL_MAJOR,
+        total_minor=TOTAL_MINOR,
+        last_update=LAST_UPDATE,
+        latest_osp=latest_osp,
+        **summary,
+    )
+
+
+@app.route("/dashboard", methods=["GET", "POST"])
+def dashboard():
     if request.method == "POST":
         file = request.files.get("file")
         if not file or not file.filename:
             flash("กรุณาเลือกไฟล์ Excel ก่อน Upload", "error")
-            return redirect("/")
+            return redirect("/dashboard")
 
         filename = secure_filename(file.filename)
         if not filename.lower().endswith((".xlsx", ".xls")):
             flash("รองรับเฉพาะไฟล์ .xlsx และ .xls", "error")
-            return redirect("/")
+            return redirect("/dashboard")
 
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
@@ -735,7 +892,7 @@ def index():
             flash(f"Upload สำเร็จ: {filename} | Jobs {TOTAL_JOBS}", "success")
         except Exception as exc:
             flash(f"อ่านไฟล์ไม่สำเร็จ: {exc}", "error")
-        return redirect("/")
+        return redirect("/dashboard")
 
     display_data = apply_group_rowspans(list(DATA)) if DATA else empty_dashboard_data()
     return render_template(
