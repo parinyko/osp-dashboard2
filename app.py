@@ -775,11 +775,221 @@ def parse_available_on(remark, now=None):
     )
 
 
+# -----------------------------------------------------------------------------
+# OSP Job Aging Summary
+# -----------------------------------------------------------------------------
+# Order requested for Dashboard OSP BKK.  FTTX / EDS IPLC are intentionally
+# excluded from this summary because they are not part of the requested groups.
+OSP_AGING_GROUPS = [
+    ("EDS", ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP"]),
+    ("FBB", ["FTTB-OSP", "FTTH-OSP", "Splitter-OSP"]),
+    ("MBB", ["Transmission-OSP"]),
+]
+
+# The Excel export may use one of these names for the Job title.  Create Time
+# is handled separately below.
+TITLE_COLUMN_CANDIDATES = [
+    "Title", "Job Title", "Job title", "Job_Title", "TITLE",
+    "ชื่อ Job", "Job Name", "Description", "รายละเอียด",
+]
+CREATE_TIME_COLUMN_CANDIDATES = [
+    "Create Time", "Created Time", "CreateTime", "CreatedTime",
+    "Create Date", "Created Date", "วันที่สร้าง", "เวลาสร้าง",
+]
+
+
+def _find_column(df, candidates):
+    if df.empty:
+        return None
+    exact = {str(c).strip().casefold(): c for c in df.columns}
+    for candidate in candidates:
+        found = exact.get(candidate.casefold())
+        if found is not None:
+            return found
+    # Small fallback for exports with extra spaces / punctuation.
+    normalized = {}
+    for c in df.columns:
+        key = re.sub(r"[^a-z0-9ก-๙]+", "", str(c).strip().casefold())
+        normalized[key] = c
+    for candidate in candidates:
+        key = re.sub(r"[^a-z0-9ก-๙]+", "", candidate.casefold())
+        if key in normalized:
+            return normalized[key]
+    return None
+
+
+def _parse_aging_datetime(value):
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            dt = pd.to_datetime(value, dayfirst=True, errors="coerce")
+            if pd.isna(dt):
+                return None
+            if hasattr(dt, "to_pydatetime"):
+                dt = dt.to_pydatetime()
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=ZoneInfo("Asia/Bangkok"))
+        return dt.astimezone(ZoneInfo("Asia/Bangkok"))
+    except Exception:
+        return None
+
+
+def _transmission_type(title):
+    """Classify Transmission-OSP by keywords in the Job title."""
+    text = clean_text(title).casefold()
+    if "node b down" in text:
+        return "BBU"
+    if "rru" in text:
+        return "RRU"
+    if "highloss" in text or "high loss" in text:
+        return "High loss"
+    if "ร้องเรียน" in text:
+        return "ร้องเรียน"
+    return "Optic LOS"
+
+
+def _empty_aging_counts():
+    return {
+        "today": 0,
+        "lt3": 0,
+        "lt7": 0,
+        "lt15": 0,
+        "over15": 0,
+        "total": 0,
+    }
+
+
+def _add_aging_bucket(counts, age_days):
+    # Buckets are mutually exclusive and follow the requested display order.
+    if age_days < 1:
+        counts["today"] += 1
+    elif age_days < 3:
+        counts["lt3"] += 1
+    elif age_days < 7:
+        counts["lt7"] += 1
+    elif age_days < 15:
+        counts["lt15"] += 1
+    else:
+        counts["over15"] += 1
+    counts["total"] += 1
+
+
+def build_osp_aging_summary(job_df):
+    """Build the requested grouped OSP aging table from Create Time."""
+    rows = []
+    if job_df is None or job_df.empty:
+        return rows
+
+    subsystem_col = "Sub System" if "Sub System" in job_df.columns else None
+    if subsystem_col is None:
+        return rows
+
+    title_col = _find_column(job_df, TITLE_COLUMN_CANDIDATES)
+    create_col = _find_column(job_df, CREATE_TIME_COLUMN_CANDIDATES)
+    if create_col is None:
+        # Keep the table structure valid when an old Excel file has no Create Time.
+        create_col = None
+
+    now = datetime.now(ZoneInfo("Asia/Bangkok"))
+    subsystem_series = job_df[subsystem_col].fillna("").astype(str).str.strip()
+    priority_series = normalize_priority_series(job_df)
+
+    # Filter exactly like the main Job Monitor before aging the jobs.
+    status_series = normalize_status_series(job_df)
+    valid_mask = subsystem_series.isin({s for _, subs in OSP_AGING_GROUPS for s in subs})
+    valid_mask &= ~status_series.str.contains("done(not leave)", regex=False)
+    valid_mask &= priority_series.ne("") & priority_series.ne("none")
+    filtered = job_df.loc[valid_mask].copy()
+    filtered_subsystems = subsystem_series.loc[filtered.index]
+    filtered_priority = priority_series.loc[filtered.index]
+
+    # Build one accumulator per requested display row.
+    accumulators = {}
+    for group_name, subsystems in OSP_AGING_GROUPS:
+        for subsystem in subsystems:
+            if subsystem == "Transmission-OSP":
+                for kind in ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน"):
+                    accumulators[(group_name, subsystem, kind)] = {
+                        "critical": _empty_aging_counts(),
+                        "major": _empty_aging_counts(),
+                        "minor": _empty_aging_counts(),
+                    }
+            else:
+                accumulators[(group_name, subsystem, None)] = {
+                    "critical": _empty_aging_counts(),
+                    "major": _empty_aging_counts(),
+                    "minor": _empty_aging_counts(),
+                }
+
+    for idx, row in filtered.iterrows():
+        subsystem = str(filtered_subsystems.loc[idx]).strip()
+        priority = str(filtered_priority.loc[idx]).strip().casefold()
+        if priority not in ("critical", "major", "minor"):
+            continue
+
+        create_dt = _parse_aging_datetime(row[create_col]) if create_col else None
+        # A Job without a usable Create Time cannot be assigned an age bucket.
+        if create_dt is None:
+            continue
+        age_days = max((now - create_dt).total_seconds() / 86400.0, 0.0)
+
+        kind = _transmission_type(row[title_col]) if subsystem == "Transmission-OSP" and title_col else (
+            "Optic LOS" if subsystem == "Transmission-OSP" else None
+        )
+        key = ("MBB", subsystem, kind) if subsystem == "Transmission-OSP" else next(
+            (k for k in accumulators if k[1] == subsystem and k[2] is None), None
+        )
+        if key is None:
+            continue
+        _add_aging_bucket(accumulators[key][priority], age_days)
+
+    for group_name, subsystems in OSP_AGING_GROUPS:
+        for subsystem in subsystems:
+            if subsystem == "Transmission-OSP":
+                transmission_kinds = ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน")
+                for kind_index, kind in enumerate(transmission_kinds):
+                    a = accumulators[(group_name, subsystem, kind)]
+                    rows.append(_make_aging_row(
+                        group_name, kind, a,
+                        subsystem=subsystem,
+                        transmission=True,
+                        show_subsystem=(kind_index == 0),
+                    ))
+            else:
+                a = accumulators[(group_name, subsystem, None)]
+                rows.append(_make_aging_row(group_name, subsystem, a, subsystem=subsystem, transmission=False))
+    return rows
+
+
+def _make_aging_row(group_name, label, a, subsystem="", transmission=False, show_subsystem=False):
+    row = {
+        "group": group_name,
+        "subsystem": subsystem,
+        "label": label,
+        "transmission": transmission,
+        # Transmission-OSP is a parent label: render it only once,
+        # while each Job Title category remains on its own aging row.
+        "show_subsystem": bool(show_subsystem),
+    }
+    grand = 0
+    for priority in ("critical", "major", "minor"):
+        counts = a[priority]
+        for key, value in counts.items():
+            row[f"{priority}_{key}"] = value
+        grand += counts["total"]
+    row["total"] = grand
+    return row
+
+
 def build_home_summary():
     """Build the summary tables/cards used by Dashboard OSP BKK."""
     job_df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
-    priority_names = ["Critical", "Major", "Minor"]
 
+    # Existing subsystem summary is kept for the chart above the aging table.
+    priority_names = ["Critical", "Major", "Minor"]
     subsystem_summary = []
     if not job_df.empty and "Sub System" in job_df.columns:
         subsystem_series = job_df["Sub System"].fillna("").astype(str).str.strip()
@@ -791,7 +1001,8 @@ def build_home_summary():
     else:
         subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
 
-    # Keep the same Zone definitions already used by Job Monitor totals.
+    osp_aging_summary = build_osp_aging_summary(job_df)
+
     zone_rules = [
         ("SCT", "Bangkok-ST2"),
         ("CWT", "Bangkok-CWT"),
@@ -809,15 +1020,18 @@ def build_home_summary():
 
     team_rows = build_dashboard_data(job_df) if not job_df.empty else empty_dashboard_data()
     missing_keywords = ("ลา", "ไม่มีทีม", "รถเสีย")
-    working = free = missing = late = 0
+    working = free = missing = late = onsite = departed = 0
     team_status_rows = []
     now = datetime.now(ZoneInfo("Asia/Bangkok"))
 
     for row in team_rows:
         remark = clean_text(row.get("remark", ""))
         remark_cf = remark.casefold()
-
-        # "ลา / ไม่มีทีม / รถเสีย" always wins over other states.
+        status_text_cf = clean_text(row.get("status_text", "")).casefold()
+        if "on-site" in status_text_cf or "onsite" in status_text_cf:
+            onsite += 1
+        if "departed" in status_text_cf:
+            departed += 1
         if any(word in remark_cf for word in missing_keywords):
             status = "ทีมขาด"
             missing += 1
@@ -832,24 +1046,17 @@ def build_home_summary():
             else:
                 status = "ว่าง"
                 free += 1
-
-        team_status_rows.append({
-            "zone": row.get("zone", ""),
-            "user": row.get("user", ""),
-            "status": status,
-        })
+        team_status_rows.append({"zone": row.get("zone", ""), "user": row.get("user", ""), "status": status})
 
     total_teams = len(team_status_rows)
     return {
         "subsystem_summary": subsystem_summary,
+        "osp_aging_summary": osp_aging_summary,
         "zone_summary": zone_summary,
         "team_summary": {
-            "working": working,
-            "free": free,
-            "missing": missing,
-            "late": late,
-            "ready": working + free,
-            "total": total_teams,
+            "working": working, "free": free, "missing": missing,
+            "late": late, "onsite": onsite, "departed": departed,
+            "ready": working + free, "total": total_teams,
         },
     }
 
