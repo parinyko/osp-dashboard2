@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="th">
 <head>
@@ -27,12 +28,12 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
     font-weight:900;
     margin-top:2px;
     white-space:nowrap;
-}.working{color:#b4232e}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
+}.working{color:#b4232e}.onsite{color:#16743d}.departed{color:#a56a00}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
 .zone-summary-panel{max-width:900px}
 .zone-summary-panel .team-cards{grid-template-columns:repeat(5,minmax(105px,1fr));padding:10px}
 .zone-summary-panel .team-stat{padding:8px 10px}
 .zone-summary-panel .team-stat .value{font-size:23px}
-.legend{display:flex;gap:10px;flex-wrap:wrap;padding:0 10px 10px;font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.dot.work{background:#dc3545}.dot.free{background:#5aa66a}.dot.missing{background:#e0a600}.dot.late{background:#7b4ab5}
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:0 10px 10px;font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.dot.work{background:#dc3545}.dot.onsite{background:#2f9e44}.dot.departed{background:#d08a00}.dot.free{background:#5aa66a}.dot.missing{background:#e0a600}.dot.late{background:#7b4ab5}
 .osp{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;padding:12px}.osp-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.osp-title{font-weight:900;color:#355e27}.osp-meta{font-size:11px;color:#6f7c6d}.osp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}.osp-item{background:#f5f9f2;border:1px solid #e0eadb;border-radius:9px;padding:8px}.osp-item b{display:block;font-size:19px;color:#355e27;margin-top:2px}.empty{color:#777;font-size:12px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.nav{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}.team-cards{grid-template-columns:repeat(2,1fr)}.ready-total{
     font-size:18px !important;
@@ -45,25 +46,90 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 .zone-cards .team-stat:nth-child(1){background:#eaf4ff;border-color:#9ec5e8}.zone-cards .team-stat:nth-child(2){background:#eaf8f0;border-color:#9ed2b2}.zone-cards .team-stat:nth-child(3){background:#fff4df;border-color:#e5bf72}.zone-cards .team-stat:nth-child(4){background:#f2ecff;border-color:#b9a2e6}.zone-cards .total-zone{background:#eef5e8;border-color:#a8c98d}.osp-item:nth-child(1){background:#fff0f0;border-color:#efb0b0}.osp-item:nth-child(1) b{color:#d64545}.osp-item:nth-child(2){background:#fff4e5;border-color:#edc27a}.osp-item:nth-child(2) b{color:#d88919}.osp-item:nth-child(3){background:#fffbe5;border-color:#e3d26a}.osp-item:nth-child(3) b{color:#b39a00}.osp-item:nth-child(4){background:#eaf5e8;border-color:#a8c98d}.osp-item:nth-child(4) b{color:#4e8f2d}
 @media(max-width:600px){body{padding:7px}.header{padding:12px}.header-row{align-items:flex-start;flex-direction:column}h1{font-size:23px}.update{white-space:normal}.cards{gap:7px}.card{padding:9px}.card .value{font-size:23px}.nav-card{padding:10px}.go{display:none}.osp-grid{grid-template-columns:repeat(2,1fr)}.panel-head{align-items:flex-start;flex-direction:column;gap:3px}}
 
+
+/* =========================
+   SUB SYSTEM SUMMARY
+========================= */
 .subsystem-chart-panel{overflow:hidden}
-.subsystem-chart{padding:4px 10px 12px}
-.subsystem-group{padding:10px 0 12px;border-bottom:1px solid #e4ece0}
-.subsystem-group:last-child{border-bottom:0}
+.subsystem-filterbar{display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;background:#fbfdf9;border-bottom:1px solid #e1eadc}
+.subsystem-filter-btn{border:1px solid #cbdcc4;background:#fff;color:#42633a;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:900;cursor:pointer}
+.subsystem-filter-btn:hover,.subsystem-filter-btn.active{background:#69a91f;color:#fff;border-color:#69a91f}
+.subsystem-chart{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:10px}
+.subsystem-group{background:#fbfdf9;border:1px solid #dce8d7;border-radius:10px;padding:9px 11px}
 .subsystem-name{font-weight:900;color:#355e27;margin-bottom:7px;display:flex;justify-content:space-between;gap:10px}
-.subsystem-total{font-size:11px;font-weight:700;color:#7b8777}
-.bar-row{display:grid;grid-template-columns:70px minmax(80px,1fr) 38px;align-items:center;gap:8px;margin:5px 0}
-.bar-label{font-size:11px;font-weight:800}
-.critical-label{color:#c62828}.major-label{color:#d97706}.minor-label{color:#9a8b00}
-.bar-track{height:18px;background:#edf3e9;border-radius:999px;overflow:hidden}
-.bar-fill{height:100%;width:0;border-radius:999px;transition:width .25s ease}
-.critical-fill{background:#d9534f}.major-fill{background:#f0a22e}.minor-fill{background:#e0c341}
+.subsystem-total{font-size:11px;font-weight:800;color:#6e7b6b}
+.bars{display:grid;gap:5px}
+.bar-row{display:grid;grid-template-columns:62px minmax(80px,1fr) 32px;align-items:center;gap:7px}
+.bar-label{font-size:11px;font-weight:800}.critical-label{color:#c62828}.major-label{color:#d97706}.minor-label{color:#9a8b00}
+.bar-track{height:17px;background:#edf3e9;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;min-width:0}.critical-fill{background:#d9534f}.major-fill{background:#f0a22e}.minor-fill{background:#e0c341}
 .bar-value{text-align:right;font-size:12px;color:#35412f}
-.zone-cards .team-stat:nth-child(1){background:#eaf4ff;border-color:#9ec5e8}.zone-cards .team-stat:nth-child(2){background:#eaf8f0;border-color:#9ed2b2}.zone-cards .team-stat:nth-child(3){background:#fff4df;border-color:#e5bf72}.zone-cards .team-stat:nth-child(4){background:#f2ecff;border-color:#b9a2e6}.zone-cards .total-zone{background:#eef5e8;border-color:#a8c98d}.osp-item:nth-child(1){background:#fff0f0;border-color:#efb0b0}.osp-item:nth-child(1) b{color:#d64545}.osp-item:nth-child(2){background:#fff4e5;border-color:#edc27a}.osp-item:nth-child(2) b{color:#d88919}.osp-item:nth-child(3){background:#fffbe5;border-color:#e3d26a}.osp-item:nth-child(3) b{color:#b39a00}.osp-item:nth-child(4){background:#eaf5e8;border-color:#a8c98d}.osp-item:nth-child(4) b{color:#4e8f2d}
-@media(max-width:600px){
- .subsystem-chart{padding-left:7px;padding-right:7px}
- .bar-row{grid-template-columns:62px minmax(60px,1fr) 32px;gap:6px}
- .bar-track{height:16px}
- .subsystem-name{font-size:13px}
+@media(max-width:700px){.subsystem-chart{grid-template-columns:1fr;padding:8px}.subsystem-filterbar{overflow-x:auto;flex-wrap:nowrap}.subsystem-filter-btn{white-space:nowrap}.bar-row{grid-template-columns:58px minmax(60px,1fr) 30px}}
+
+/* =========================
+   OSP AGE SUMMARY TABLE
+========================= */
+.osp-age-panel{overflow:hidden}
+.osp-age-wrap{overflow:auto;-webkit-overflow-scrolling:touch;padding:0 0 2px}
+.osp-age-table{width:100%;min-width:1220px;border-collapse:separate;border-spacing:0;font-size:11px;table-layout:fixed;background:#fff}
+.osp-age-table th,.osp-age-table td{border-right:1px solid #d8e4d4;border-bottom:1px solid #d8e4d4;text-align:center;padding:6px 4px;white-space:nowrap;line-height:1.15}
+.osp-age-table thead th{font-weight:900;vertical-align:middle}
+.osp-age-table thead tr:first-child th{height:32px;font-size:12px}
+.osp-age-table thead tr:nth-child(2) th{height:36px;font-size:10.5px}
+.osp-age-table th:first-child,.osp-age-table td:first-child{border-left:1px solid #d8e4d4}
+.osp-age-table .group-critical{background:linear-gradient(#f46f63,#e85b50);color:#fff;border-color:#df6a61}
+.osp-age-table .group-major{background:linear-gradient(#ffd04a,#f5bf27);color:#4b3900;border-color:#e5bd42}
+.osp-age-table .group-minor{background:linear-gradient(#eadb4b,#ddcb35);color:#413a00;border-color:#d1c23b}
+.osp-age-table .age-critical{background:#fff0ee;color:#8e2f28}
+.osp-age-table .age-major{background:#fff6d9;color:#765900}
+.osp-age-table .age-minor{background:#fffbe0;color:#756a00}
+.osp-age-table .subsystem-head{background:#dcebd6;color:#234c27;text-align:left;min-width:145px;position:sticky;left:0;z-index:4}
+.osp-age-table .total-head{font-weight:900}
+.osp-age-table .critical-total-head{background:#f7d0cb;color:#7f2525}
+.osp-age-table .major-total-head{background:#f8e5ad;color:#765500}
+.osp-age-table .minor-total-head{background:#f2ebb0;color:#756a00}
+.osp-age-table .grand-total-head{background:#cfe2ef;color:#214c67;min-width:72px}
+.osp-age-table tbody td{background:#fff;transition:background .15s ease}
+.osp-age-table tbody tr:nth-child(even) td{background:#f9fcf7}
+.osp-age-table tbody tr:hover td{background:#eef8e9}
+.osp-age-table td.num{font-variant-numeric:tabular-nums;font-weight:800;color:#30402f}
+.osp-age-table td.subsystem-cell{text-align:left;font-weight:900;color:#315d29;background:#f1f7ee!important;position:sticky;left:0;z-index:2}
+.osp-age-table td.priority-total-critical{background:#fbe1dd!important;color:#9b302b;font-weight:900}
+.osp-age-table td.priority-total-major{background:#fff0c7!important;color:#8a6500;font-weight:900}
+.osp-age-table td.priority-total-minor{background:#f7f0c9!important;color:#837600;font-weight:900}
+.osp-age-table td.grand-total{background:#dcebf3!important;color:#245775;font-weight:900;font-size:12px}
+.osp-age-table tfoot td{border-top:2px solid #b9cdb3;font-weight:900}
+.osp-age-table tfoot .subsystem-head{background:#d7e8d1!important;color:#234c27}
+.osp-age-table tfoot td.priority-total-critical{background:#f4ccc7!important}
+.osp-age-table tfoot td.priority-total-major{background:#f7e1a8!important}
+.osp-age-table tfoot td.priority-total-minor{background:#eee5a5!important}
+.osp-age-table tfoot td.grand-total{background:#c5ddeb!important;font-size:12px}
+.osp-age-table .age-label{display:block;font-size:11px;font-weight:900}
+.osp-age-table .age-sub{display:block;margin-top:2px;font-size:9px;font-weight:700;opacity:.78}
+.osp-age-note{padding:8px 11px;color:#647262;font-size:10.5px;background:#f7fbf5;border-top:1px solid #dfe9db}
+@media(max-width:700px){
+ .osp-age-table{min-width:1220px}
+ .osp-age-table th,.osp-age-table td{padding:6px 3px}
+ .osp-age-table .subsystem-head,.osp-age-table td.subsystem-cell{min-width:135px}
+}
+
+
+/* OSP aging v3: requested group/order and Transmission title breakdown */
+.osp-age-table-v3{min-width:1260px}
+.osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:190px;width:190px}
+.osp-age-table-v3 .age-sub{display:block;margin-top:2px;font-size:8.5px;font-weight:700;opacity:.72}
+.osp-age-table-v3 .aging-group-row td{padding:5px 8px;text-align:left;background:#edf6e8!important;border-top:2px solid #c9dcc2;border-bottom:1px solid #d7e6d1;color:#315a2c}
+.aging-group-badge{display:inline-block;min-width:68px;padding:3px 10px;border-radius:999px;background:#d5e9cc;color:#245323;font-weight:900;letter-spacing:.2px}
+.osp-age-table-v3 .subsystem-label{font-weight:900}
+.osp-age-table-v3 .transmission-subsystem{display:block;font-size:11px;font-weight:900;color:#315d29}
+.osp-age-table-v3 .transmission-kind{display:block;margin-top:2px;padding-left:12px;font-size:10px;font-weight:800;color:#68755f}
+.osp-age-table-v3 .transmission-child td{background:#fbfdf9}
+.osp-age-table-v3 .transmission-child td.subsystem-cell{background:#f2f8ef!important;border-left:4px solid #a8c79e}
+.osp-age-table-v3 tbody tr:not(.aging-group-row):hover td{background:#eef8e9!important}
+.osp-age-table-v3 tfoot td{font-size:11px}
+@media(max-width:700px){
+ .osp-age-table-v3{min-width:1260px}
+ .osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:180px;width:180px}
 }
 </style>
 </head>
@@ -85,35 +151,115 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 <a class="nav-card" href="/daily_osp_remain"><div><div class="icon">📈</div><div class="nav-title">Daily Job OSP Remain</div><div class="nav-desc">OSP Remain, Snapshot History และแนวโน้มรายช่วงเวลา</div></div><span class="go">เข้าสู่ Daily OSP →</span></a>
 </section>
 
-<div class="section-title">จำนวน Job แยกตาม Sub System และ Priority</div>
-<section class="panel subsystem-chart-panel">
-<div class="panel-head"><div class="panel-title">Sub System Summary</div><div class="panel-note">แสดงเฉพาะ Priority ที่มีจำนวน Job มากกว่า 0</div></div>
-<div class="subsystem-chart">
-{% for r in subsystem_summary %}
-  {% if r.total > 0 %}
-  <div class="subsystem-group">
-    <div class="subsystem-name">{{ r.subsystem }} <span class="subsystem-total">Total {{ r.total }}</span></div>
-    <div class="bars">
-      {% if r.critical > 0 %}<div class="bar-row"><span class="bar-label critical-label">Critical</span><div class="bar-track"><div class="bar-fill critical-fill" data-value="{{ r.critical }}"></div></div><b class="bar-value">{{ r.critical }}</b></div>{% endif %}
-      {% if r.major > 0 %}<div class="bar-row"><span class="bar-label major-label">Major</span><div class="bar-track"><div class="bar-fill major-fill" data-value="{{ r.major }}"></div></div><b class="bar-value">{{ r.major }}</b></div>{% endif %}
-      {% if r.minor > 0 %}<div class="bar-row"><span class="bar-label minor-label">Minor</span><div class="bar-track"><div class="bar-fill minor-fill" data-value="{{ r.minor }}"></div></div><b class="bar-value">{{ r.minor }}</b></div>{% endif %}
-    </div>
-  </div>
-  {% endif %}
-{% endfor %}
-{% if not subsystem_summary|selectattr('total','gt',0)|list %}
-<div class="empty">ขณะนี้ไม่มี Job ที่มีจำนวนมากกว่า 0</div>
-{% endif %}
-</div>
-</section>
-
 <div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
 <section class="grid-2">
 <div class="panel zone-summary-panel"><div class="panel-head"><div class="panel-title">Zone Summary</div><div class="panel-note">จำนวน Job ตาม Zone</div></div><div class="team-cards zone-cards">{% for r in zone_summary if r.zone != 'Total' %}<div class="team-stat zone-click"><div class="label">{{ r.zone }}</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}{% for r in zone_summary if r.zone == 'Total' %}<div class="team-stat total-zone"><div class="label">Total</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}</div></div>
-<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
+<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">On-site</div><div class="value onsite">{{ team_summary.onsite }}</div></div><div class="team-stat"><div class="label">Departed</div><div class="value departed">{{ team_summary.departed }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
     {{ team_summary.ready }} / {{ team_summary.total }}
-</div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
+</div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot onsite"></i>On-site</span><span><i class="dot departed"></i>Departed</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
 </section>
+
+<section class="panel osp-age-panel">
+  <div class="panel-head">
+    <div class="panel-title">OSP Job Aging Summary</div>
+    <div class="panel-note">เรียงตามกลุ่ม EDS → FBB → MBB · Today (&lt; 1 วัน) → &lt;3 → &lt;7 → &lt;15 → Over 15 วัน</div>
+  </div>
+  <div class="osp-age-wrap">
+    <table class="osp-age-table osp-age-table-v3">
+      <thead>
+        <tr>
+          <th class="subsystem-head" rowspan="2">กลุ่ม / Sub System</th>
+          <th class="group-critical" colspan="6">Critical</th>
+          <th class="group-major" colspan="6">Major</th>
+          <th class="group-minor" colspan="6">Minor</th>
+          <th class="grand-total-head" rowspan="2">Grand<br>Total</th>
+        </tr>
+        <tr>
+          <th class="age-critical">Today<span class="age-sub">&lt; 1 วัน</span></th>
+          <th class="age-critical">&lt;3 วัน</th>
+          <th class="age-critical">&lt;7 วัน</th>
+          <th class="age-critical">&lt;15 วัน</th>
+          <th class="age-critical">Over 15 วัน</th>
+          <th class="critical-total-head">Total</th>
+
+          <th class="age-major">Today<span class="age-sub">&lt; 1 วัน</span></th>
+          <th class="age-major">&lt;3 วัน</th>
+          <th class="age-major">&lt;7 วัน</th>
+          <th class="age-major">&lt;15 วัน</th>
+          <th class="age-major">Over 15 วัน</th>
+          <th class="major-total-head">Total</th>
+
+          <th class="age-minor">Today<span class="age-sub">&lt; 1 วัน</span></th>
+          <th class="age-minor">&lt;3 วัน</th>
+          <th class="age-minor">&lt;7 วัน</th>
+          <th class="age-minor">&lt;15 วัน</th>
+          <th class="age-minor">Over 15 วัน</th>
+          <th class="minor-total-head">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% set ns = namespace(last_group='', transmission_shown=false) %}
+      {% for r in osp_aging_summary %}
+        {% if r.group != ns.last_group %}
+          <tr class="aging-group-row">
+            <td colspan="20"><span class="aging-group-badge">{{ r.group }}</span></td>
+          </tr>
+          {% set ns.last_group = r.group %}
+        {% endif %}
+        <tr class="{% if r.transmission %}transmission-child{% endif %}">
+          <td class="subsystem-cell">
+            {% if r.transmission %}
+              {% if not ns.transmission_shown %}
+                <span class="transmission-subsystem">Transmission-OSP</span>
+                {% set ns.transmission_shown = true %}
+              {% endif %}
+              <span class="transmission-kind">{{ r.label }}</span>
+            {% else %}
+              <span class="subsystem-label">{{ r.label }}</span>
+            {% endif %}
+          </td>
+          <td class="num">{{ '' if r.critical_today == 0 else r.critical_today }}</td><td class="num">{{ '' if r.critical_lt3 == 0 else r.critical_lt3 }}</td><td class="num">{{ '' if r.critical_lt7 == 0 else r.critical_lt7 }}</td><td class="num">{{ '' if r.critical_lt15 == 0 else r.critical_lt15 }}</td><td class="num">{{ '' if r.critical_over15 == 0 else r.critical_over15 }}</td><td class="num priority-total-critical">{{ '' if r.critical_total == 0 else r.critical_total }}</td>
+          <td class="num">{{ '' if r.major_today == 0 else r.major_today }}</td><td class="num">{{ '' if r.major_lt3 == 0 else r.major_lt3 }}</td><td class="num">{{ '' if r.major_lt7 == 0 else r.major_lt7 }}</td><td class="num">{{ '' if r.major_lt15 == 0 else r.major_lt15 }}</td><td class="num">{{ '' if r.major_over15 == 0 else r.major_over15 }}</td><td class="num priority-total-major">{{ '' if r.major_total == 0 else r.major_total }}</td>
+          <td class="num">{{ '' if r.minor_today == 0 else r.minor_today }}</td><td class="num">{{ '' if r.minor_lt3 == 0 else r.minor_lt3 }}</td><td class="num">{{ '' if r.minor_lt7 == 0 else r.minor_lt7 }}</td><td class="num">{{ '' if r.minor_lt15 == 0 else r.minor_lt15 }}</td><td class="num">{{ '' if r.minor_over15 == 0 else r.minor_over15 }}</td><td class="num priority-total-minor">{{ '' if r.minor_total == 0 else r.minor_total }}</td>
+          <td class="num grand-total">{{ '' if r.total == 0 else r.total }}</td>
+        </tr>
+      {% endfor %}
+      {% if not osp_aging_summary %}
+        <tr><td colspan="20" class="empty">ขณะนี้ไม่มี Job ค้าง หรือไม่พบ Create Time ที่อ่านได้</td></tr>
+      {% endif %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="subsystem-head"><b>Grand Total</b></td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_today')) == 0 else (osp_aging_summary|sum(attribute='critical_today')) }}</td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt3')) == 0 else (osp_aging_summary|sum(attribute='critical_lt3')) }}</td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt7')) == 0 else (osp_aging_summary|sum(attribute='critical_lt7')) }}</td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt15')) == 0 else (osp_aging_summary|sum(attribute='critical_lt15')) }}</td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_over15')) == 0 else (osp_aging_summary|sum(attribute='critical_over15')) }}</td>
+          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_total')) == 0 else (osp_aging_summary|sum(attribute='critical_total')) }}</td>
+
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_today')) == 0 else (osp_aging_summary|sum(attribute='major_today')) }}</td>
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt3')) == 0 else (osp_aging_summary|sum(attribute='major_lt3')) }}</td>
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt7')) == 0 else (osp_aging_summary|sum(attribute='major_lt7')) }}</td>
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt15')) == 0 else (osp_aging_summary|sum(attribute='major_lt15')) }}</td>
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_over15')) == 0 else (osp_aging_summary|sum(attribute='major_over15')) }}</td>
+          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_total')) == 0 else (osp_aging_summary|sum(attribute='major_total')) }}</td>
+
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_today')) == 0 else (osp_aging_summary|sum(attribute='minor_today')) }}</td>
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt3')) == 0 else (osp_aging_summary|sum(attribute='minor_lt3')) }}</td>
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt7')) == 0 else (osp_aging_summary|sum(attribute='minor_lt7')) }}</td>
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt15')) == 0 else (osp_aging_summary|sum(attribute='minor_lt15')) }}</td>
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_over15')) == 0 else (osp_aging_summary|sum(attribute='minor_over15')) }}</td>
+          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_total')) == 0 else (osp_aging_summary|sum(attribute='minor_total')) }}</td>
+          <td class="num grand-total">{{ '' if (osp_aging_summary|sum(attribute='total')) == 0 else (osp_aging_summary|sum(attribute='total')) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="osp-age-note">Transmission-OSP แยกจาก Job Title: <b>Optic LOS</b> = นอกเหนือจาก 4 รายการ · <b>BBU</b> = Node B Down · <b>RRU</b> = RRU · <b>High loss</b> = Highloss / High loss · <b>ร้องเรียน</b> = ร้องเรียน</div>
+</section>
+
+
 
 <div class="section-title">สรุป OSP ล่าสุด</div>
 <section class="osp">{% if latest_osp %}<div class="osp-head"><div class="osp-title">Snapshot {{ latest_osp.get('slot','-') }}</div><div class="osp-meta">{{ latest_osp.get('timestamp','-') }}</div></div><div class="osp-grid"><div class="osp-item">Critical<b>{{ latest_osp.get('totals',{}).get('critical',0) }}</b></div><div class="osp-item">Major<b>{{ latest_osp.get('totals',{}).get('major',0) }}</b></div><div class="osp-item">Minor<b>{{ latest_osp.get('totals',{}).get('minor',0) }}</b></div><div class="osp-item">Grand Total<b>{{ latest_osp.get('totals',{}).get('grand_total',0) }}</b></div></div>{% else %}<div class="empty">ยังไม่มีข้อมูล Snapshot Daily OSP</div>{% endif %}</section>
@@ -130,5 +276,28 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  document.querySelectorAll(".subsystem-group").forEach(function(group){
+    const vals=[...group.querySelectorAll(".bar-fill")].map(x=>Number(x.dataset.value||0));
+    const max=Math.max(...vals,1);
+    group.querySelectorAll(".bar-fill").forEach(function(el){
+      el.style.width=(Number(el.dataset.value||0)/max*100)+"%";
+    });
+  });
+  document.querySelectorAll(".subsystem-filter-btn").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      document.querySelectorAll(".subsystem-filter-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const key=btn.dataset.subsystem;
+      document.querySelectorAll(".subsystem-group").forEach(function(g){
+        g.style.display=(key==="all" || g.dataset.subsystem===key) ? "" : "none";
+      });
+    });
+  });
+});
+</script>
+
 </body>
 </html>
+
