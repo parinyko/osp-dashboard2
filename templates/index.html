@@ -664,11 +664,11 @@ th:nth-child(8),td:nth-child(8){width:460px}
   </td>
 
 
-  <!-- WORK STATUS -->
+  <!-- STATUS: Job Count = 0 -> ว่าง, Job Count >= 1 -> Working -->
   <td
-    class="work-status {{ 'working' if row.work_status == 'Working' else 'free' }}"
+    class="work-status {{ 'working' if row.job_count|int > 0 else 'free' }}"
   >
-    {{ row.work_status }}
+    {{ 'Working' if row.job_count|int > 0 else 'ว่าง' }}
   </td>
 
 
@@ -740,7 +740,7 @@ th:nth-child(8),td:nth-child(8){width:460px}
     <div class="mobile-card-grid">
       <div class="mobile-field">
         <div class="mobile-label">สถานะการทำงาน</div>
-        <div class="mobile-value"><span class="mobile-status {{ 'working' if row.work_status == 'Working' else 'free' }}">{{ row.work_status }}</span></div>
+        <div class="mobile-value"><span class="mobile-status {{ 'working' if row.job_count|int > 0 else 'free' }}">{{ 'Working' if row.job_count|int > 0 else 'ว่าง' }}</span></div>
       </div>
       <div class="mobile-field">
         <div class="mobile-label">Job Count</div>
