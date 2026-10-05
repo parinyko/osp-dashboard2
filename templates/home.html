@@ -28,12 +28,12 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
     font-weight:900;
     margin-top:2px;
     white-space:nowrap;
-}.working{color:#b4232e}.onsite{color:#16743d}.departed{color:#a56a00}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
+}.working{color:#b4232e}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
 .zone-summary-panel{max-width:900px}
 .zone-summary-panel .team-cards{grid-template-columns:repeat(5,minmax(105px,1fr));padding:10px}
 .zone-summary-panel .team-stat{padding:8px 10px}
 .zone-summary-panel .team-stat .value{font-size:23px}
-.legend{display:flex;gap:10px;flex-wrap:wrap;padding:0 10px 10px;font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.dot.work{background:#dc3545}.dot.onsite{background:#2f9e44}.dot.departed{background:#d08a00}.dot.free{background:#5aa66a}.dot.missing{background:#e0a600}.dot.late{background:#7b4ab5}
+.legend{display:flex;gap:10px;flex-wrap:wrap;padding:0 10px 10px;font-size:11px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.dot.work{background:#dc3545}.dot.free{background:#5aa66a}.dot.missing{background:#e0a600}.dot.late{background:#7b4ab5}
 .osp{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;padding:12px}.osp-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.osp-title{font-weight:900;color:#355e27}.osp-meta{font-size:11px;color:#6f7c6d}.osp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}.osp-item{background:#f5f9f2;border:1px solid #e0eadb;border-radius:9px;padding:8px}.osp-item b{display:block;font-size:19px;color:#355e27;margin-top:2px}.empty{color:#777;font-size:12px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.nav{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}.team-cards{grid-template-columns:repeat(2,1fr)}.ready-total{
     font-size:18px !important;
@@ -45,26 +45,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 }
 .zone-cards .team-stat:nth-child(1){background:#eaf4ff;border-color:#9ec5e8}.zone-cards .team-stat:nth-child(2){background:#eaf8f0;border-color:#9ed2b2}.zone-cards .team-stat:nth-child(3){background:#fff4df;border-color:#e5bf72}.zone-cards .team-stat:nth-child(4){background:#f2ecff;border-color:#b9a2e6}.zone-cards .total-zone{background:#eef5e8;border-color:#a8c98d}.osp-item:nth-child(1){background:#fff0f0;border-color:#efb0b0}.osp-item:nth-child(1) b{color:#d64545}.osp-item:nth-child(2){background:#fff4e5;border-color:#edc27a}.osp-item:nth-child(2) b{color:#d88919}.osp-item:nth-child(3){background:#fffbe5;border-color:#e3d26a}.osp-item:nth-child(3) b{color:#b39a00}.osp-item:nth-child(4){background:#eaf5e8;border-color:#a8c98d}.osp-item:nth-child(4) b{color:#4e8f2d}
 @media(max-width:600px){body{padding:7px}.header{padding:12px}.header-row{align-items:flex-start;flex-direction:column}h1{font-size:23px}.update{white-space:normal}.cards{gap:7px}.card{padding:9px}.card .value{font-size:23px}.nav-card{padding:10px}.go{display:none}.osp-grid{grid-template-columns:repeat(2,1fr)}.panel-head{align-items:flex-start;flex-direction:column;gap:3px}}
-
-
-/* =========================
-   SUB SYSTEM SUMMARY
-========================= */
-.subsystem-chart-panel{overflow:hidden}
-.subsystem-filterbar{display:flex;gap:7px;flex-wrap:wrap;padding:9px 11px;background:#fbfdf9;border-bottom:1px solid #e1eadc}
-.subsystem-filter-btn{border:1px solid #cbdcc4;background:#fff;color:#42633a;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:900;cursor:pointer}
-.subsystem-filter-btn:hover,.subsystem-filter-btn.active{background:#69a91f;color:#fff;border-color:#69a91f}
-.subsystem-chart{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:10px}
-.subsystem-group{background:#fbfdf9;border:1px solid #dce8d7;border-radius:10px;padding:9px 11px}
-.subsystem-name{font-weight:900;color:#355e27;margin-bottom:7px;display:flex;justify-content:space-between;gap:10px}
-.subsystem-total{font-size:11px;font-weight:800;color:#6e7b6b}
-.bars{display:grid;gap:5px}
-.bar-row{display:grid;grid-template-columns:62px minmax(80px,1fr) 32px;align-items:center;gap:7px}
-.bar-label{font-size:11px;font-weight:800}.critical-label{color:#c62828}.major-label{color:#d97706}.minor-label{color:#9a8b00}
-.bar-track{height:17px;background:#edf3e9;border-radius:999px;overflow:hidden}
-.bar-fill{height:100%;border-radius:999px;min-width:0}.critical-fill{background:#d9534f}.major-fill{background:#f0a22e}.minor-fill{background:#e0c341}
-.bar-value{text-align:right;font-size:12px;color:#35412f}
-@media(max-width:700px){.subsystem-chart{grid-template-columns:1fr;padding:8px}.subsystem-filterbar{overflow-x:auto;flex-wrap:nowrap}.subsystem-filter-btn{white-space:nowrap}.bar-row{grid-template-columns:58px minmax(60px,1fr) 30px}}
 
 /* =========================
    OSP AGE SUMMARY TABLE
@@ -107,10 +87,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 .osp-age-table .age-label{display:block;font-size:11px;font-weight:900}
 .osp-age-table .age-sub{display:block;margin-top:2px;font-size:9px;font-weight:700;opacity:.78}
 .osp-age-note{padding:8px 11px;color:#647262;font-size:10.5px;background:#f7fbf5;border-top:1px solid #dfe9db}
-.done-summary{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(50,90,40,.05)}
-.done-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#f2f8ef;border-bottom:1px solid #dce8d7}
-.done-summary-title{font-weight:900;color:#355e27}.done-summary-total{font-size:12px;font-weight:900;color:#4f7d3d;background:#eaf5e5;border:1px solid #cfe2c7;border-radius:8px;padding:5px 9px}
-.done-table{width:100%;border-collapse:collapse;font-size:12px}.done-table th{background:#70a92d;color:#fff;padding:7px 9px;text-align:left}.done-table th:last-child,.done-table td:last-child{text-align:center;width:130px}.done-table td{padding:7px 9px;border-bottom:1px solid #e7eee4}.done-table tbody tr:nth-child(even){background:#fafcf9}.done-table tfoot td{font-weight:900;background:#eef6ea;border-top:2px solid #c8dcc1}.done-empty{padding:14px 12px;color:#748073;font-size:12px}
 @media(max-width:700px){
  .osp-age-table{min-width:1220px}
  .osp-age-table th,.osp-age-table td{padding:6px 3px}
@@ -135,11 +111,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
  .osp-age-table-v3{min-width:1260px}
  .osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:180px;width:180px}
 }
-
-.done-filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 8px}
-.done-filter{border:1px solid #cfe3bf;background:#f7fbf3;color:#456b3d;border-radius:8px;padding:6px 14px;font-weight:800;cursor:pointer}
-.done-filter:hover{background:#eaf5e3}
-.done-filter.active{background:#6fae24;color:#fff;border-color:#5b9819;box-shadow:0 2px 7px rgba(73,128,37,.18)}
 </style>
 </head>
 <body>
@@ -155,20 +126,34 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 
 <div class="section-title">เมนูหลัก</div>
 <section class="nav">
-<a class="nav-card" href="/dashboard"><div><div class="icon">📊</div><div class="nav-title">Status Team</div><div class="nav-desc">ภาพรวมทีมงาน User, Job Count, Status, Contact และ Remark</div></div><span class="go">เข้าสู่ Dashboard →</span></a>
+<a class="nav-card" href="/dashboard"><div><div class="icon">📊</div><div class="nav-title">Job Dashboard</div><div class="nav-desc">ภาพรวมทีมงาน User, Job Count, Status, Contact และ Remark</div></div><span class="go">เข้าสู่ Dashboard →</span></a>
 <a class="nav-card" href="/job_monitor"><div><div class="icon">📋</div><div class="nav-title">Job Monitor</div><div class="nav-desc">รายการ Job และตัวกรอง Sub System, Priority และ Zone</div></div><span class="go">เข้าสู่ Job Monitor →</span></a>
 <a class="nav-card" href="/daily_osp_remain"><div><div class="icon">📈</div><div class="nav-title">Daily Job OSP Remain</div><div class="nav-desc">OSP Remain, Snapshot History และแนวโน้มรายช่วงเวลา</div></div><span class="go">เข้าสู่ Daily OSP →</span></a>
-<a class="nav-card" href="/resource_monitor"><div><div class="icon">🕒</div><div class="nav-title">Resource Monitor</div><div class="nav-desc">ดูสถานะทีมทุก 30 นาที และ Job ID ตามช่วงเวลา</div></div><span class="go">เข้าสู่ Resource Monitor →</span></a>
 </section>
 
-<div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
-<section class="grid-2">
-<div class="panel zone-summary-panel"><div class="panel-head"><div class="panel-title">Zone Summary</div><div class="panel-note">จำนวน Job ตาม Zone</div></div><div class="team-cards zone-cards">{% for r in zone_summary if r.zone != 'Total' %}<div class="team-stat zone-click"><div class="label">{{ r.zone }}</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}{% for r in zone_summary if r.zone == 'Total' %}<div class="team-stat total-zone"><div class="label">Total</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}</div></div>
-<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">On-site</div><div class="value onsite">{{ team_summary.onsite }}</div></div><div class="team-stat"><div class="label">Departed</div><div class="value departed">{{ team_summary.departed }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
-    {{ team_summary.ready }} / {{ team_summary.total }}
-</div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot onsite"></i>On-site</span><span><i class="dot departed"></i>Departed</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
+<div class="section-title">จำนวน Job แยกตาม Sub System และ Priority</div>
+<section class="panel subsystem-chart-panel">
+<div class="panel-head"><div class="panel-title">Sub System Summary</div><div class="panel-note">แสดงเฉพาะ Priority ที่มีจำนวน Job มากกว่า 0</div></div>
+<div class="subsystem-chart">
+{% for r in subsystem_summary %}
+  {% if r.total > 0 %}
+  <div class="subsystem-group">
+    <div class="subsystem-name">{{ r.subsystem }} <span class="subsystem-total">Total {{ r.total }}</span></div>
+    <div class="bars">
+      {% if r.critical > 0 %}<div class="bar-row"><span class="bar-label critical-label">Critical</span><div class="bar-track"><div class="bar-fill critical-fill" data-value="{{ r.critical }}"></div></div><b class="bar-value">{{ r.critical }}</b></div>{% endif %}
+      {% if r.major > 0 %}<div class="bar-row"><span class="bar-label major-label">Major</span><div class="bar-track"><div class="bar-fill major-fill" data-value="{{ r.major }}"></div></div><b class="bar-value">{{ r.major }}</b></div>{% endif %}
+      {% if r.minor > 0 %}<div class="bar-row"><span class="bar-label minor-label">Minor</span><div class="bar-track"><div class="bar-fill minor-fill" data-value="{{ r.minor }}"></div></div><b class="bar-value">{{ r.minor }}</b></div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% if not subsystem_summary|selectattr('total','gt',0)|list %}
+<div class="empty">ขณะนี้ไม่มี Job ที่มีจำนวนมากกว่า 0</div>
+{% endif %}
+</div>
 </section>
 
+<div class="section-title">จำนวน Job ค้างตามอายุของ Job</div>
 <section class="panel osp-age-panel">
   <div class="panel-head">
     <div class="panel-title">OSP Job Aging Summary</div>
@@ -228,10 +213,10 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
               <span class="subsystem-label">{{ r.label }}</span>
             {% endif %}
           </td>
-          <td class="num">{{ '' if r.critical_today == 0 else r.critical_today }}</td><td class="num">{{ '' if r.critical_lt3 == 0 else r.critical_lt3 }}</td><td class="num">{{ '' if r.critical_lt7 == 0 else r.critical_lt7 }}</td><td class="num">{{ '' if r.critical_lt15 == 0 else r.critical_lt15 }}</td><td class="num">{{ '' if r.critical_over15 == 0 else r.critical_over15 }}</td><td class="num priority-total-critical">{{ '' if r.critical_total == 0 else r.critical_total }}</td>
-          <td class="num">{{ '' if r.major_today == 0 else r.major_today }}</td><td class="num">{{ '' if r.major_lt3 == 0 else r.major_lt3 }}</td><td class="num">{{ '' if r.major_lt7 == 0 else r.major_lt7 }}</td><td class="num">{{ '' if r.major_lt15 == 0 else r.major_lt15 }}</td><td class="num">{{ '' if r.major_over15 == 0 else r.major_over15 }}</td><td class="num priority-total-major">{{ '' if r.major_total == 0 else r.major_total }}</td>
-          <td class="num">{{ '' if r.minor_today == 0 else r.minor_today }}</td><td class="num">{{ '' if r.minor_lt3 == 0 else r.minor_lt3 }}</td><td class="num">{{ '' if r.minor_lt7 == 0 else r.minor_lt7 }}</td><td class="num">{{ '' if r.minor_lt15 == 0 else r.minor_lt15 }}</td><td class="num">{{ '' if r.minor_over15 == 0 else r.minor_over15 }}</td><td class="num priority-total-minor">{{ '' if r.minor_total == 0 else r.minor_total }}</td>
-          <td class="num grand-total">{{ '' if r.total == 0 else r.total }}</td>
+          <td class="num">{{ r.critical_today }}</td><td class="num">{{ r.critical_lt3 }}</td><td class="num">{{ r.critical_lt7 }}</td><td class="num">{{ r.critical_lt15 }}</td><td class="num">{{ r.critical_over15 }}</td><td class="num priority-total-critical">{{ r.critical_total }}</td>
+          <td class="num">{{ r.major_today }}</td><td class="num">{{ r.major_lt3 }}</td><td class="num">{{ r.major_lt7 }}</td><td class="num">{{ r.major_lt15 }}</td><td class="num">{{ r.major_over15 }}</td><td class="num priority-total-major">{{ r.major_total }}</td>
+          <td class="num">{{ r.minor_today }}</td><td class="num">{{ r.minor_lt3 }}</td><td class="num">{{ r.minor_lt7 }}</td><td class="num">{{ r.minor_lt15 }}</td><td class="num">{{ r.minor_over15 }}</td><td class="num priority-total-minor">{{ r.minor_total }}</td>
+          <td class="num grand-total">{{ r.total }}</td>
         </tr>
       {% endfor %}
       {% if not osp_aging_summary %}
@@ -241,27 +226,27 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
       <tfoot>
         <tr>
           <td class="subsystem-head"><b>Grand Total</b></td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_today')) == 0 else (osp_aging_summary|sum(attribute='critical_today')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt3')) == 0 else (osp_aging_summary|sum(attribute='critical_lt3')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt7')) == 0 else (osp_aging_summary|sum(attribute='critical_lt7')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt15')) == 0 else (osp_aging_summary|sum(attribute='critical_lt15')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_over15')) == 0 else (osp_aging_summary|sum(attribute='critical_over15')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_total')) == 0 else (osp_aging_summary|sum(attribute='critical_total')) }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_today') }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_lt3') }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_lt7') }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_lt15') }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_over15') }}</td>
+          <td class="num priority-total-critical">{{ osp_aging_summary|sum(attribute='critical_total') }}</td>
 
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_today')) == 0 else (osp_aging_summary|sum(attribute='major_today')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt3')) == 0 else (osp_aging_summary|sum(attribute='major_lt3')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt7')) == 0 else (osp_aging_summary|sum(attribute='major_lt7')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt15')) == 0 else (osp_aging_summary|sum(attribute='major_lt15')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_over15')) == 0 else (osp_aging_summary|sum(attribute='major_over15')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_total')) == 0 else (osp_aging_summary|sum(attribute='major_total')) }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_today') }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_lt3') }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_lt7') }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_lt15') }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_over15') }}</td>
+          <td class="num priority-total-major">{{ osp_aging_summary|sum(attribute='major_total') }}</td>
 
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_today')) == 0 else (osp_aging_summary|sum(attribute='minor_today')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt3')) == 0 else (osp_aging_summary|sum(attribute='minor_lt3')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt7')) == 0 else (osp_aging_summary|sum(attribute='minor_lt7')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt15')) == 0 else (osp_aging_summary|sum(attribute='minor_lt15')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_over15')) == 0 else (osp_aging_summary|sum(attribute='minor_over15')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_total')) == 0 else (osp_aging_summary|sum(attribute='minor_total')) }}</td>
-          <td class="num grand-total">{{ '' if (osp_aging_summary|sum(attribute='total')) == 0 else (osp_aging_summary|sum(attribute='total')) }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_today') }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_lt3') }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_lt7') }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_lt15') }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_over15') }}</td>
+          <td class="num priority-total-minor">{{ osp_aging_summary|sum(attribute='minor_total') }}</td>
+          <td class="num grand-total">{{ osp_aging_summary|sum(attribute='total') }}</td>
         </tr>
       </tfoot>
     </table>
@@ -269,34 +254,16 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
   <div class="osp-age-note">Transmission-OSP แยกจาก Job Title: <b>Optic LOS</b> = นอกเหนือจาก 4 รายการ · <b>BBU</b> = Node B Down · <b>RRU</b> = RRU · <b>High loss</b> = Highloss / High loss · <b>ร้องเรียน</b> = ร้องเรียน</div>
 </section>
 
-
+<div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
+<section class="grid-2">
+<div class="panel zone-summary-panel"><div class="panel-head"><div class="panel-title">Zone Summary</div><div class="panel-note">จำนวน Job ตาม Zone</div></div><div class="team-cards zone-cards">{% for r in zone_summary if r.zone != 'Total' %}<div class="team-stat zone-click"><div class="label">{{ r.zone }}</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}{% for r in zone_summary if r.zone == 'Total' %}<div class="team-stat total-zone"><div class="label">Total</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}</div></div>
+<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
+    {{ team_summary.ready }} / {{ team_summary.total }}
+</div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
+</section>
 
 <div class="section-title">สรุป OSP ล่าสุด</div>
 <section class="osp">{% if latest_osp %}<div class="osp-head"><div class="osp-title">Snapshot {{ latest_osp.get('slot','-') }}</div><div class="osp-meta">{{ latest_osp.get('timestamp','-') }}</div></div><div class="osp-grid"><div class="osp-item">Critical<b>{{ latest_osp.get('totals',{}).get('critical',0) }}</b></div><div class="osp-item">Major<b>{{ latest_osp.get('totals',{}).get('major',0) }}</b></div><div class="osp-item">Minor<b>{{ latest_osp.get('totals',{}).get('minor',0) }}</b></div><div class="osp-item">Grand Total<b>{{ latest_osp.get('totals',{}).get('grand_total',0) }}</b></div></div>{% else %}<div class="empty">ยังไม่มีข้อมูล Snapshot Daily OSP</div>{% endif %}</section>
-
-<div class="section-title">Status Done(not leave)</div>
-<section class="done-summary" id="doneSummarySection">
-  <div class="done-summary-head">
-    <div class="done-summary-title">จำนวน Status Done(not leave) แยกตาม User</div>
-    <div class="done-summary-total" id="doneSummaryTotal">รวม {{ done_not_leave_total }} Job</div>
-  </div>
-
-  <div class="done-filter-bar">
-    <button type="button" class="done-filter active" data-group="all">ทั้งหมด</button>
-    <button type="button" class="done-filter" data-group="mbb">MBB</button>
-    <button type="button" class="done-filter" data-group="eds">EDS</button>
-    <button type="button" class="done-filter" data-group="fbb">FBB</button>
-  </div>
-
-  <div class="table-scroll">
-    <table class="done-table">
-      <thead><tr><th>User</th><th>จำนวน</th></tr></thead>
-      <tbody id="doneSummaryBody"></tbody>
-      <tfoot><tr><td>Grand Total</td><td id="doneSummaryGrandTotal">{{ done_not_leave_total }}</td></tr></tfoot>
-    </table>
-    <div class="done-empty" id="doneSummaryEmpty" style="display:none">ยังไม่มี Job ที่มี Status = Done(not leave) ใน Sub System ที่เลือก</div>
-  </div>
-</section>
 </div>
 
 <script>
@@ -308,66 +275,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const value = Number(el.dataset.value || 0);
     el.style.width = ((value / max) * 100) + '%';
   });
-});
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  document.querySelectorAll(".subsystem-group").forEach(function(group){
-    const vals=[...group.querySelectorAll(".bar-fill")].map(x=>Number(x.dataset.value||0));
-    const max=Math.max(...vals,1);
-    group.querySelectorAll(".bar-fill").forEach(function(el){
-      el.style.width=(Number(el.dataset.value||0)/max*100)+"%";
-    });
-  });
-  document.querySelectorAll(".subsystem-filter-btn").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      document.querySelectorAll(".subsystem-filter-btn").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      const key=btn.dataset.subsystem;
-      document.querySelectorAll(".subsystem-group").forEach(function(g){
-        g.style.display=(key==="all" || g.dataset.subsystem===key) ? "" : "none";
-      });
-    });
-  });
-});
-</script>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const data = {{ done_not_leave_by_group|tojson }};
-  const body = document.getElementById('doneSummaryBody');
-  const total = document.getElementById('doneSummaryTotal');
-  const grand = document.getElementById('doneSummaryGrandTotal');
-  const empty = document.getElementById('doneSummaryEmpty');
-
-  function render(group){
-    const item = data[group] || {total:0, rows:[]};
-    body.innerHTML = '';
-    (item.rows || []).forEach(function(r){
-      const tr = document.createElement('tr');
-      const tdUser = document.createElement('td');
-      const tdCount = document.createElement('td');
-      tdUser.textContent = r.user;
-      tdCount.textContent = r.count;
-      tr.appendChild(tdUser);
-      tr.appendChild(tdCount);
-      body.appendChild(tr);
-    });
-    total.textContent = 'รวม ' + item.total + ' Job';
-    grand.textContent = item.total;
-    empty.style.display = (item.total === 0) ? 'block' : 'none';
-  }
-
-  document.querySelectorAll('.done-filter').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.done-filter').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      render(btn.dataset.group);
-    });
-  });
-
-  render('all');
 });
 </script>
 </body>
