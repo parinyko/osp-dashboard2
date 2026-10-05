@@ -1293,26 +1293,30 @@ def build_home_summary():
     for row in team_rows:
         remark = clean_text(row.get("remark", ""))
         remark_cf = remark.casefold()
-        if any(word in remark_cf for word in missing_keywords):
-            status = "ทีมขาด"
+        # คอลัมน์ Status ของตาราง Dashboard แสดงเพียง 2 ค่า:
+        # Working / ว่าง เท่านั้น
+        # ส่วน On-site / Departed / ทีมขาด / ทีมเลิกดึก ยังคงใช้สำหรับ
+        # การนับ Summary แยกต่างหาก ไม่แสดงเป็นค่าของคอลัมน์ Status
+        is_missing = any(word in remark_cf for word in missing_keywords)
+        available_at = parse_available_on(remark, now)
+        is_late = available_at is not None and available_at > now
+
+        if is_missing:
             missing += 1
+        if is_late:
+            late += 1
+
+        if row.get("work_status") == "On-site":
+            onsite += 1
+        elif row.get("work_status") == "Departed":
+            departed += 1
+        elif row.get("work_status") == "Working":
+            working += 1
         else:
-            available_at = parse_available_on(remark, now)
-            if available_at is not None and available_at > now:
-                status = "ทีมเลิกดึก"
-                late += 1
-            elif row.get("work_status") == "On-site":
-                status = "On-site"
-                onsite += 1
-            elif row.get("work_status") == "Departed":
-                status = "Departed"
-                departed += 1
-            elif row.get("work_status") == "Working":
-                status = "Working"
-                working += 1
-            else:
-                status = "ว่าง"
-                free += 1
+            free += 1
+
+        # แสดงเฉพาะ Working / ว่าง ในคอลัมน์ Status
+        status = "Working" if row.get("work_status") != "ว่าง" else "ว่าง"
         team_status_rows.append({"zone": row.get("zone", ""), "user": row.get("user", ""), "status": status})
 
     total_teams = len(team_status_rows)
