@@ -409,10 +409,16 @@ def build_dashboard_data(df):
             statuses = [clean_text(v) for v in user_jobs["Status"].tolist() if clean_text(v)]
         status_text = ", ".join(sorted(set(statuses), key=str.casefold))
 
-        # Main Status is determined ONLY by Job Count:
-        # Job Count = 0 -> ว่าง, Job Count >= 1 -> Working.
-        # Current Status (On-site / Departed / etc.) must NOT change this column.
-        work_status = "Working" if len(user_jobs) >= 1 else "ว่าง"
+        status_cf = status_text.casefold()
+        if not user_jobs.empty:
+            if "on-site" in status_cf or "onsite" in status_cf:
+                work_status = "On-site"
+            elif "departed" in status_cf:
+                work_status = "Departed"
+            else:
+                work_status = "Working"
+        else:
+            work_status = "ว่าง"
 
         result.append({
             "zone": zone,
@@ -1300,22 +1306,17 @@ def build_home_summary():
         if is_late:
             late += 1
 
-        # Summary Working / ว่าง follows the SAME rule as the main Status column.
-        # On-site / Departed are tracked separately from Current Status and may overlap
-        # with Working because they describe the job state, not the Status column.
-        if int(row.get("job_count", 0) or 0) >= 1:
+        if row.get("work_status") == "On-site":
+            onsite += 1
+        elif row.get("work_status") == "Departed":
+            departed += 1
+        elif row.get("work_status") == "Working":
             working += 1
         else:
             free += 1
 
-        status_cf = clean_text(row.get("status_text", "")).casefold()
-        if "on-site" in status_cf or "onsite" in status_cf:
-            onsite += 1
-        if "departed" in status_cf:
-            departed += 1
-
         # แสดงเฉพาะ Working / ว่าง ในคอลัมน์ Status
-        status = "Working" if int(row.get("job_count", 0) or 0) >= 1 else "ว่าง"
+        status = "Working" if row.get("work_status") != "ว่าง" else "ว่าง"
         team_status_rows.append({"zone": row.get("zone", ""), "user": row.get("user", ""), "status": status})
 
     total_teams = len(team_status_rows)
@@ -1328,9 +1329,7 @@ def build_home_summary():
         "team_summary": {
             "working": working, "onsite": onsite, "departed": departed,
             "free": free, "missing": missing,
-            # Ready is the total team population, so it is not double-counted
-            # when Working overlaps with On-site / Departed.
-            "late": late, "ready": working + free, "total": total_teams,
+            "late": late, "ready": working + onsite + departed + free, "total": total_teams,
         },
     }
 
