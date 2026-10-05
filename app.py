@@ -271,6 +271,12 @@ DAILY_OSP_FILE = "daily_osp_remain.json"
 DAILY_OSP_MAX_RECORDS = 730
 DAILY_OSP_STOP = Event()
 
+# Resource Monitor: keep a 30-minute status history for every dashboard user.
+RESOURCE_MONITOR_FILE = "resource_monitor_history.json"
+RESOURCE_MONITOR_MAX_RECORDS = 20000
+RESOURCE_MONITOR_STOP = Event()
+RESOURCE_LOCK = Lock()
+
 
 def load_json_file(path, default=None):
     default = {} if default is None else default
@@ -403,11 +409,22 @@ def build_dashboard_data(df):
             statuses = [clean_text(v) for v in user_jobs["Status"].tolist() if clean_text(v)]
         status_text = ", ".join(sorted(set(statuses), key=str.casefold))
 
+        status_cf = status_text.casefold()
+        if not user_jobs.empty:
+            if "on-site" in status_cf or "onsite" in status_cf:
+                work_status = "On-site"
+            elif "departed" in status_cf:
+                work_status = "Departed"
+            else:
+                work_status = "Working"
+        else:
+            work_status = "ว่าง"
+
         result.append({
             "zone": zone,
             "user": user,
             "area": AREA_DATA.get(user, ""),
-            "work_status": "Working" if len(user_jobs) else "ว่าง",
+            "work_status": work_status,
             "job_count": int(len(user_jobs)),
             "status_text": status_text,
             "status_color": get_status_color(status_text),
@@ -432,10 +449,12 @@ def apply_group_rowspans(rows):
 
 
 def update_global_data(df):
-    global DATA, RAW_DATA, LAST_UPDATE
+    global DATA, RAW_DATA, ORIGINAL_DATA, LAST_UPDATE
     global TOTAL_CRITICAL, TOTAL_MAJOR, TOTAL_MINOR, TOTAL_JOBS
     global TOTAL_SCT, TOTAL_CWT, TOTAL_ONT, TOTAL_TLC
 
+    # Keep a clean copy of the original upload before normal filtering.
+    ORIGINAL_DATA = df.fillna("").to_dict("records") if df is not None else []
     job_df = prepare_job_dataframe(df)
     RAW_DATA = job_df.fillna("").to_dict("records")
     totals = calculate_totals(job_df)
@@ -615,6 +634,163 @@ def scheduled_osp_slot(now):
     return None
 
 
+def load_resource_history():
+    try:
+        if not os.path.exists(RESOURCE_MONITOR_FILE):
+            return []
+        with open(RESOURCE_MONITOR_FILE, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        if isinstance(payload, dict):
+            records = payload.get("records", [])
+        else:
+            records = payload
+        return records if isinstance(records, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+RESOURCE_HISTORY = load_resource_history()
+
+# Keep the original uploaded rows so Done(Not Leave) can be summarized
+# even though normal dashboard filtering removes those jobs.
+ORIGINAL_DATA = []
+
+
+def save_resource_history():
+    payload = {
+        "version": 1,
+        "updated_at": datetime.now(ZoneInfo("Asia/Bangkok")).isoformat(),
+        "records": RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:],
+    }
+    temp_path = f"{RESOURCE_MONITOR_FILE}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(temp_path, RESOURCE_MONITOR_FILE)
+
+
+def _find_job_id_column(df):
+    """Find the Job ID column without assuming one exact Excel header spelling."""
+    if df is None or df.empty:
+        return None
+    candidates = {
+        "job id", "jobid", "job_id", "job no", "job number",
+        "job number id", "jobcode", "job code", "job"
+    }
+    for col in df.columns:
+        key = re.sub(r"[^a-z0-9]+", " ", str(col).strip().casefold()).strip()
+        if key in candidates:
+            return col
+    return None
+
+
+def resource_job_for_user(df, user):
+    """Return the selected Job ID and its Current Status for one user."""
+    if df is None or df.empty:
+        return {"job_id": "", "status": ""}
+
+    assign = df["Assign to"].fillna("").astype(str).str.strip().str.casefold()
+    mask = assign.eq(clean_text(user).casefold())
+    if "Priority" in df.columns:
+        priority = df["Priority"].fillna("").astype(str).str.strip().str.lower()
+        mask &= priority.ne("") & priority.ne("none")
+    if "Sub System" in df.columns:
+        mask &= df["Sub System"].fillna("").astype(str).str.strip().isin(VALID_SUBSYSTEMS)
+    if "Status" in df.columns:
+        st = df["Status"].fillna("").astype(str).str.strip().str.lower()
+        mask &= ~st.str.contains("done(not leave)", regex=False)
+
+    user_jobs = df.loc[mask].copy()
+    if user_jobs.empty:
+        return {"job_id": "", "status": ""}
+
+    status_col = "Current Status" if "Current Status" in user_jobs.columns else "Status"
+    job_col = _find_job_id_column(user_jobs)
+
+    rank = {"on-site": 5, "onsite": 5, "departed": 4, "accepted": 3, "assigned": 2, "held": 1}
+    def score(v):
+        key = clean_text(v).casefold()
+        for k, n in rank.items():
+            if k in key:
+                return n
+        return 0
+
+    best = None
+    best_score = -1
+    for idx, row in user_jobs.iterrows():
+        status = clean_text(row.get(status_col, ""))
+        sc = score(status)
+        if sc > best_score:
+            best = row
+            best_score = sc
+        elif best is None:
+            best = row
+
+    if best is None:
+        return {"job_id": "", "status": ""}
+
+    job_id = clean_text(best.get(job_col, "")) if job_col else ""
+    status = clean_text(best.get(status_col, ""))
+    return {"job_id": job_id, "status": status}
+
+
+def resource_status_for_user(df, user):
+    """Backward-compatible status-only helper."""
+    return resource_job_for_user(df, user)["status"]
+
+def build_resource_snapshot(now=None):
+    now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
+    # Snapshots are aligned to 00/30 minutes.
+    minute = 30 if now.minute >= 30 else 0
+    stamp = now.replace(minute=minute, second=0, microsecond=0)
+    df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
+    rows = []
+    for team in dashboard_teams():
+        item = resource_job_for_user(df, team["user"])
+        rows.append({
+            "zone": team["zone"],
+            "user": team["user"],
+            "status": item["status"],
+            "job_id": item["job_id"],
+        })
+    return {
+        "timestamp": stamp.isoformat(),
+        "date": stamp.strftime("%Y-%m-%d"),
+        "time": stamp.strftime("%H:%M"),
+        "rows": rows,
+    }
+
+
+def save_resource_snapshot(now=None, allow_duplicate=False):
+    global RESOURCE_HISTORY
+    record = build_resource_snapshot(now)
+    key = record["timestamp"]
+    with RESOURCE_LOCK:
+        if not allow_duplicate and any(r.get("timestamp") == key for r in RESOURCE_HISTORY):
+            return next(r for r in RESOURCE_HISTORY if r.get("timestamp") == key), False
+        RESOURCE_HISTORY.append(record)
+        RESOURCE_HISTORY = RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
+        save_resource_history()
+    return record, True
+
+
+def resource_monitor_scheduler():
+    last_key = None
+    while not RESOURCE_MONITOR_STOP.wait(15):
+        now = datetime.now(ZoneInfo("Asia/Bangkok"))
+        if now.minute not in (0, 30):
+            continue
+        key = now.strftime("%Y-%m-%d %H:%M")
+        if key == last_key:
+            continue
+        last_key = key
+        try:
+            save_resource_snapshot(now)
+        except Exception as exc:
+            print(f"[Resource Monitor] snapshot failed: {exc}")
+
+
 def daily_osp_scheduler():
     last_checked_minute = None
     while not DAILY_OSP_STOP.wait(15):
@@ -630,6 +806,57 @@ def daily_osp_scheduler():
             save_daily_osp_snapshot(slot)
         except Exception as exc:
             print(f"[Daily OSP] snapshot failed: {exc}")
+
+
+@app.route("/resource_monitor")
+def resource_monitor():
+    if not RAW_DATA:
+        load_latest_excel_into_memory()
+    dates = sorted({r.get("date") for r in RESOURCE_HISTORY if r.get("date")}, reverse=True)
+    selected = request.args.get("date", "")
+    if selected not in dates:
+        selected = dates[0] if dates else datetime.now(ZoneInfo("Asia/Bangkok")).strftime("%Y-%m-%d")
+    day_records = [r for r in RESOURCE_HISTORY if r.get("date") == selected]
+    day_records.sort(key=lambda r: r.get("time", ""))
+    slots = [f"{h:02d}:{m:02d}" for h in range(24) for m in (0, 30)]
+    users = dashboard_teams()
+    matrix = {u["user"]: {} for u in users}
+    for rec in day_records:
+        for row in rec.get("rows", []):
+            if row.get("user") in matrix:
+                # New snapshots store both Job ID and Current Status.
+                # Old history records remain readable as status-only cells.
+                matrix[row["user"]][rec.get("time", "")] = {
+                    "job_id": clean_text(row.get("job_id", "")),
+                    "status": clean_text(row.get("status", "")),
+                }
+
+    # Build horizontally merged display cells: consecutive slots with the
+    # same Job ID become one cell. This keeps the template simple and makes
+    # the visual timeline match the requested layout.
+    display_rows = []
+    for u in users:
+        cells = []
+        pos = 0
+        while pos < len(slots):
+            cur = matrix.get(u["user"], {}).get(slots[pos], {})
+            if isinstance(cur, str):
+                cur = {"job_id": "", "status": cur}
+            jid = clean_text(cur.get("job_id", ""))
+            span = 1
+            if jid:
+                while pos + span < len(slots):
+                    nxt = matrix.get(u["user"], {}).get(slots[pos + span], {})
+                    if isinstance(nxt, str):
+                        nxt = {"job_id": "", "status": nxt}
+                    if clean_text(nxt.get("job_id", "")) != jid:
+                        break
+                    span += 1
+            cells.append({"job_id": jid, "status": clean_text(cur.get("status", "")), "span": span})
+            pos += span
+        display_rows.append({"zone": u["zone"], "user": u["user"], "cells": cells})
+
+    return render_template("resource_monitor.html", records=day_records, selected_date=selected, available_dates=dates, last_update=LAST_UPDATE, slots=slots, users=users, matrix=matrix, display_rows=display_rows)
 
 
 @app.route("/daily_osp_remain")
@@ -949,30 +1176,21 @@ def build_osp_aging_summary(job_df):
     for group_name, subsystems in OSP_AGING_GROUPS:
         for subsystem in subsystems:
             if subsystem == "Transmission-OSP":
-                transmission_kinds = ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน")
-                for kind_index, kind in enumerate(transmission_kinds):
+                for kind in ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน"):
                     a = accumulators[(group_name, subsystem, kind)]
-                    rows.append(_make_aging_row(
-                        group_name, kind, a,
-                        subsystem=subsystem,
-                        transmission=True,
-                        show_subsystem=(kind_index == 0),
-                    ))
+                    rows.append(_make_aging_row(group_name, kind, a, subsystem=subsystem, transmission=True))
             else:
                 a = accumulators[(group_name, subsystem, None)]
                 rows.append(_make_aging_row(group_name, subsystem, a, subsystem=subsystem, transmission=False))
     return rows
 
 
-def _make_aging_row(group_name, label, a, subsystem="", transmission=False, show_subsystem=False):
+def _make_aging_row(group_name, label, a, subsystem="", transmission=False):
     row = {
         "group": group_name,
         "subsystem": subsystem,
         "label": label,
         "transmission": transmission,
-        # Transmission-OSP is a parent label: render it only once,
-        # while each Job Title category remains on its own aging row.
-        "show_subsystem": bool(show_subsystem),
     }
     grand = 0
     for priority in ("critical", "major", "minor"):
@@ -982,6 +1200,49 @@ def _make_aging_row(group_name, label, a, subsystem="", transmission=False, show
         grand += counts["total"]
     row["total"] = grand
     return row
+
+
+DONE_SUBSYSTEM_GROUPS = {
+    "all": [
+        "EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP", "EDS IPLC-OSP",
+        "FTTB-OSP", "FTTH-OSP", "FTTX-OSP", "Splitter-OSP",
+        "Transmission-OSP",
+    ],
+    "mbb": ["Transmission-OSP"],
+    "eds": ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP", "EDS IPLC-OSP"],
+    "fbb": ["FTTB-OSP", "FTTH-OSP", "FTTX-OSP", "Splitter-OSP"],
+}
+
+
+def build_done_not_leave_by_group(source_df):
+    """Return JSON-safe Done(Not Leave) totals grouped by the selected OSP subsystem group."""
+    result = {}
+    if source_df is None or source_df.empty or "Sub System" not in source_df.columns:
+        for key in DONE_SUBSYSTEM_GROUPS:
+            result[key] = {"total": 0, "rows": []}
+        return result
+
+    subsystem = source_df["Sub System"].fillna("").astype(str).str.strip()
+    status = (source_df["Status"].fillna("").astype(str).str.strip().str.casefold()
+              if "Status" in source_df.columns else pd.Series("", index=source_df.index))
+    user = (source_df["Assign to"].fillna("").astype(str).str.strip()
+            if "Assign to" in source_df.columns else pd.Series("", index=source_df.index))
+
+    done_mask = status.eq("done(not leave)")
+
+    for group_key, allowed in DONE_SUBSYSTEM_GROUPS.items():
+        mask = done_mask & subsystem.isin(allowed)
+        counts = user.loc[mask].replace("", "(ไม่ระบุ User)").value_counts()
+        rows = [
+            {"user": str(name), "count": int(count)}
+            for name, count in counts.items()
+        ]
+        result[group_key] = {
+            "total": int(mask.sum()),
+            "rows": rows,
+        }
+
+    return result
 
 
 def build_home_summary():
@@ -1002,6 +1263,11 @@ def build_home_summary():
         subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
 
     osp_aging_summary = build_osp_aging_summary(job_df)
+    # Done(Not Leave) must be counted from the original upload because
+    # prepare_job_dataframe() intentionally removes those rows.
+    done_source_df = pd.DataFrame(ORIGINAL_DATA) if ORIGINAL_DATA else pd.DataFrame()
+    done_not_leave_by_group = build_done_not_leave_by_group(done_source_df)
+    done_not_leave_total = int(done_not_leave_by_group.get("all", {}).get("total", 0))
 
     zone_rules = [
         ("SCT", "Bangkok-ST2"),
@@ -1020,18 +1286,13 @@ def build_home_summary():
 
     team_rows = build_dashboard_data(job_df) if not job_df.empty else empty_dashboard_data()
     missing_keywords = ("ลา", "ไม่มีทีม", "รถเสีย")
-    working = free = missing = late = onsite = departed = 0
+    working = onsite = departed = free = missing = late = 0
     team_status_rows = []
     now = datetime.now(ZoneInfo("Asia/Bangkok"))
 
     for row in team_rows:
         remark = clean_text(row.get("remark", ""))
         remark_cf = remark.casefold()
-        status_text_cf = clean_text(row.get("status_text", "")).casefold()
-        if "on-site" in status_text_cf or "onsite" in status_text_cf:
-            onsite += 1
-        if "departed" in status_text_cf:
-            departed += 1
         if any(word in remark_cf for word in missing_keywords):
             status = "ทีมขาด"
             missing += 1
@@ -1040,6 +1301,12 @@ def build_home_summary():
             if available_at is not None and available_at > now:
                 status = "ทีมเลิกดึก"
                 late += 1
+            elif row.get("work_status") == "On-site":
+                status = "On-site"
+                onsite += 1
+            elif row.get("work_status") == "Departed":
+                status = "Departed"
+                departed += 1
             elif row.get("work_status") == "Working":
                 status = "Working"
                 working += 1
@@ -1052,11 +1319,13 @@ def build_home_summary():
     return {
         "subsystem_summary": subsystem_summary,
         "osp_aging_summary": osp_aging_summary,
+        "done_not_leave_by_group": done_not_leave_by_group,
+        "done_not_leave_total": done_not_leave_total,
         "zone_summary": zone_summary,
         "team_summary": {
-            "working": working, "free": free, "missing": missing,
-            "late": late, "onsite": onsite, "departed": departed,
-            "ready": working + free, "total": total_teams,
+            "working": working, "onsite": onsite, "departed": departed,
+            "free": free, "missing": missing,
+            "late": late, "ready": working + onsite + departed + free, "total": total_teams,
         },
     }
 
@@ -1132,7 +1401,12 @@ def job_monitor():
 
 if __name__ == "__main__":
     load_latest_excel_into_memory()
+    try:
+        save_resource_snapshot()
+    except Exception as exc:
+        print(f"[Resource Monitor] initial snapshot failed: {exc}")
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("FLASK_DEBUG") != "1":
         Thread(target=daily_osp_scheduler, name="daily-osp-scheduler", daemon=True).start()
+        Thread(target=resource_monitor_scheduler, name="resource-monitor-scheduler", daemon=True).start()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
