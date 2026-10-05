@@ -28,7 +28,7 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
     font-weight:900;
     margin-top:2px;
     white-space:nowrap;
-}.working{color:#b4232e}.onsite{color:#16743d}.departed{color:#a56a00}.free{color:#16743d}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
+}.working{color:#9b2027;background:#ffc9cf!important;border-radius:7px;padding:6px 8px}.onsite{color:#16743d}.departed{color:#a56a00}.free{color:#16743d;background:#c7efd2!important;border-radius:7px;padding:6px 8px}.missing{color:#9a6200}.late{color:#6f42c1}.ready{color:#355e27}.team-detail{padding:0 10px 10px;font-size:11px;color:#748073}
 .zone-summary-panel{max-width:900px}
 .zone-summary-panel .team-cards{grid-template-columns:repeat(5,minmax(105px,1fr));padding:10px}
 .zone-summary-panel .team-stat{padding:8px 10px}
@@ -107,10 +107,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 .osp-age-table .age-label{display:block;font-size:11px;font-weight:900}
 .osp-age-table .age-sub{display:block;margin-top:2px;font-size:9px;font-weight:700;opacity:.78}
 .osp-age-note{padding:8px 11px;color:#647262;font-size:10.5px;background:#f7fbf5;border-top:1px solid #dfe9db}
-.done-summary{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(50,90,40,.05)}
-.done-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#f2f8ef;border-bottom:1px solid #dce8d7}
-.done-summary-title{font-weight:900;color:#355e27}.done-summary-total{font-size:12px;font-weight:900;color:#4f7d3d;background:#eaf5e5;border:1px solid #cfe2c7;border-radius:8px;padding:5px 9px}
-.done-table{width:100%;border-collapse:collapse;font-size:12px}.done-table th{background:#70a92d;color:#fff;padding:7px 9px;text-align:left}.done-table th:last-child,.done-table td:last-child{text-align:center;width:130px}.done-table td{padding:7px 9px;border-bottom:1px solid #e7eee4}.done-table tbody tr:nth-child(even){background:#fafcf9}.done-table tfoot td{font-weight:900;background:#eef6ea;border-top:2px solid #c8dcc1}.done-empty{padding:14px 12px;color:#748073;font-size:12px}
 @media(max-width:700px){
  .osp-age-table{min-width:1220px}
  .osp-age-table th,.osp-age-table td{padding:6px 3px}
@@ -135,11 +131,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
  .osp-age-table-v3{min-width:1260px}
  .osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:180px;width:180px}
 }
-
-.done-filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 8px}
-.done-filter{border:1px solid #cfe3bf;background:#f7fbf3;color:#456b3d;border-radius:8px;padding:6px 14px;font-weight:800;cursor:pointer}
-.done-filter:hover{background:#eaf5e3}
-.done-filter.active{background:#6fae24;color:#fff;border-color:#5b9819;box-shadow:0 2px 7px rgba(73,128,37,.18)}
 </style>
 </head>
 <body>
@@ -158,7 +149,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 <a class="nav-card" href="/dashboard"><div><div class="icon">📊</div><div class="nav-title">Status Team</div><div class="nav-desc">ภาพรวมทีมงาน User, Job Count, Status, Contact และ Remark</div></div><span class="go">เข้าสู่ Dashboard →</span></a>
 <a class="nav-card" href="/job_monitor"><div><div class="icon">📋</div><div class="nav-title">Job Monitor</div><div class="nav-desc">รายการ Job และตัวกรอง Sub System, Priority และ Zone</div></div><span class="go">เข้าสู่ Job Monitor →</span></a>
 <a class="nav-card" href="/daily_osp_remain"><div><div class="icon">📈</div><div class="nav-title">Daily Job OSP Remain</div><div class="nav-desc">OSP Remain, Snapshot History และแนวโน้มรายช่วงเวลา</div></div><span class="go">เข้าสู่ Daily OSP →</span></a>
-<a class="nav-card" href="/resource_monitor"><div><div class="icon">🕒</div><div class="nav-title">Resource Monitor</div><div class="nav-desc">ดูสถานะทีมทุก 30 นาที และ Job ID ตามช่วงเวลา</div></div><span class="go">เข้าสู่ Resource Monitor →</span></a>
 </section>
 
 <div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
@@ -273,30 +263,6 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 
 <div class="section-title">สรุป OSP ล่าสุด</div>
 <section class="osp">{% if latest_osp %}<div class="osp-head"><div class="osp-title">Snapshot {{ latest_osp.get('slot','-') }}</div><div class="osp-meta">{{ latest_osp.get('timestamp','-') }}</div></div><div class="osp-grid"><div class="osp-item">Critical<b>{{ latest_osp.get('totals',{}).get('critical',0) }}</b></div><div class="osp-item">Major<b>{{ latest_osp.get('totals',{}).get('major',0) }}</b></div><div class="osp-item">Minor<b>{{ latest_osp.get('totals',{}).get('minor',0) }}</b></div><div class="osp-item">Grand Total<b>{{ latest_osp.get('totals',{}).get('grand_total',0) }}</b></div></div>{% else %}<div class="empty">ยังไม่มีข้อมูล Snapshot Daily OSP</div>{% endif %}</section>
-
-<div class="section-title">Status Done(not leave)</div>
-<section class="done-summary" id="doneSummarySection">
-  <div class="done-summary-head">
-    <div class="done-summary-title">จำนวน Status Done(not leave) แยกตาม User</div>
-    <div class="done-summary-total" id="doneSummaryTotal">รวม {{ done_not_leave_total }} Job</div>
-  </div>
-
-  <div class="done-filter-bar">
-    <button type="button" class="done-filter active" data-group="all">ทั้งหมด</button>
-    <button type="button" class="done-filter" data-group="mbb">MBB</button>
-    <button type="button" class="done-filter" data-group="eds">EDS</button>
-    <button type="button" class="done-filter" data-group="fbb">FBB</button>
-  </div>
-
-  <div class="table-scroll">
-    <table class="done-table">
-      <thead><tr><th>User</th><th>จำนวน</th></tr></thead>
-      <tbody id="doneSummaryBody"></tbody>
-      <tfoot><tr><td>Grand Total</td><td id="doneSummaryGrandTotal">{{ done_not_leave_total }}</td></tr></tfoot>
-    </table>
-    <div class="done-empty" id="doneSummaryEmpty" style="display:none">ยังไม่มี Job ที่มี Status = Done(not leave) ใน Sub System ที่เลือก</div>
-  </div>
-</section>
 </div>
 
 <script>
@@ -332,44 +298,6 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 </script>
 
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const data = {{ done_not_leave_by_group|tojson }};
-  const body = document.getElementById('doneSummaryBody');
-  const total = document.getElementById('doneSummaryTotal');
-  const grand = document.getElementById('doneSummaryGrandTotal');
-  const empty = document.getElementById('doneSummaryEmpty');
-
-  function render(group){
-    const item = data[group] || {total:0, rows:[]};
-    body.innerHTML = '';
-    (item.rows || []).forEach(function(r){
-      const tr = document.createElement('tr');
-      const tdUser = document.createElement('td');
-      const tdCount = document.createElement('td');
-      tdUser.textContent = r.user;
-      tdCount.textContent = r.count;
-      tr.appendChild(tdUser);
-      tr.appendChild(tdCount);
-      body.appendChild(tr);
-    });
-    total.textContent = 'รวม ' + item.total + ' Job';
-    grand.textContent = item.total;
-    empty.style.display = (item.total === 0) ? 'block' : 'none';
-  }
-
-  document.querySelectorAll('.done-filter').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.done-filter').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      render(btn.dataset.group);
-    });
-  });
-
-  render('all');
-});
-</script>
 </body>
 </html>
 
