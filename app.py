@@ -685,54 +685,116 @@ def _find_job_id_column(df):
     return None
 
 
-def resource_job_for_user(df, user):
-    """Return the selected Job ID and its Current Status for one user."""
+RESOURCE_STATUS_ORDER = {
+    "on-site": 1,
+    "onsite": 1,
+    "departed": 2,
+    "assigned": 3,
+    "accepted": 3,
+    "held": 4,
+}
+
+
+def resource_status_order(status):
+    key = clean_text(status).casefold()
+    for name, order in RESOURCE_STATUS_ORDER.items():
+        if name in key:
+            return order
+    return 99
+
+
+def resource_due_status(priority, create_time, now=None):
+    """Calculate Indue/Outdue directly from Create Time."""
+    now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
+    created = _parse_aging_datetime(create_time)
+    if created is None:
+        return ""
+
+    priority_key = clean_text(priority).casefold()
+    elapsed_hours = (now - created).total_seconds() / 3600.0
+
+    if priority_key == "critical":
+        return "Indue" if elapsed_hours < 3 else "Outdue"
+
+    if priority_key == "major":
+        return "Indue" if elapsed_hours < 10 else "Outdue"
+
+    return ""
+
+
+def resource_job_for_user(df, user, now=None):
+    """Return selected job plus status, priority, create time and due status."""
+    empty = {
+        "job_id": "",
+        "status": "",
+        "priority": "",
+        "create_time": "",
+        "due_status": "",
+    }
+
     if df is None or df.empty:
-        return {"job_id": "", "status": ""}
+        return empty
+
+    now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
 
     assign = df["Assign to"].fillna("").astype(str).str.strip().str.casefold()
     mask = assign.eq(clean_text(user).casefold())
+
     if "Priority" in df.columns:
         priority = df["Priority"].fillna("").astype(str).str.strip().str.lower()
         mask &= priority.ne("") & priority.ne("none")
+
     if "Sub System" in df.columns:
-        mask &= df["Sub System"].fillna("").astype(str).str.strip().isin(VALID_SUBSYSTEMS)
+        mask &= (
+            df["Sub System"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .isin(VALID_SUBSYSTEMS)
+        )
+
     if "Status" in df.columns:
         st = df["Status"].fillna("").astype(str).str.strip().str.lower()
         mask &= ~st.str.contains("done(not leave)", regex=False)
 
     user_jobs = df.loc[mask].copy()
+
     if user_jobs.empty:
-        return {"job_id": "", "status": ""}
+        return empty
 
     status_col = "Current Status" if "Current Status" in user_jobs.columns else "Status"
     job_col = _find_job_id_column(user_jobs)
-
-    rank = {"on-site": 5, "onsite": 5, "departed": 4, "accepted": 3, "assigned": 2, "held": 1}
-    def score(v):
-        key = clean_text(v).casefold()
-        for k, n in rank.items():
-            if k in key:
-                return n
-        return 0
+    priority_col = "Priority" if "Priority" in user_jobs.columns else None
+    create_col = (
+        _find_column(user_jobs, CREATE_TIME_COLUMN_CANDIDATES)
+        if "CREATE_TIME_COLUMN_CANDIDATES" in globals()
+        else None
+    )
 
     best = None
-    best_score = -1
-    for idx, row in user_jobs.iterrows():
-        status = clean_text(row.get(status_col, ""))
-        sc = score(status)
-        if sc > best_score:
+    best_order = 999
+
+    for _, row in user_jobs.iterrows():
+        order = resource_status_order(row.get(status_col, ""))
+        if best is None or order < best_order:
             best = row
-            best_score = sc
-        elif best is None:
-            best = row
+            best_order = order
 
     if best is None:
-        return {"job_id": "", "status": ""}
+        return empty
 
     job_id = clean_text(best.get(job_col, "")) if job_col else ""
     status = clean_text(best.get(status_col, ""))
-    return {"job_id": job_id, "status": status}
+    priority = clean_text(best.get(priority_col, "")) if priority_col else ""
+    create_time = best.get(create_col, "") if create_col else ""
+
+    return {
+        "job_id": job_id,
+        "status": status,
+        "priority": priority,
+        "create_time": clean_text(create_time),
+        "due_status": resource_due_status(priority, create_time, now),
+    }
 
 
 def resource_status_for_user(df, user):
@@ -741,19 +803,27 @@ def resource_status_for_user(df, user):
 
 def build_resource_snapshot(now=None):
     now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
+
     # Snapshots are aligned to 00/30 minutes.
     minute = 30 if now.minute >= 30 else 0
     stamp = now.replace(minute=minute, second=0, microsecond=0)
+
     df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
     rows = []
+
     for team in dashboard_teams():
-        item = resource_job_for_user(df, team["user"])
+        item = resource_job_for_user(df, team["user"], stamp)
+
         rows.append({
             "zone": team["zone"],
             "user": team["user"],
             "status": item["status"],
             "job_id": item["job_id"],
+            "priority": item["priority"],
+            "create_time": item["create_time"],
+            "due_status": item["due_status"],
         })
+
     return {
         "timestamp": stamp.isoformat(),
         "date": stamp.strftime("%Y-%m-%d"),
@@ -829,6 +899,9 @@ def resource_monitor():
                 matrix[row["user"]][rec.get("time", "")] = {
                     "job_id": clean_text(row.get("job_id", "")),
                     "status": clean_text(row.get("status", "")),
+                    "priority": clean_text(row.get("priority", "")),
+                    "create_time": clean_text(row.get("create_time", "")),
+                    "due_status": clean_text(row.get("due_status", "")),
                 }
 
     # Build horizontally merged display cells: consecutive slots with the
@@ -852,7 +925,14 @@ def resource_monitor():
                     if clean_text(nxt.get("job_id", "")) != jid:
                         break
                     span += 1
-            cells.append({"job_id": jid, "status": clean_text(cur.get("status", "")), "span": span})
+            cells.append({
+                "job_id": jid,
+                "status": clean_text(cur.get("status", "")),
+                "priority": clean_text(cur.get("priority", "")),
+                "create_time": clean_text(cur.get("create_time", "")),
+                "due_status": clean_text(cur.get("due_status", "")),
+                "span": span,
+            })
             pos += span
         display_rows.append({"zone": u["zone"], "user": u["user"], "cells": cells})
 
@@ -1008,7 +1088,7 @@ def parse_available_on(remark, now=None):
 # Order requested for Dashboard OSP BKK.  FTTX / EDS IPLC are intentionally
 # excluded from this summary because they are not part of the requested groups.
 OSP_AGING_GROUPS = [
-    ("EDS", ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP", "EDS IPLC-OSP"]),
+    ("EDS", ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP"]),
     ("FBB", ["FTTB-OSP", "FTTH-OSP", "Splitter-OSP"]),
     ("MBB", ["Transmission-OSP"]),
 ]
@@ -1293,30 +1373,26 @@ def build_home_summary():
     for row in team_rows:
         remark = clean_text(row.get("remark", ""))
         remark_cf = remark.casefold()
-        # คอลัมน์ Status ของตาราง Dashboard แสดงเพียง 2 ค่า:
-        # Working / ว่าง เท่านั้น
-        # ส่วน On-site / Departed / ทีมขาด / ทีมเลิกดึก ยังคงใช้สำหรับ
-        # การนับ Summary แยกต่างหาก ไม่แสดงเป็นค่าของคอลัมน์ Status
-        is_missing = any(word in remark_cf for word in missing_keywords)
-        available_at = parse_available_on(remark, now)
-        is_late = available_at is not None and available_at > now
-
-        if is_missing:
+        if any(word in remark_cf for word in missing_keywords):
+            status = "ทีมขาด"
             missing += 1
-        if is_late:
-            late += 1
-
-        if row.get("work_status") == "On-site":
-            onsite += 1
-        elif row.get("work_status") == "Departed":
-            departed += 1
-        elif row.get("work_status") == "Working":
-            working += 1
         else:
-            free += 1
-
-        # แสดงเฉพาะ Working / ว่าง ในคอลัมน์ Status
-        status = "Working" if row.get("work_status") != "ว่าง" else "ว่าง"
+            available_at = parse_available_on(remark, now)
+            if available_at is not None and available_at > now:
+                status = "ทีมเลิกดึก"
+                late += 1
+            elif row.get("work_status") == "On-site":
+                status = "On-site"
+                onsite += 1
+            elif row.get("work_status") == "Departed":
+                status = "Departed"
+                departed += 1
+            elif row.get("work_status") == "Working":
+                status = "Working"
+                working += 1
+            else:
+                status = "ว่าง"
+                free += 1
         team_status_rows.append({"zone": row.get("zone", ""), "user": row.get("user", ""), "status": status})
 
     total_teams = len(team_status_rows)
