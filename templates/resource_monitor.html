@@ -3,554 +3,741 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Resource Monitor</title>
 
 <style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:#f4f7f1;
-  color:#214b24;
-  font-family:Arial,"Tahoma",sans-serif;
-  font-size:13px
+* {
+  box-sizing: border-box;
 }
 
-.shell{
-  padding:12px;
-  max-width:100%;
-  margin:auto
+body {
+  margin: 0;
+  background: #f4f7f1;
+  color: #214b24;
+  font-family: Arial, "Tahoma", sans-serif;
+  font-size: 13px;
 }
 
-.header{
-  background:#eaf3e5;
-  border:1px solid #cddfc5;
-  border-radius:12px;
-  padding:12px 16px;
-  margin-bottom:10px
+.shell {
+  padding: 12px;
+  max-width: 100%;
+  margin: auto;
 }
 
-.header-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:15px
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  background: #eaf3e5;
+  border: 1px solid #cddfc5;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
 }
 
-.header h1{
-  margin:0;
-  font-size:21px
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
 }
 
-.subtitle{
-  margin-top:3px;
-  color:#647262
+.header h1 {
+  margin: 0;
+  font-size: 21px;
 }
 
-.update{
-  font-size:11px;
-  color:#667566
+.subtitle {
+  margin-top: 3px;
+  color: #647262;
 }
 
-.page-nav{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  padding:10px 12px;
-  background:#fff;
-  border-bottom:1px solid #dfe9da;
-  position:sticky;
-  top:0;
-  z-index:20
+.update {
+  font-size: 11px;
+  color: #667566;
 }
 
-.page-nav a{
-  padding:7px 12px;
-  border:1px solid #cfe0c5;
-  border-radius:8px;
-  text-decoration:none;
-  color:#315a28;
-  background:#f7fbf5;
-  font-weight:800;
-  font-size:12px
+/* =========================
+   NAVIGATION
+========================= */
+
+.page-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #dfe9da;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
-.page-nav a:hover{
-  background:#edf7e8
+.page-nav a {
+  padding: 7px 12px;
+  border: 1px solid #cfe0c5;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #315a28;
+  background: #f7fbf5;
+  font-weight: 800;
+  font-size: 12px;
 }
 
-.page-nav a.active{
-  background:#dff0d6;
-  border-color:#9fc58a
+.page-nav a:hover {
+  background: #edf7e8;
 }
 
-.toolbar{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  background:#fff;
-  border:1px solid #d6e3d0;
-  border-radius:10px;
-  padding:9px 12px;
-  margin-bottom:10px
+.page-nav a.active {
+  background: #dff0d6;
+  border-color: #9fc58a;
 }
 
-.toolbar label{
-  font-weight:800
+/* =========================
+   TOOLBAR
+========================= */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid #d6e3d0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+}
+
+.toolbar label {
+  font-weight: 800;
 }
 
 .toolbar select,
-.toolbar button{
-  border:1px solid #bdd2b5;
-  border-radius:7px;
-  background:#f8fcf6;
-  padding:6px 10px;
-  color:#315d29;
-  font-weight:700
+.toolbar button {
+  border: 1px solid #bdd2b5;
+  border-radius: 7px;
+  background: #f8fcf6;
+  padding: 6px 10px;
+  color: #315d29;
+  font-weight: 700;
 }
 
-.toolbar button{
-  cursor:pointer
+.toolbar button {
+  cursor: pointer;
 }
 
-.note{
-  margin-left:auto;
-  color:#6a7867;
-  font-size:11px
+.note {
+  margin-left: auto;
+  color: #6a7867;
+  font-size: 11px;
 }
 
-.panel{
-  background:#fff;
-  border:1px solid #cddfc5;
-  border-radius:11px;
-  overflow:hidden;
-  box-shadow:0 2px 7px rgba(50,90,40,.05)
+/* =========================
+   PANEL
+========================= */
+
+.panel {
+  background: #fff;
+  border: 1px solid #cddfc5;
+  border-radius: 11px;
+  overflow: hidden;
+  box-shadow: 0 2px 7px rgba(50, 90, 40, 0.05);
 }
 
-.panel-head{
-  padding:10px 13px;
-  background:#edf6e9;
-  border-bottom:1px solid #d4e3ce;
-  display:flex;
-  justify-content:space-between;
-  align-items:center
+.panel-head {
+  padding: 10px 13px;
+  background: #edf6e9;
+  border-bottom: 1px solid #d4e3ce;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.panel-title{
-  font-size:17px;
-  font-weight:900
+.panel-title {
+  font-size: 17px;
+  font-weight: 900;
 }
 
-.panel-note{
-  font-size:11px;
-  color:#647262
+.panel-note {
+  font-size: 11px;
+  color: #647262;
 }
 
-.table-wrap{
-  overflow:auto;
-  max-height:calc(100vh - 175px)
+/* =========================
+   TABLE
+========================= */
+
+.table-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 175px);
 }
 
-table{
-  border-collapse:separate;
-  border-spacing:0;
-  min-width:1700px;
-  width:max-content
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1700px;
+  width: max-content;
 }
 
-th,td{
-  border-right:1px solid #bfc9bb;
-  border-bottom:1px solid #bfc9bb;
-  text-align:center;
-  white-space:nowrap
+th,
+td {
+  border-right: 1px solid #bfc9bb;
+  border-bottom: 1px solid #bfc9bb;
+  text-align: center;
+  white-space: nowrap;
 }
 
-thead th{
-  position:sticky;
-  top:0;
-  z-index:4;
-  background:#dcebd5;
-  color:#214b24;
-  font-weight:900;
-  height:31px
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #dcebd5;
+  color: #214b24;
+  font-weight: 900;
+  height: 31px;
 }
 
-.time-head{
-  min-width:115px
+.time-head {
+  min-width: 115px;
 }
 
-.date-row th{
-  background:#c9d9ec;
-  color:#334b68;
-  height:28px
+.date-row th {
+  background: #c9d9ec;
+  color: #334b68;
+  height: 28px;
 }
 
-.user-head{
-  position:sticky;
-  left:0;
-  z-index:8;
-  min-width:135px;
-  background:#dcebd5
+.user-head {
+  position: sticky;
+  left: 0;
+  z-index: 8;
+  min-width: 135px;
+  background: #dcebd5;
 }
 
-.user-cell{
-  position:sticky;
-  left:0;
-  z-index:3;
-  text-align:left;
-  padding:5px 8px;
-  background:#fff;
-  min-width:135px;
-  font-weight:800
+.user-cell {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  text-align: left;
+  padding: 5px 8px;
+  background: #fff;
+  min-width: 135px;
+  font-weight: 800;
 }
 
-.status{
-  min-width:115px;
-  height:42px;
-  padding:3px 5px;
-  font-size:10px;
-  font-weight:800;
-  vertical-align:middle
+/* =========================
+   STATUS CELL
+========================= */
+
+.status {
+  min-width: 115px;
+  height: 52px;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: middle;
 }
 
-.status-empty{
-  background:#fff;
-  color:transparent
+.status-empty {
+  background: #fff;
+  color: transparent;
 }
 
 /*
-  Status colors
-  Assigned + Accepted intentionally use the same color.
+  Assigned และ Accepted
+  ใช้สีเดียวกันตาม requirement
 */
 .assigned,
-.accepted{
-  background:#ffc7ce;
-  color:#8d1e28
+.accepted {
+  background: #ffc7ce;
+  color: #8d1e28;
 }
 
-.onsite{
-  background:#c6efce;
-  color:#176b2a
+/* On-Site */
+.onsite {
+  background: #c6efce;
+  color: #176b2a;
 }
 
-.departed{
-  background:#ffe699;
-  color:#865200
+/* Departed */
+.departed {
+  background: #ffe699;
+  color: #865200;
 }
 
-.held{
-  background:#9fd5ff;
-  color:#174e76
+/* Held */
+.held {
+  background: #9fd5ff;
+  color: #174e76;
 }
 
-.other{
-  background:#eee;
-  color:#444
+/* Other / Unknown */
+.other {
+  background: #eee;
+  color: #444;
 }
 
-.job-id{
-  display:block;
-  font-size:10px;
-  line-height:1.15;
-  font-weight:900
+/* =========================
+   JOB INFORMATION
+========================= */
+
+.job-id {
+  display: block;
+  font-size: 10px;
+  line-height: 1.15;
+  font-weight: 900;
 }
 
-.job-status{
-  display:block;
-  margin-top:2px;
-  font-size:10px;
-  line-height:1.1;
-  font-weight:800
+.job-status {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 800;
 }
 
-.due-status{
-  display:block;
-  margin-top:2px;
-  font-size:10px;
-  line-height:1.1;
-  font-weight:900
+.due-status {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 900;
 }
 
-.due-indue{
-  color:#23833a
+/* Indue */
+.due-indue {
+  color: #23833a;
 }
 
-.due-outdue{
-  color:#c62828
+/* Outdue */
+.due-outdue {
+  color: #c62828;
 }
 
-.due-other{
-  color:#687268
+/* กรณีไม่มีค่า */
+.due-other {
+  color: #687268;
 }
 
-.legend{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  padding:9px 12px;
-  background:#f8fbf6;
-  border-top:1px solid #dce8d8
+/* =========================
+   LEGEND
+========================= */
+
+.legend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  background: #f8fbf6;
+  border-top: 1px solid #dce8d8;
 }
 
-.legend span{
-  padding:4px 9px;
-  border:1px solid #d5dfd1;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:800
+.legend span {
+  padding: 4px 9px;
+  border: 1px solid #d5dfd1;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.dot{
-  display:inline-block;
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  margin-right:5px;
-  vertical-align:-1px
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: -1px;
 }
 
-.d-assigned{
-  background:#f26a6a
+/* Legend colors */
+
+.d-assigned {
+  background: #f26a6a;
 }
 
-.d-onsite{
-  background:#56a866
+.d-onsite {
+  background: #56a866;
 }
 
-.d-departed{
-  background:#d18b21
+.d-departed {
+  background: #d18b21;
 }
 
-.d-held{
-  background:#5a9ccc
+.d-held {
+  background: #5a9ccc;
 }
 
-.d-indue{
-  background:#23833a
+.d-indue {
+  background: #23833a;
 }
 
-.d-outdue{
-  background:#c62828
+.d-outdue {
+  background: #c62828;
 }
 
-.empty{
-  padding:30px;
-  text-align:center;
-  color:#788275
+/* =========================
+   EMPTY
+========================= */
+
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: #788275;
 }
 
-@media(max-width:800px){
-  .header-row{
-    align-items:flex-start;
-    flex-direction:column
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 800px) {
+
+  .header-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .note{
-    margin-left:0
+  .note {
+    margin-left: 0;
   }
 
-  .table-wrap{
-    max-height:none
+  .table-wrap {
+    max-height: none;
   }
 
-  .shell{
-    padding:7px
+  .shell {
+    padding: 7px;
   }
+
 }
 </style>
 </head>
 
 <body>
+
 <div class="shell">
 
-<header class="header">
-  <div class="header-row">
-    <div>
-      <h1>🕒 Resource Monitor</h1>
-      <div class="subtitle">
-        แสดง Current Status พร้อม Indue / Outdue จาก Create Time
+  <!-- =========================
+       HEADER
+  ========================== -->
+
+  <header class="header">
+
+    <div class="header-row">
+
+      <div>
+
+        <h1>
+          🕒 Resource Monitor
+        </h1>
+
+        <div class="subtitle">
+          แสดง Current Status พร้อม Indue / Outdue จาก Create Time
+        </div>
+
       </div>
+
+      <div class="update">
+        Last Update:
+        <b>{{ last_update or '-' }}</b>
+      </div>
+
     </div>
 
-    <div class="update">
-      Last Update: <b>{{ last_update or '-' }}</b>
-    </div>
-  </div>
-</header>
+  </header>
 
-<nav class="page-nav">
-  <a href="/">🏠 Status Team</a>
-  <a href="/job_monitor">📋 Job Monitor</a>
-  <a href="/daily_osp_remain">📈 Daily Job OSP Remain</a>
-</nav>
 
-<div class="toolbar">
-  <label for="dateSelect">วันที่</label>
+  <!-- =========================
+       NAVIGATION
+  ========================== -->
 
-  <select id="dateSelect"
-          onchange="location.href='/resource_monitor?date='+this.value">
-    {% for d in available_dates %}
-      <option value="{{ d }}"
-        {% if d==selected_date %}selected{% endif %}>
-        {{ d }}
-      </option>
-    {% endfor %}
+  <nav class="page-nav">
 
-    {% if not available_dates %}
-      <option value="{{ selected_date }}">{{ selected_date }}</option>
-    {% endif %}
-  </select>
+    <a href="/">
+      🏠 Status Team
+    </a>
 
-  <span class="note">
-    สี = Current Status |
-    รูปแบบ = Job ID (Status) — Indue/Outdue |
-    Job ID เดิมติดกันจะรวมช่อง
-  </span>
-</div>
+    <a href="/job_monitor">
+      📋 Job Monitor
+    </a>
 
-<section class="panel">
+    <a href="/daily_osp_remain">
+      📈 Daily Job OSP Remain
+    </a>
 
-  <div class="panel-head">
-    <div class="panel-title">
-      Resource Status — {{ selected_date }}
-    </div>
+    <a href="/resource_monitor" class="active">
+      🕒 Resource Monitor
+    </a>
 
-    <div class="panel-note">
-      ทุก User / ทุก 30 นาที
-    </div>
-  </div>
+  </nav>
 
-  {% if users %}
 
-  <div class="table-wrap">
-    <table>
+  <!-- =========================
+       TOOLBAR
+  ========================== -->
 
-      <thead>
-        <tr class="date-row">
-          <th class="user-head">User</th>
+  <div class="toolbar">
 
-          {% for slot in slots %}
-            <th class="time-head">{{ slot }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
+    <label for="dateSelect">
+      วันที่
+    </label>
 
-      <tbody>
+    <select
+      id="dateSelect"
+      onchange="location.href='/resource_monitor?date=' + this.value"
+    >
 
-      {% for row in display_rows %}
+      {% for d in available_dates %}
 
-        <tr>
-          <td class="user-cell">{{ row.user }}</td>
-
-          {% for cell in row.cells %}
-
-            {% set jid = cell.job_id|default('', true)|trim %}
-            {% set st = cell.status|default('', true)|trim %}
-            {% set low = st|lower %}
-            {% set due = cell.due_status|default('', true)|trim %}
-            {% set due_low = due|lower %}
-
-            <td
-              class="status
-                {% if not jid %}
-                  status-empty
-                {% elif 'on-site' in low or 'onsite' in low %}
-                  onsite
-                {% elif 'departed' in low %}
-                  departed
-                {% elif 'accepted' in low %}
-                  accepted
-                {% elif 'assigned' in low %}
-                  assigned
-                {% elif 'held' in low %}
-                  held
-                {% else %}
-                  other
-                {% endif %}"
-              colspan="{{ cell.span }}"
-            >
-
-              {% if jid %}
-
-                <span class="job-id">
-                  {{ jid }}
-                </span>
-
-                <span class="job-status">
-                  ({{ st or '-' }})
-                </span>
-
-                {% if due_low == 'indue' %}
-                  <span class="due-status due-indue">
-                    — Indue
-                  </span>
-                {% elif due_low == 'outdue' %}
-                  <span class="due-status due-outdue">
-                    — Outdue
-                  </span>
-                {% elif due %}
-                  <span class="due-status due-other">
-                    — {{ due }}
-                  </span>
-                {% endif %}
-
-              {% endif %}
-
-            </td>
-
-          {% endfor %}
-
-        </tr>
+        <option
+          value="{{ d }}"
+          {% if d == selected_date %}selected{% endif %}
+        >
+          {{ d }}
+        </option>
 
       {% endfor %}
 
-      </tbody>
-    </table>
+      {% if not available_dates %}
+
+        <option value="{{ selected_date }}">
+          {{ selected_date }}
+        </option>
+
+      {% endif %}
+
+    </select>
+
+
+    <span class="note">
+
+      สี = Current Status |
+
+      รูปแบบ = Job ID (Status) — Indue / Outdue |
+
+      Job ID เดิมติดกันจะรวมช่อง
+
+    </span>
+
   </div>
 
-  <div class="legend">
-    <span>
-      <i class="dot d-assigned"></i>
-      Assigned / Accepted
-    </span>
 
-    <span>
-      <i class="dot d-onsite"></i>
-      On-Site
-    </span>
+  <!-- =========================
+       RESOURCE PANEL
+  ========================== -->
 
-    <span>
-      <i class="dot d-departed"></i>
-      Departed
-    </span>
+  <section class="panel">
 
-    <span>
-      <i class="dot d-held"></i>
-      Held
-    </span>
+    <div class="panel-head">
 
-    <span>
-      <i class="dot d-indue"></i>
-      Indue
-    </span>
+      <div class="panel-title">
+        Resource Status — {{ selected_date }}
+      </div>
 
-    <span>
-      <i class="dot d-outdue"></i>
-      Outdue
-    </span>
-  </div>
+      <div class="panel-note">
+        ทุก User / ทุก 30 นาที
+      </div>
 
-  {% else %}
-
-    <div class="empty">
-      ไม่พบ User
     </div>
 
-  {% endif %}
 
-</section>
+    {% if users %}
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+
+          <tr class="date-row">
+
+            <th class="user-head">
+              User
+            </th>
+
+            {% for slot in slots %}
+
+              <th class="time-head">
+                {{ slot }}
+              </th>
+
+            {% endfor %}
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        {% for row in display_rows %}
+
+          <tr>
+
+            <!-- USER -->
+
+            <td class="user-cell">
+              {{ row.user }}
+            </td>
+
+
+            <!-- TIME SLOTS -->
+
+            {% for cell in row.cells %}
+
+              {% set jid = cell.job_id|default('', true)|trim %}
+              {% set st = cell.status|default('', true)|trim %}
+              {% set low = st|lower %}
+              {% set due = cell.due_status|default('', true)|trim %}
+              {% set due_low = due|lower %}
+
+
+              <td
+
+                class="status
+
+                {% if not jid %}
+
+                  status-empty
+
+                {% elif 'on-site' in low or 'onsite' in low %}
+
+                  onsite
+
+                {% elif 'departed' in low %}
+
+                  departed
+
+                {% elif 'accepted' in low %}
+
+                  accepted
+
+                {% elif 'assigned' in low %}
+
+                  assigned
+
+                {% elif 'held' in low %}
+
+                  held
+
+                {% else %}
+
+                  other
+
+                {% endif %}"
+
+                colspan="{{ cell.span }}"
+
+              >
+
+                {% if jid %}
+
+                  <!-- JOB ID -->
+
+                  <span class="job-id">
+                    {{ jid }}
+                  </span>
+
+
+                  <!-- STATUS -->
+
+                  <span class="job-status">
+                    ({{ st or '-' }})
+                  </span>
+
+
+                  <!-- INDUE / OUTDUE -->
+
+                  {% if due_low == 'indue' %}
+
+                    <span class="due-status due-indue">
+                      — Indue
+                    </span>
+
+                  {% elif due_low == 'outdue' %}
+
+                    <span class="due-status due-outdue">
+                      — Outdue
+                    </span>
+
+                  {% elif due %}
+
+                    <span class="due-status due-other">
+                      — {{ due }}
+                    </span>
+
+                  {% endif %}
+
+                {% endif %}
+
+              </td>
+
+            {% endfor %}
+
+          </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- =========================
+         LEGEND
+    ========================== -->
+
+    <div class="legend">
+
+      <span>
+        <i class="dot d-assigned"></i>
+        Assigned / Accepted
+      </span>
+
+      <span>
+        <i class="dot d-onsite"></i>
+        On-Site
+      </span>
+
+      <span>
+        <i class="dot d-departed"></i>
+        Departed
+      </span>
+
+      <span>
+        <i class="dot d-held"></i>
+        Held
+      </span>
+
+      <span>
+        <i class="dot d-indue"></i>
+        Indue
+      </span>
+
+      <span>
+        <i class="dot d-outdue"></i>
+        Outdue
+      </span>
+
+    </div>
+
+
+    {% else %}
+
+      <div class="empty">
+        ไม่พบ User
+      </div>
+
+    {% endif %}
+
+  </section>
 
 </div>
+
 </body>
 </html>
