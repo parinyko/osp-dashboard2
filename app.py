@@ -762,7 +762,9 @@ def resource_job_for_user(df, user, now=None):
     if user_jobs.empty:
         return empty
 
-    status_col = "Current Status" if "Current Status" in user_jobs.columns else "Status"
+    # Resource Monitor ต้องใช้ Status เดียวกับ Dashboard
+    # เพื่อไม่ให้ Dashboard = On-site แต่ Resource Monitor = Departed
+    status_col = "Status"
     job_col = _find_job_id_column(user_jobs)
     priority_col = "Priority" if "Priority" in user_jobs.columns else None
     create_col = (
