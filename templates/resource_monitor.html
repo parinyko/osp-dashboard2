@@ -173,6 +173,8 @@ body {
 .table-wrap {
   overflow: auto;
   max-height: calc(100vh - 175px);
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 table {
@@ -738,6 +740,65 @@ thead th {
   </section>
 
 </div>
+
+<script>
+/* =========================================================
+   OPEN RESOURCE MONITOR AT THE LATEST TIME — CENTERED
+   - On today's date: center the current 30-minute slot.
+   - On an older selected date: center the latest available slot.
+   - Keeps the User column visible.
+========================================================= */
+(function () {
+  function centerLatestTime() {
+    const wrap = document.querySelector('.table-wrap');
+    const table = wrap && wrap.querySelector('table');
+    if (!wrap || !table) return;
+
+    const headers = Array.from(table.querySelectorAll('thead .time-head'));
+    if (!headers.length) return;
+
+    const selectedDate = '{{ selected_date }}';
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const today = `${yyyy}-${mm}-${dd}`;
+
+    let targetIndex;
+
+    if (selectedDate === today) {
+      // Round down to the latest 00/30 slot.
+      const hour = now.getHours();
+      const minute = now.getMinutes() >= 30 ? 30 : 0;
+      const target = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      targetIndex = headers.findIndex(h => h.textContent.trim() === target);
+    }
+
+    // Historical date: use the latest slot represented by the table.
+    if (targetIndex === undefined || targetIndex < 0) {
+      targetIndex = headers.length - 1;
+    }
+
+    const target = headers[targetIndex];
+    if (!target) return;
+
+    // Center the selected time column inside the visible table area.
+    const targetCenter = target.offsetLeft + (target.offsetWidth / 2);
+    const desiredLeft = targetCenter - (wrap.clientWidth / 2);
+    const maxLeft = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+
+    wrap.scrollLeft = Math.max(0, Math.min(desiredLeft, maxLeft));
+  }
+
+  window.addEventListener('load', function () {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(centerLatestTime);
+    });
+  });
+
+  window.addEventListener('resize', centerLatestTime);
+})();
+</script>
 
 </body>
 </html>
