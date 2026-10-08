@@ -1088,7 +1088,12 @@ def parse_available_on(remark, now=None):
 # Order requested for Dashboard OSP BKK.  FTTX / EDS IPLC are intentionally
 # excluded from this summary because they are not part of the requested groups.
 OSP_AGING_GROUPS = [
-    ("EDS", ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP"]),
+    ("EDS", [
+    "EDS-OSP",
+    "ETS-OSP",
+    "EDS SW NODE-OSP",
+    "EDS IPLC-OSP",
+]),
     ("FBB", ["FTTB-OSP", "FTTH-OSP", "Splitter-OSP"]),
     ("MBB", ["Transmission-OSP"]),
 ]
