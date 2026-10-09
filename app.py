@@ -92,6 +92,7 @@ ASSIGN_ORDER = [
     "Extrcwt G",
     "Extrcwt H",
     "Exspare A",
+    "Exspare B",
     "Kitsada Wiraphan",
     "Poolsak Saenmee",
     "Chawalit Bunrod",
@@ -158,6 +159,7 @@ TEAM_DATA = [
     {"zone": "CWT", "user": "Extrcwt H"},
 
     {"zone": "Team Spare", "user": "Exspare A"},
+    {"zone": "Team Spare", "user": "Exspare B"},
 
     {"zone": "BKK2", "user": "Kitsada Wiraphan"},
     {"zone": "BKK2", "user": "Poolsak Saenmee"},
@@ -236,7 +238,8 @@ AREA_DATA = {
     "Exeds A": "All Zone (เน้น RRU กับงานภายในห้าง ทุกโซน)",
     "Exeds B": "All Zone",
 
-    "Exspare A": "ปากเกร็ด บางบัวทอง ไทรน้อย"
+    "Exspare A": "All Zone"
+    "Exspare B": "All Zone"
 }
 
 def get_status_color(status_text):
