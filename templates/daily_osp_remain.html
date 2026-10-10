@@ -33,6 +33,7 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 12px;min-height:34px}.chip{display:inline-flex;align-items:center;gap:6px;background:#eef7e6;border:1px solid #cfe3bf;color:#397817;border-radius:999px;padding:5px 6px 5px 12px;font-weight:800;font-size:15px}
 .chip button{border:0;background:#fff;color:#c62828;border-radius:50%;width:22px;height:22px;cursor:pointer;font-weight:900;line-height:1}.chips .none{color:#a0522d;font-size:13px;align-self:center}
 .add-row{display:flex;gap:8px;align-items:center}.add-row input{flex:1;padding:7px 10px;border:1px solid #cfe0c5;border-radius:9px;font-size:15px}
+.pw-row{display:flex;gap:8px;align-items:center;margin-top:12px}.pw-row label{font-size:13px;font-weight:800;color:#397817;white-space:nowrap}.pw-row input{flex:1;padding:7px 10px;border:1px solid #cfe0c5;border-radius:9px;font-size:15px}
 .err{color:#c62828;font-size:12px;min-height:16px;margin-top:6px}.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 @media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.header-row{align-items:flex-start}.title{font-size:22px}}
 </style>
@@ -122,6 +123,9 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
       <input type="time" id="scheduleInput" step="60">
       <button type="button" class="btn btn-light" onclick="addScheduleTime()">+ เพิ่มรอบ</button>
     </div>
+    {% if schedule_locked %}
+    <div class="pw-row"><label for="schedulePassword">🔒 รหัสยืนยัน</label><input type="password" id="schedulePassword" inputmode="numeric" autocomplete="off" placeholder="กรอกรหัสก่อนบันทึก"></div>
+    {% endif %}
     <div id="scheduleError" class="err"></div>
     <div class="modal-foot">
       <button type="button" class="btn btn-light" onclick="closeSchedule()">ยกเลิก</button>
@@ -332,6 +336,7 @@ function openSchedule(){
   draftTimes=[...scheduleTimes];
   document.getElementById('scheduleError').textContent='';
   document.getElementById('scheduleInput').value='';
+  const pw=document.getElementById('schedulePassword'); if(pw) pw.value='';
   renderChips();
   document.getElementById('scheduleModal').classList.add('open');
 }
@@ -347,15 +352,18 @@ function addScheduleTime(){
 }
 function removeScheduleTime(i){ draftTimes.splice(i,1); renderChips(); }
 document.getElementById('scheduleInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addScheduleTime(); });
+document.getElementById('schedulePassword')?.addEventListener('keydown',e=>{ if(e.key==='Enter') saveSchedule(); });
 async function saveSchedule(){
   const btn=document.getElementById('scheduleSave');
   const err=document.getElementById('scheduleError');
   // เวลาที่เลือกค้างไว้แต่ยังไม่กดเพิ่ม ให้นับรวมด้วย
   const pending=(document.getElementById('scheduleInput').value||'').slice(0,5);
   if(pending && !draftTimes.includes(pending)){ draftTimes.push(pending); draftTimes.sort(); }
+  const pwInput=document.getElementById('schedulePassword');
+  if(pwInput && !pwInput.value){ err.textContent='กรอกรหัสก่อนบันทึก'; pwInput.focus(); return; }
   btn.disabled=true; btn.textContent='กำลังบันทึก…'; err.textContent='';
   try{
-    const r=await fetch('/daily_osp_schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({times:draftTimes})});
+    const r=await fetch('/daily_osp_schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({times:draftTimes,password:pwInput?pwInput.value:''})});
     const j=await r.json();
     if(!r.ok||!j.success) throw new Error(j.message||('HTTP '+r.status));
     location.reload();

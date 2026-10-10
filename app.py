@@ -168,6 +168,14 @@ def load_daily_osp_times():
     return list(DAILY_OSP_DEFAULT_TIMES)
 
 DAILY_OSP_TIMES = load_daily_osp_times()
+
+# Password for changing the schedule. Set on the server (deploy compose), never in this public repo.
+# Unset = no password (local dev).
+SCHEDULE_PASSWORD = os.environ.get("SCHEDULE_PASSWORD", "")
+SCHEDULE_FAILS = {}   # client ip -> [timestamps of wrong passwords]
+
+def client_ip():
+    return request.headers.get("CF-Connecting-IP") or request.remote_addr or "-"
 RESOURCE_HISTORY = load_history(RESOURCE_FILE)
 DATA, RAW_DATA, ORIGINAL_DATA = [], [], []
 LAST_UPDATE = "-"
@@ -842,14 +850,25 @@ def daily_osp_remain():
     if not RAW_DATA: load_latest_excel_into_memory()
     return render_template("daily_osp_remain.html",records=list(reversed(DAILY_OSP_HISTORY)),
         latest=DAILY_OSP_HISTORY[-1] if DAILY_OSP_HISTORY else None,subsystem_names=VALID_SUBSYSTEMS,
-        current_jobs=TOTAL_JOBS,last_update=LAST_UPDATE,schedule_times=DAILY_OSP_TIMES)
+        current_jobs=TOTAL_JOBS,last_update=LAST_UPDATE,schedule_times=DAILY_OSP_TIMES,
+        schedule_locked=bool(SCHEDULE_PASSWORD))
 
 @app.route("/daily_osp_schedule",methods=["GET","POST"])
 def daily_osp_schedule():
     global DAILY_OSP_TIMES
     if request.method == "GET":
         return jsonify(success=True,times=DAILY_OSP_TIMES)
-    raw = (request.get_json(silent=True) or {}).get("times")
+    body = request.get_json(silent=True) or {}
+    if SCHEDULE_PASSWORD:
+        ip, now_ts = client_ip(), time.time()
+        fails = [t for t in SCHEDULE_FAILS.get(ip, []) if now_ts - t < 600]
+        if len(fails) >= 5:
+            return jsonify(success=False,message="ใส่รหัสผิดหลายครั้ง ลองใหม่ใน 10 นาที"),429
+        if str(body.get("password", "")) != SCHEDULE_PASSWORD:
+            SCHEDULE_FAILS[ip] = fails + [now_ts]
+            return jsonify(success=False,message="รหัสไม่ถูกต้อง"),401
+        SCHEDULE_FAILS.pop(ip, None)
+    raw = body.get("times")
     if not isinstance(raw, list):
         return jsonify(success=False,message="รูปแบบข้อมูลไม่ถูกต้อง"),400
     bad = [str(t) for t in raw if not TIME_RE.match(str(t).strip())]
