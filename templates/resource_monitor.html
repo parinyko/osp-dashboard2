@@ -171,6 +171,7 @@ body {
 ========================= */
 
 .table-wrap {
+  cursor: grab;
   overflow: auto;
   max-height: calc(100vh - 175px);
   scroll-behavior: smooth;
@@ -349,6 +350,16 @@ td[data-others] {
   font-size: 12px;
   font-weight: 900;
   color: #315a28;
+}
+
+.table-wrap.dragging {
+  cursor: grabbing;
+  user-select: none;
+  scroll-behavior: auto;
+}
+
+.table-wrap.dragging td {
+  cursor: grabbing;
 }
 
 tr.row-hidden {
@@ -1075,6 +1086,35 @@ function goDate(d) {
   }
   // Ctrl / ⌘ + wheel on the table zooms the table instead of the whole page.
   const wrap = document.querySelector('.table-wrap');
+  // Click-and-drag pans the table (left/right and up/down). A drag never opens the job popup.
+  if (wrap) {
+    let drag = null;
+    wrap.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || e.target.closest('a, button, select, input')) return;
+      drag = { x: e.clientX, y: e.clientY, left: wrap.scrollLeft, top: wrap.scrollTop, moved: false };
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+      if (!drag.moved) { drag.moved = true; wrap.classList.add('dragging'); }
+      wrap.scrollLeft = drag.left - dx;
+      wrap.scrollTop = drag.top - dy;
+      e.preventDefault();
+    });
+    window.addEventListener('mouseup', () => {
+      if (!drag) return;
+      if (drag.moved) {
+        wrap.classList.remove('dragging');
+        // swallow the click that ends a drag so it doesn't open the popup
+        const swallow = (ev) => ev.stopPropagation();
+        window.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 50);
+      }
+      drag = null;
+    });
+  }
+
   if (wrap) wrap.addEventListener('wheel', (e) => {
     if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
