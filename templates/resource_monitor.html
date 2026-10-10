@@ -244,6 +244,15 @@ thead th {
   vertical-align: middle;
 }
 
+.site-code {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
 .user-zone {
   display: block;
   font-size: 9px;
@@ -298,6 +307,12 @@ td[data-others] {
 
 .jobs-pop .jp-row.main {
   border-top: 0;
+}
+
+.jobs-pop .jp-site {
+  flex: 1;
+  color: #315d29;
+  font-weight: 900;
 }
 
 .jobs-pop .jp-st {
@@ -640,7 +655,7 @@ tr.row-hidden {
 
       สี = Current Status |
 
-      รูปแบบ = Job ID (Status) — Indue / Outdue |
+      รูปแบบ = Job ID · SITE_CODE (Status) — Indue / Outdue |
 
       Job ID + สถานะเดิมติดกันจะรวมช่อง | +N = มีงานอื่นค้างอีก N งาน (กดที่ช่องเพื่อดูเลข JB)
 
@@ -755,8 +770,8 @@ tr.row-hidden {
                 {% endif %}"
 
                 colspan="{{ cell.span }}"
-                {% if jid %}title="{{ cell.time }} · {{ jid }} ({{ st or '-' }}){% if cell.priority %} · {{ cell.priority }}{% endif %}{% for o in cell.other_jobs %}&#10;+ {{ o.job_id }} ({{ o.status or '-' }}){% endfor %}{% if cell.others and not cell.other_jobs %} · มีงานอื่นอีก {{ cell.others }} งาน{% endif %}"{% endif %}
-                {% if cell.other_jobs %}data-main='{{ {"job_id": jid, "status": st, "time": cell.time}|tojson }}' data-others='{{ cell.other_jobs|tojson }}' onclick="showJobs(this, event)"{% endif %}
+                {% if jid %}title="{{ cell.time }} · {{ jid }}{% if cell.site %} [{{ cell.site }}]{% endif %} ({{ st or '-' }}){% if cell.priority %} · {{ cell.priority }}{% endif %}{% for o in cell.other_jobs %}&#10;+ {{ o.job_id }}{% if o.site %} [{{ o.site }}]{% endif %} ({{ o.status or '-' }}){% endfor %}{% if cell.others and not cell.other_jobs %} · มีงานอื่นอีก {{ cell.others }} งาน{% endif %}"{% endif %}
+                {% if cell.other_jobs %}data-main='{{ {"job_id": jid, "status": st, "time": cell.time, "site": cell.site}|tojson }}' data-others='{{ cell.other_jobs|tojson }}' onclick="showJobs(this, event)"{% endif %}
 
               >
 
@@ -767,6 +782,7 @@ tr.row-hidden {
                   <span class="job-id">
                     {{ jid }}
                   </span>
+                  {% if cell.site %}<span class="site-code">{{ cell.site }}</span>{% endif %}
 
 
                   <!-- STATUS -->
@@ -942,7 +958,7 @@ function showJobs(td, e) {
   const main = JSON.parse(td.dataset.main || '{}');
   const others = JSON.parse(td.dataset.others || '[]');
   const esc = (v) => String(v || '-').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const row = (j, cls) => '<div class="jp-row ' + cls + '"><span>' + esc(j.job_id) + '</span><span class="jp-st">' + esc(j.status) + '</span></div>';
+  const row = (j, cls) => '<div class="jp-row ' + cls + '"><span>' + esc(j.job_id) + '</span><span class="jp-site">' + (j.site ? esc(j.site) : '') + '</span><span class="jp-st">' + esc(j.status) + '</span></div>';
   pop.innerHTML = '<b>' + (others.length + 1) + ' งานของทีมนี้ · ' + esc(main.time) + '</b>' + row(main, 'main') + others.map(o => row(o, '')).join('');
   pop.style.display = 'block';
   const r = pop.getBoundingClientRect();

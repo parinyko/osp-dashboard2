@@ -329,6 +329,18 @@ def status_rank(status):
     low = clean_text(status).lower()
     return max((r for k, r in STATUS_RANK if k in low), default=0)
 
+# The JobMonitor export has no SITE_CODE column, but every Job Title starts with it:
+# "[Important] PADUM-[1605]SitePriority=..." -> PADUM (matches SITE_CODE of the
+# "Data Job done" export for 99.6% of jobs; the rest carry a sub-site suffix like LWSWB_RM).
+TITLE_TAGS_RE = re.compile(r"^(\s*\[[^\]]*\]\s*)+")
+SITE_CODE_RE = re.compile(r"[A-Za-z0-9_./]{2,40}")
+
+def site_code_from_title(title):
+    t = TITLE_TAGS_RE.sub("", clean_text(title))
+    if "-" not in t: return ""
+    code = t.split("-", 1)[0].strip()
+    return code if SITE_CODE_RE.fullmatch(code) else ""
+
 # Resource Monitor company filter: zone -> company.
 ZONE_COMPANY = {"DMP": "DMP", "Origin": "Origin"}
 
@@ -344,16 +356,17 @@ def save_resource_snapshot():
         user=t["user"]
         jobs = df[df["Assign to"].fillna("").astype(str).str.strip().str.casefold()==user.casefold()] if "Assign to" in df else df.iloc[0:0]
         job_list = [{"job_id":clean_text(j.get("Job ID",j.get("JobID",""))),"status":clean_text(j.get("Status","")),
-                     "priority":clean_text(j.get("Priority","")),"create_time":clean_text(j.get("Create Time",""))}
+                     "priority":clean_text(j.get("Priority","")),"create_time":clean_text(j.get("Create Time","")),
+                     "site":site_code_from_title(j.get("Job Title",""))}
                     for j in jobs.to_dict("records")]
         # Each cell used to show the first job with every job's status joined ("Accepted, On-Site"),
         # so the status often belonged to another job. Show the team's current job with its own status.
         main = max(job_list, key=lambda j: status_rank(j["status"])) if job_list else {}
         rows.append({"zone":t["zone"],"user":user,"status":main.get("status",""),"job_id":main.get("job_id",""),
-                     "priority":main.get("priority",""),"create_time":main.get("create_time",""),
+                     "priority":main.get("priority",""),"create_time":main.get("create_time",""),"site":main.get("site",""),
                      "due_status":resource_due_status(main.get("priority",""),main.get("create_time",""),stamp),
                      "job_count":len(job_list),
-                     "others":[{"job_id":j["job_id"],"status":j["status"]} for j in job_list if j is not main]})
+                     "others":[{"job_id":j["job_id"],"status":j["status"],"site":j["site"]} for j in job_list if j is not main]})
     rec={"date":stamp.strftime("%Y-%m-%d"),"time":stamp.strftime("%H:%M"),"timestamp":stamp.isoformat(),"rows":rows}
     RESOURCE_HISTORY.append(rec)
     RESOURCE_HISTORY=RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
@@ -844,7 +857,7 @@ def resource_monitor():
     for rec in day_records:
         for row in rec.get("rows",[]):
             if row.get("user") in matrix:
-                cell={k:clean_text(row.get(k,"")) for k in ("job_id","status","priority","create_time","due_status")}
+                cell={k:clean_text(row.get(k,"")) for k in ("job_id","status","priority","create_time","due_status","site")}
                 cell["other_jobs"]=[o for o in (row.get("others") or []) if isinstance(o,dict)]
                 cell["others"]=max(int(row.get("job_count") or 0)-1,len(cell["other_jobs"]),0)
                 matrix[row["user"]][rec.get("time","")]=cell
@@ -864,7 +877,7 @@ def resource_monitor():
                     if clean_text(nxt.get("job_id",""))!=jid or clean_text(nxt.get("status",""))!=st: break
                     span+=1
             last=cell_at(u["user"],slots[pos+span-1])   # latest snapshot of the span: Indue may have become Outdue
-            cells.append({"job_id":jid,"status":st,"priority":clean_text(cur.get("priority","")),
+            cells.append({"job_id":jid,"status":st,"priority":clean_text(cur.get("priority","")),"site":clean_text(cur.get("site","") or last.get("site","")),
                 "create_time":clean_text(cur.get("create_time","")),"due_status":clean_text(last.get("due_status","")),
                 "others":last.get("others",0) if jid else 0,"other_jobs":last.get("other_jobs",[]) if jid else [],
                 "span":span,"time":slots[pos]})
