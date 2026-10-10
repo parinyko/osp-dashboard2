@@ -251,10 +251,10 @@ map.on("load", async () => {
   map.addSource("kmz", {type: "geojson", data: {type: "FeatureCollection", features: []}});
   map.addSource("faults", {type: "geojson", data: {type: "FeatureCollection", features: []}});
 
-  map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", ["get", "sev"], 0],
+  map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", ["coalesce", ["get", "sev"], 0], 0],
     paint: {"fill-color": "#22a052", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0.13, 14.5, 0.02]}});
   map.addLayer({id: "district-alert", type: "fill", source: "districts", filter: [">", ["coalesce", ["get", "sev"], 0], 0],
-    paint: {"fill-color": ["match", ["get", "sev"], 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.3}});
+    paint: {"fill-color": ["match", ["coalesce", ["get", "sev"], 0], 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.3}});
   map.addLayer({id: "district-line", type: "line", source: "districts",
     paint: {"line-color": "#ffffff", "line-width": 1, "line-opacity": 0.9}});
   map.addLayer({id: "zone-line", type: "line", source: "zones",
