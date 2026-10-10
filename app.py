@@ -976,7 +976,7 @@ def rebuild_site_table():
 def map_company(team_zone):
     """Company of the team a job is assigned to — the Job Map's first filter row."""
     if not team_zone:
-        return "Pool"          # Workforce BKK Pool: not dispatched to a team yet
+        return "Workforce"     # Workforce BKK Pool: not dispatched to a team yet
     if team_zone in DASHBOARD_EXCLUDED_ZONES:
         return "AIS"
     return zone_company(team_zone)

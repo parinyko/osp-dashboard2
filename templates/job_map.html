@@ -15,6 +15,12 @@
   --crit:#E11D48;--major:#EA580C;--minor:#CA8A04;--late:#BE123C;--ok:#15803D;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
+html[data-theme="dark"]{
+  --ground:#0B1017;--surface:#111823;--line:#1F2A37;--line2:#2D3B4D;--ink:#E6EDF3;--ink2:#C3CEDB;--muted:#8B98A9;
+  --accent:#38BDF8;--accent-soft:rgba(56,189,248,.14);--accent-line:#0EA5E9;
+  --crit:#FB7185;--major:#FB923C;--minor:#FACC15;--late:#F43F5E;--ok:#4ADE80;
+  color-scheme:dark;
+}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans Thai",system-ui,sans-serif}
 button{font:inherit}
@@ -53,7 +59,7 @@ button{font:inherit}
 /* map stage */
 .stage{position:relative;min-height:0}
 #map{position:absolute;inset:0}
-.panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10);backdrop-filter:blur(6px)}
+.panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10)}
 .queue{position:absolute;left:14px;top:14px;bottom:14px;width:400px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
 .qhead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px 14px}
 .qhead b{font-size:14px}.qhead small{font-size:11.5px;color:var(--muted)}
@@ -122,7 +128,10 @@ button{font:inherit}
 .callout{position:absolute;width:360px;display:none;flex-direction:column;z-index:6}
 .callout.open{display:flex;animation:pop .18s ease}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 14px 10px;border-bottom:1px solid var(--line);cursor:grab;touch-action:none;user-select:none}
+.callout.dragging .ch{cursor:grabbing}
+.callout.dragging{box-shadow:0 18px 48px rgba(15,23,42,.25)}
+.grip{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);margin-top:6px}
 .ch .id{font-family:var(--mono);font-size:18px;font-weight:600}
 .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .badge{font-size:11.5px;font-weight:600;border-radius:6px;padding:1px 8px;line-height:20px;border:1px solid transparent}
@@ -185,6 +194,35 @@ button{font:inherit}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
 .maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;box-shadow:0 6px 20px rgba(15,23,42,.15)}
 .kmz-hover .maplibregl-popup-content{padding:6px 9px}
+html[data-theme="dark"] .panel{background:rgba(17,24,35,.97);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+html[data-theme="dark"] .row{border-bottom-color:#18212D}
+html[data-theme="dark"] .row:hover{background:#151E2A}
+html[data-theme="dark"] .seg button.on{box-shadow:0 1px 2px rgba(0,0,0,.4)}
+html[data-theme="dark"] .st-assigned{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35);color:#FDA4AF}
+html[data-theme="dark"] .st-accepted{background:rgba(236,72,153,.12);border-color:rgba(236,72,153,.35);color:#F9A8D4}
+html[data-theme="dark"] .st-departed{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#FCD34D}
+html[data-theme="dark"] .st-onsite{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86EFAC}
+html[data-theme="dark"] .st-held{background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.4);color:#93C5FD}
+html[data-theme="dark"] .st-transfered{background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.4);color:#C4B5FD}
+html[data-theme="dark"] .st-done,html[data-theme="dark"] .st-other{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.3);color:#CBD5E1}
+html[data-theme="dark"] .tag.sp{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35)}
+html[data-theme="dark"] .tag.net{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.35)}
+html[data-theme="dark"] .b-crit{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35)}
+html[data-theme="dark"] .b-major{background:rgba(251,146,60,.12);border-color:rgba(251,146,60,.35);color:#FDBA74}
+html[data-theme="dark"] .b-minor{background:rgba(250,204,21,.12);border-color:rgba(250,204,21,.35);color:#FDE047}
+html[data-theme="dark"] .faults{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.35)}
+html[data-theme="dark"] .fault{border-top-color:rgba(244,63,94,.25)}
+html[data-theme="dark"] .fault[data-lat]:hover{background:rgba(244,63,94,.16)}
+html[data-theme="dark"] .pos.exact{background:rgba(34,197,94,.12);color:#86EFAC}
+html[data-theme="dark"] .pos.site{color:#7DD3FC}
+html[data-theme="dark"] .pos.area{background:rgba(148,163,184,.12)}
+html[data-theme="dark"] .zl{background:rgba(17,24,35,.95)}
+html[data-theme="dark"] .btn.primary{color:#04121C}
+html[data-theme="dark"] .btn.primary:hover{background:#7DD3FC}
+html[data-theme="dark"] .maplibregl-popup-content{background:#111823;color:#E6EDF3}
+html[data-theme="dark"] .maplibregl-popup-tip{border-top-color:#111823;border-bottom-color:#111823}
+html[data-theme="dark"] .maplibregl-ctrl-attrib{background:rgba(17,24,35,.8);color:#8B98A9}
+html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 @media (prefers-reduced-motion: reduce){.callout.open{animation:none}}
@@ -200,6 +238,10 @@ button{font:inherit}
   .search{min-width:0;flex:1 1 200px}
 }
 </style>
+<script>
+  // theme before first paint (no flash): saved choice, default light
+  try { if (localStorage.getItem("jm.theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}
+</script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -221,6 +263,9 @@ button{font:inherit}
   <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></symbol>
   <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M6 16l4-5 4 3 5-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -237,6 +282,7 @@ button{font:inherit}
       <span class="sr">ค้นหางาน</span>
       <input id="q" type="search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
     </label>
+    <button class="iconbtn" id="themeBtn" style="width:40px;height:40px" aria-label="สลับโหมดมืด" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg></button>
     <nav class="links" aria-label="หน้าอื่น">
       <a href="/"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>หน้าแรก</span></a>
       <a href="/job_monitor"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg><span>Job Monitor</span></a>
@@ -307,7 +353,8 @@ button{font:inherit}
 
     <article class="callout panel" id="callout" aria-label="รายละเอียดงาน">
       <div class="ch">
-        <div><div class="id" id="cId">-</div><div class="badges" id="cBadges"></div></div>
+        <div><div class="id" id="cId">-</div><div class="badges" id="cBadges"></div>
+          <div class="grip"><svg class="ico" style="width:14px;height:14px" aria-hidden="true"><use href="#i-move"/></svg>ลากที่หัวการ์ดเพื่อย้ายไปวางที่อื่น</div></div>
         <span style="display:flex;gap:6px">
           <button class="iconbtn" id="cFold" aria-label="ย่อรายละเอียด" aria-expanded="true"><svg class="ico" aria-hidden="true"><use href="#i-chev-up"/></svg></button>
           <button class="iconbtn" id="cClose" aria-label="ปิดรายละเอียด"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
@@ -351,7 +398,7 @@ const store = {get: (k) => { try { return localStorage.getItem("jm." + k); } cat
 let jobs = [], selected = null, lastUpdated = null;
 // filters: zone (header), company / priority / status rows, extra toggles; status "" = every open job (not Done)
 const view = {area: "", company: "", pri: "", status: "", flags: new Set(), q: ""};
-const COMPANIES = [["DMP", "DMP"], ["Origin", "Origin"], ["Ex-Press", "Ex-Press"], ["AIS", "AIS"], ["Pool", "ยังไม่จ่ายทีม"]];
+const COMPANIES = [["DMP", "DMP"], ["Origin", "Origin"], ["Ex-Press", "Ex-Press"], ["AIS", "AIS"], ["Workforce", "Workforce"]];
 const STATUSES = [["assigned", "Assigned", "#E11D48"], ["accepted", "Accepted", "#DB2777"], ["departed", "Departed", "#D97706"],
                   ["onsite", "On-Site", "#16A34A"], ["held", "Held", "#2563EB"], ["transfered", "Transfered", "#7C3AED"], ["done", "Done", "#475569"]];
 const statusKey = (j) => {
@@ -449,16 +496,17 @@ function setupLayers() {
   map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: kind("point"),
     paint: {"circle-color": ["coalesce", ["get", "icon"], "#EC4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
             "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
-  const halo = {"text-color": "#0F172A", "text-halo-color": "#FFFFFF", "text-halo-width": 1.6};
+  const halo = dark ? {"text-color": "#E6EDF3", "text-halo-color": "#0B1017", "text-halo-width": 1.6}
+                    : {"text-color": "#0F172A", "text-halo-color": "#FFFFFF", "text-halo-width": 1.6};
   map.addLayer({id: "kmz-line-label", type: "symbol", source: "kmz", minzoom: 14, filter: kind("line"),
     layout: {"symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-max-angle": 30, "symbol-spacing": 280},
-    paint: {...halo, "text-color": "#075985"}});
+    paint: {...halo, "text-color": dark ? "#7DD3FC" : "#075985"}});
   map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 15.5, filter: kind("point"),
     layout: {"text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 10, "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true},
     paint: halo});
   map.addLayer({id: "kmz-poly-label", type: "symbol", source: "kmz", minzoom: 15, filter: kind("polygon"),
     layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-optional": true},
-    paint: {...halo, "text-color": "#7C2D12"}});
+    paint: {...halo, "text-color": dark ? "#FDBA74" : "#7C2D12"}});
   map.addLayer({id: "kmz-fault-halo", type: "circle", source: "kmz", filter: ["has", "fault"],
     paint: {"circle-color": "transparent", "circle-stroke-color": "#BE123C", "circle-stroke-width": 3, "circle-radius": 12, "circle-stroke-opacity": 0.8}});
 
@@ -563,7 +611,7 @@ function animate() {
   if (REDUCED) return;
   let last = 0;
   const frame = (t) => {
-    if (t - last > 33 && map.getLayer("district-alert")) {
+    if (t - last > 50 && !map.isMoving() && map.getLayer("district-alert")) {
       last = t;
       const blink = 0.5 + 0.5 * Math.sin(t / 1600 * 2 * Math.PI);
       const fade = Math.min(1, Math.max(0.1, (14.5 - map.getZoom()) / 3));
@@ -764,7 +812,7 @@ function select(id, fly) {
   const pb = {critical: "b-crit", major: "b-major", minor: "b-minor"}[j._p] || "b-status";
   $("cBadges").innerHTML = (j._out ? `<span class="badge b-late">เกินเวลา</span>` : "") +
     `<span class="badge ${pb}">${esc(j.priority)}</span><span class="badge tag st-${j._s}" style="font-size:11.5px">${esc(statusLabel(j))}</span>` +
-    `<span class="badge b-status">${esc({Pool: "ยังไม่จ่ายทีม", AIS: "AIS"}[j.company] || j.company)}</span>`;
+    `<span class="badge b-status">${esc(j.company)}</span>`;
   const pos = {
     job: ["exact", "pin", "ตำแหน่งตรงจุดจากพิกัดในใบงาน"],
     kmz: ["exact", "pin", "ตำแหน่ง Splitter ในแบบโครงข่าย (ตามชื่อในใบงาน)"],
@@ -799,16 +847,16 @@ function select(id, fly) {
   if ($("cKmz")) $("cKmz").onclick = () => openKmz(j.site);
   $("cCopy").onclick = () => navigator.clipboard.writeText(j.id).then(() => toast(`คัดลอก ${j.id} แล้ว`));
   $("callout").classList.add("open");
-  // a refresh, or picking another job while a drawing is open, keeps the card as it was; otherwise show it in full
-  const keep = fly === null || $("kmzCard").classList.contains("open");
-  foldCallout(keep ? $("callout").classList.contains("compact") : false);
+  // a refresh keeps the card as it was (folded or not); picking a job shows it in full
+  foldCallout(fly === null ? $("callout").classList.contains("compact") : false);
   history.replaceState(null, "", "/map?job=" + encodeURIComponent(id));
 }
 
 // The callout sits beside its pin and follows it while the map moves.
+let calloutPinned = false;   // true after the user drags the card: it stays where they put it
 function placeCallout() {
   const el = $("callout");
-  if (!el.classList.contains("open") || window.innerWidth <= 860) return;
+  if (!el.classList.contains("open") || window.innerWidth <= 860 || calloutPinned) return;
   const j = jobs.find(x => x.id === selected);
   const stage = el.parentElement.getBoundingClientRect();
   const kmzOpen = $("kmzCard").classList.contains("open");
@@ -830,13 +878,34 @@ function foldCallout(compact) {
   placeCallout();
 }
 $("cFold").onclick = () => foldCallout(!$("callout").classList.contains("compact"));
+(function dragCallout() {
+  const el = $("callout"), handle = el.querySelector(".ch");
+  let start = null;
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || e.target.closest("button") || window.innerWidth <= 860) return;
+    start = {x: e.clientX, y: e.clientY, left: el.offsetLeft, top: el.offsetTop};
+    handle.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (!start) return;
+    const stage = el.parentElement.getBoundingClientRect();
+    const x = start.left + e.clientX - start.x, y = start.top + e.clientY - start.y;
+    el.style.left = Math.max(0, Math.min(x, stage.width - el.offsetWidth)) + "px";
+    el.style.top = Math.max(0, Math.min(y, stage.height - el.offsetHeight)) + "px";
+    calloutPinned = true;
+  });
+  const end = () => { start = null; el.classList.remove("dragging"); };
+  handle.addEventListener("pointerup", end);
+  handle.addEventListener("pointercancel", end);
+})();
 $("qToggle").onclick = () => {
   const min = $("rows").closest(".queue").classList.toggle("min");
   $("qToggle").setAttribute("aria-expanded", String(!min));
   $("qToggle").setAttribute("aria-label", min ? "ขยายคิวงาน" : "ย่อคิวงาน");
   $("qToggle").innerHTML = icon(min ? "i-chev-down" : "i-chev-up");
 };
-$("cClose").onclick = () => { $("callout").classList.remove("open"); selected = null; render(); history.replaceState(null, "", "/map"); };
+$("cClose").onclick = () => { calloutPinned = false; $("callout").classList.remove("open"); selected = null; render(); history.replaceState(null, "", "/map"); };
 
 // ---------------------------------------------------------------- KMZ
 function mapKey() { try { return sessionStorage.getItem("mapKey") || ""; } catch (e) { return ""; } }
@@ -879,7 +948,7 @@ async function openKmz(site) {
   $("kmzCard").classList.add("open");
   $("legend").style.display = "none";
   closeBasemap();
-  if ($("callout").classList.contains("open")) foldCallout(true);
+  placeCallout();
   await loadKmz(site, 0);
 }
 async function loadKmz(site, i) {
@@ -965,6 +1034,20 @@ for (const [id, key] of [["tZones", "zones"], ["tLabels", "labels"], ["tFaults",
   $(id).checked = show[key];
   $(id).onchange = (e) => { show[key] = e.target.checked; store.set(key, show[key] ? "1" : "0"); applyToggles(); };
 }
+// Dark mode: page theme, and the light / dark basemaps swap with it (streets keep their own look)
+function setTheme(dark) {
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  store.set("theme", dark ? "dark" : "light");
+  $("themeBtn").setAttribute("aria-pressed", String(dark));
+  $("themeBtn").setAttribute("aria-label", dark ? "ใช้โหมดสว่าง" : "ใช้โหมดมืด");
+  $("themeBtn").innerHTML = icon(dark ? "i-sun" : "i-moon");
+  const swap = dark ? {light: "dark"} : {dark: "light"};
+  if (!swap[basemap]) return;
+  basemap = swap[basemap]; store.set("basemap", basemap);
+  if (map) { renderBasemaps(); map.setStyle(BASEMAPS[basemap].url, {diff: false}); }   // before boot: the map just starts on it
+}
+$("themeBtn").onclick = () => setTheme(document.documentElement.dataset.theme !== "dark");
+setTheme(document.documentElement.dataset.theme === "dark");
 $("zIn").onclick = () => map.zoomIn();
 $("zOut").onclick = () => map.zoomOut();
 $("zHome").onclick = () => setArea("", true);
