@@ -97,8 +97,7 @@ ASSIGN_ORDER = [
 "Exspare F",
 "Exspare G",
 "Exspare H",
-"Exspare I",
-"Workforce BKK Pool"
+"Exspare I"
 ]
 TEAM_DATA = [
 
