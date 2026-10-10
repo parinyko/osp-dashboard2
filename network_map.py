@@ -322,12 +322,17 @@ def _find_all(el, name):
 
 
 def _style_of(el):
-    """Colors from a <Style> element."""
+    """Colours, line width, icon and label settings from a <Style> element."""
     st = {}
     for sub in el:
         kind = _local(sub.tag)
         color = _child(sub, "color")
         col, op = _kml_color(color.text if color is not None else "")
+        scale = _child(sub, "scale")
+        try:
+            scale = round(float(scale.text), 2) if scale is not None else None
+        except (TypeError, ValueError):
+            scale = None
         if kind == "LineStyle":
             if col:
                 st["stroke"], st["stroke_opacity"] = col, op
@@ -343,24 +348,65 @@ def _style_of(el):
             f = _child(sub, "fill")
             if f is not None and (f.text or "").strip() == "0":
                 st["fill_opacity"] = 0
-        elif kind == "IconStyle" and col:
-            st["icon"] = col
+            o = _child(sub, "outline")
+            if o is not None and (o.text or "").strip() == "0":
+                st["outline"] = 0
+        elif kind == "IconStyle":
+            if col:
+                st["icon"], st["icon_opacity"] = col, op       # tint, multiplied into the icon like Google Earth
+            if scale is not None:
+                st["icon_scale"] = scale
+            icon = _child(sub, "Icon")
+            href = _child(icon, "href") if icon is not None else None
+            if href is not None and (href.text or "").strip():
+                st["icon_href"] = href.text.strip()
+            hs = _child(sub, "hotSpot")
+            if hs is not None:
+                try:
+                    st["hot"] = [float(hs.get("x", 0.5)), float(hs.get("y", 0.5)),
+                                 hs.get("xunits", "fraction"), hs.get("yunits", "fraction")]
+                except ValueError:
+                    pass
+        elif kind == "LabelStyle":
+            if col:
+                st["label"], st["label_opacity"] = col, op
+            if scale is not None:
+                st["label_scale"] = scale
     return st
 
 
 def kml_to_geojson(data, max_features=30000):
+    """GeoJSON of a drawing plus its folder tree, the way Google Earth lists it.
+    Every feature carries fid (its folder) and pid (its placemark); tree nodes are
+    {"id", "name", "count", "visible", "open", "children", "items": [[pid, name, kind]]}."""
     styles, style_maps, feats = {}, {}, []
-    folders = []
+    folders = {}        # id -> node
+    stack = []          # open Folder/Document ids
+    in_pm = 0
+    pid = 0
     data = _declare_prefixes(data)
     for event, el in ET.iterparse(io.BytesIO(data), events=("start", "end")):
         tag = _local(el.tag)
         if event == "start":
             if tag in ("Folder", "Document"):
-                folders.append(None)
+                fid = len(folders)
+                folders[fid] = {"id": fid, "name": None, "parent": stack[-1] if stack else None,
+                                "visible": True, "open": False, "children": [], "items": [], "own": 0}
+                if stack:
+                    folders[stack[-1]]["children"].append(fid)
+                stack.append(fid)
+            elif tag == "Placemark":
+                in_pm += 1
             continue
-        if tag == "name" and folders and folders[-1] is None:
-            folders[-1] = (el.text or "").strip()
-        elif tag == "Style" and el.get("id"):
+        if not in_pm and stack:
+            node = folders[stack[-1]]
+            if tag == "name" and node["name"] is None:
+                node["name"] = (el.text or "").strip()
+            elif tag == "visibility" and (el.text or "").strip() == "0":
+                node["visible"] = False
+            elif tag == "open" and (el.text or "").strip() == "1":
+                node["open"] = True
+        if tag == "Style" and el.get("id"):
             styles[el.get("id")] = _style_of(el)
         elif tag == "StyleMap" and el.get("id"):
             for pair in el:
@@ -369,21 +415,25 @@ def kml_to_geojson(data, max_features=30000):
                     if key is not None and (key.text or "").strip() == "normal" and url is not None:
                         style_maps[el.get("id")] = (url.text or "").strip().lstrip("#")
         elif tag in ("Folder", "Document"):
-            folders.pop()
+            stack.pop()
             el.clear()
         elif tag == "Placemark":
+            in_pm -= 1
             if len(feats) < max_features:
                 name = _child(el, "name")
                 desc = _child(el, "description")
                 url = _child(el, "styleUrl")
                 inline = _child(el, "Style")
-                path = [f for f in folders if f]
+                vis = _child(el, "visibility")
+                fid = stack[-1] if stack else -1
+                pid += 1
                 props = {
                     "name": (name.text or "").strip() if name is not None else "",
-                    "folder": path[-1] if path else "",
-                    "path": " / ".join(path[1:]) if len(path) > 1 else (path[0] if path else ""),
+                    "fid": fid, "pid": pid,
                     "style": (url.text or "").strip().lstrip("#") if url is not None else "",
                 }
+                if vis is not None and (vis.text or "").strip() == "0":
+                    props["hidden"] = 1
                 if desc is not None and desc.text:
                     props["desc"] = re.sub(r"<[^>]+>", " ", desc.text).strip()[:300]
                 if inline is not None:
@@ -398,6 +448,7 @@ def kml_to_geojson(data, max_features=30000):
                             ext[d.get("name")[:40]] = val[:120]
                 if ext:
                     props["ext"] = ext
+                kinds = []
                 for g in el.iter():
                     kind = _local(g.tag)
                     if kind == "Point":
@@ -405,11 +456,13 @@ def kml_to_geojson(data, max_features=30000):
                         if c:
                             feats.append({"type": "Feature", "properties": {**props, "kind": "point"},
                                           "geometry": {"type": "Point", "coordinates": c[0]}})
+                            kinds.append("point")
                     elif kind == "LineString":
                         c = _coords(_child(g, "coordinates").text if _child(g, "coordinates") is not None else "")
                         if len(c) >= 2:
                             feats.append({"type": "Feature", "properties": {**props, "kind": "line"},
                                           "geometry": {"type": "LineString", "coordinates": c}})
+                            kinds.append("line")
                     elif kind == "Polygon":
                         rings = []
                         for b in ("outerBoundaryIs", "innerBoundaryIs"):
@@ -421,20 +474,40 @@ def kml_to_geojson(data, max_features=30000):
                         if rings:
                             feats.append({"type": "Feature", "properties": {**props, "kind": "polygon"},
                                           "geometry": {"type": "Polygon", "coordinates": rings}})
+                            kinds.append("polygon")
+                if kinds and fid in folders:
+                    folders[fid]["items"].append([pid, props["name"], kinds[0]])
+                    folders[fid]["own"] += 1
             el.clear()
 
-    # resolve shared styles (StyleMap -> Style) into plain colour properties
-    groups = defaultdict(int)
+    # shared styles (StyleMap -> Style) become plain properties; folder path for popups
+    def path_of(fid):
+        names = []
+        while fid is not None and fid in folders:
+            if folders[fid]["parent"] is not None and folders[fid]["name"]:
+                names.append(folders[fid]["name"])
+            fid = folders[fid]["parent"]
+        return " / ".join(reversed(names))
+    paths = {}
     for f in feats:
         p = f["properties"]
         sid = p.pop("style", "")
         st = dict(styles.get(style_maps.get(sid, sid), {}))
         st.update(p.pop("inline", {}) or {})
         p.update(st)
-        p["folder"] = p["folder"] or "(ไม่มีโฟลเดอร์)"
-        groups[p["folder"]] += 1
-    return {"type": "FeatureCollection", "features": feats,
-            "groups": [{"name": k, "count": v} for k, v in sorted(groups.items(), key=lambda kv: -kv[1])],
+        if p["fid"] not in paths:
+            paths[p["fid"]] = path_of(p["fid"])
+        p["path"] = paths[p["fid"]]
+        p["folder"] = folders[p["fid"]]["name"] if p["fid"] in folders else ""
+
+    def node(fid):
+        n = folders[fid]
+        kids = [node(c) for c in n["children"]]
+        kids = [k for k in kids if k["count"]]
+        return {"id": fid, "name": n["name"] or "(ไม่มีชื่อ)", "visible": n["visible"], "open": n["open"],
+                "count": n["own"] + sum(k["count"] for k in kids), "children": kids, "items": n["items"]}
+    tree = [node(fid) for fid, n in folders.items() if n["parent"] is None]
+    return {"type": "FeatureCollection", "features": feats, "tree": tree,
             "truncated": len(feats) >= max_features}
 
 
@@ -602,3 +675,57 @@ def build_site_table():
     with _site_lock:
         _site_table = None
     return len(table), from_kmz, hist
+
+
+# ---------------------------------------------------------------- drawing icons
+
+ICON_DIR = NETWORK_DIR / "icons"
+# Google Earth's stock icons (and the earthpoint set some drawings use) — fetched once, kept on the server
+ICON_HOSTS = ("maps.google.com/mapfiles/", "www.earthpoint.us/dots/", "earth.google.com/images/", "www.gstatic.com/mapspro/")
+IMAGE_TYPES = {".png": "image/png", ".gif": "image/gif", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+
+
+def remote_icon(url):
+    """(bytes, mimetype) for an allowed icon URL, cached under NETWORK_DIR/icons; None if not allowed / unreachable."""
+    import hashlib
+    import urllib.request
+    u = str(url or "").strip()
+    bare = re.sub(r"^https?://", "", u).lower()
+    ext = os.path.splitext(bare.split("?", 1)[0])[1]
+    if not bare.startswith(ICON_HOSTS) or ext not in IMAGE_TYPES:
+        return None
+    path = ICON_DIR / (hashlib.sha1(bare.encode()).hexdigest() + ext)
+    if path.is_file():
+        return path.read_bytes(), IMAGE_TYPES[ext]
+    try:
+        with urllib.request.urlopen("https://" + re.sub(r"^https?://", "", u), timeout=10) as r:
+            data = r.read(512 * 1024)
+    except Exception:
+        return None
+    try:
+        ICON_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = str(path) + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except OSError:
+        pass
+    return data, IMAGE_TYPES[ext]
+
+
+def kmz_resource(file_name, inner):
+    """(bytes, mimetype) of an image packed inside a KMZ (files/icon.png); None otherwise."""
+    path = (KMZ_DIR / file_name).resolve()
+    if KMZ_DIR.resolve() not in path.parents or not path.is_file() or path.suffix.lower() != ".kmz":
+        return None
+    inner = str(inner or "").lstrip("/").replace("\\", "/")
+    ext = os.path.splitext(inner)[1].lower()
+    if ext not in IMAGE_TYPES or ".." in inner.split("/"):
+        return None
+    try:
+        with zipfile.ZipFile(path) as z:
+            names = {n.lower(): n for n in z.namelist()}
+            real = names.get(inner.lower())
+            return (z.read(real), IMAGE_TYPES[ext]) if real else None
+    except (OSError, zipfile.BadZipFile):
+        return None

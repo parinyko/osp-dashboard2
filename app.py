@@ -1073,6 +1073,28 @@ def api_map_kmz(site, i):
         return jsonify(success=False, message=f"เปิดไฟล์ไม่สำเร็จ: {exc}"), 500
     return jsonify(site=site.upper(), title=versions[i]["title"], date=versions[i]["date"], **gj)
 
+@app.route("/api/map/icon")
+def api_map_icon():
+    got = nm.remote_icon(request.args.get("u", ""))
+    if not got:
+        return "", 404
+    resp = app.response_class(got[0], mimetype=got[1])
+    resp.headers["Cache-Control"] = "public, max-age=604800"
+    return resp
+
+@app.route("/api/map/kmz/<site>/<int:i>/res")
+def api_map_kmz_res(site, i):
+    # images packed inside a drawing (its own icons) — not the drawing itself
+    versions = nm.kmz_versions(site)
+    if not 0 <= i < len(versions):
+        return "", 404
+    got = nm.kmz_resource(versions[i]["file"], request.args.get("p", ""))
+    if not got:
+        return "", 404
+    resp = app.response_class(got[0], mimetype=got[1])
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
 @app.route("/daily_osp_remain")
 def daily_osp_remain():
     if not RAW_DATA: load_latest_excel_into_memory()

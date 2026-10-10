@@ -177,12 +177,25 @@ button{font:inherit}
 .note{font-size:12px;color:var(--muted)}
 
 /* KMZ card */
-.kmz{position:absolute;right:64px;top:14px;width:320px;max-height:calc(100% - 90px);display:none;flex-direction:column;overflow:hidden;z-index:5}
+.kmz{position:absolute;right:64px;top:14px;width:360px;max-height:calc(100% - 90px);display:none;flex-direction:column;overflow:hidden;z-index:5}
 .kmz.open{display:flex}
 .kh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .kh b{display:flex;align-items:center;gap:8px;font-size:13.5px}
 .kb{padding:10px 12px;overflow:auto}
 .kb select{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12.5px;margin-bottom:8px;background:var(--surface);color:var(--ink)}
+.tree{font-size:12.5px}
+.trow,.titem{display:flex;align-items:center;gap:6px;min-height:28px}
+.trow:hover,.titem:hover{background:var(--ground);border-radius:6px}
+.tw{width:20px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0}
+.trow input,.titem input{width:15px;height:15px;flex:none;accent-color:var(--accent);margin:0}
+.tname{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .c{font-family:var(--mono);font-size:11px;color:var(--muted);padding-right:4px}
+.tlink{flex:1;min-width:0;text-align:left;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 0}
+.tlink:hover{color:var(--accent);text-decoration:underline}
+.tg{width:16px;height:16px;flex:none;object-fit:contain}
+.tg.dot{width:9px;height:9px;border-radius:50%;margin:0 3.5px}
+.tg.ln{height:3px;border-radius:2px}
+.tg.pg{width:12px;height:12px;border:1.5px solid;border-radius:2px;margin:0 2px;opacity:.85}
 .layer{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;cursor:pointer}
 .layer input{width:16px;height:16px;accent-color:var(--accent)}
 .layer .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
@@ -289,6 +302,8 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></g></symbol>
+  <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M6 16l4-5 4 3 5-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
@@ -436,7 +451,20 @@ const statusKey = (j) => {
   return ({assigned: 1, accepted: 1, departed: 1, onsite: 1, held: 1, transfered: 1, transferred: 1}[s] ? (s === "transferred" ? "transfered" : s) : "other");
 };
 const statusLabel = (j) => j.done ? "Done (Not Leave)" : (j.status || "-");
-let districtFC = null, zoneFC = null, zoneMarkers = {}, kmz = null, kmzHidden = new Set();
+let districtFC = null, zoneFC = null, zoneMarkers = {}, kmz = null;
+// drawing visibility, like the checkboxes in Google Earth's Places panel
+let kmzFolderOff = new Set(), kmzItemOff = new Set(), kmzNodes = {}, kmzSiteIdx = null;
+function kmzHiddenFolders() {
+  const out = [];
+  const walk = (n, off) => { off = off || kmzFolderOff.has(n.id); if (off) out.push(n.id); n.children.forEach(c => walk(c, off)); };
+  (kmz ? kmz.tree : []).forEach(n => walk(n, false));
+  return out;
+}
+function kmzFilter(k) {
+  return ["all", ["==", ["get", "kind"], k],
+          ["!", ["in", ["get", "fid"], ["literal", kmzHiddenFolders()]]],
+          ["!", ["in", ["get", "pid"], ["literal", [...kmzItemOff]]]]];
+}
 let basemap = BASEMAPS[store.get("basemap")] ? store.get("basemap") : "light";   // owner's pick: light basemap, all layers on
 const show = {zones: store.get("zones") !== "0", labels: store.get("labels") !== "0", faults: store.get("faults") !== "0"};
 
@@ -496,6 +524,7 @@ function addIcons() {
 
 function setupLayers() {
   addIcons();
+  ensureIconsOnMap();
   const empty = {type: "FeatureCollection", features: []};
   map.addSource("districts", {type: "geojson", data: districtFC});
   map.addSource("zones", {type: "geojson", data: zoneFC});
@@ -517,28 +546,37 @@ function setupLayers() {
     paint: {"line-color": ["match", ["get", "area"], "A1", AREAS.A1.color, "A2", AREAS.A2.color, "A3", AREAS.A3.color, AREAS.A4.color],
             "line-width": 2.4, "line-opacity": 0.85}});
 
-  const vis = ["!", ["in", ["get", "folder"], ["literal", [...kmzHidden]]]];
-  const kind = (k) => ["all", ["==", ["get", "kind"], k], vis];
+  // the drawing, styled like Google Earth draws it: its own colours, line widths, icons and label colours
+  const kind = (k) => kmzFilter(k);
+  const zs = (v) => ["interpolate", ["linear"], ["zoom"], 12, ["*", 0.6, v], 16, v];
   map.addLayer({id: "kmz-fill", type: "fill", source: "kmz", filter: kind("polygon"),
-    paint: {"fill-color": ["coalesce", ["get", "fill"], "#22D3EE"], "fill-opacity": ["min", 0.35, ["coalesce", ["get", "fill_opacity"], 0.18]]}});
-  map.addLayer({id: "kmz-outline", type: "line", source: "kmz", filter: kind("polygon"),
-    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0891B2"], "line-width": 1.2}});
+    paint: {"fill-color": ["coalesce", ["get", "fill"], "#22D3EE"], "fill-opacity": ["min", 0.5, ["coalesce", ["get", "fill_opacity"], 0.25]]}});
+  map.addLayer({id: "kmz-outline", type: "line", source: "kmz", filter: ["all", kind("polygon"), ["!=", ["get", "outline"], 0]],
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0891B2"], "line-width": zs(["coalesce", ["get", "width"], 1.5])}});
   map.addLayer({id: "kmz-line", type: "line", source: "kmz", filter: kind("line"), layout: {"line-cap": "round", "line-join": "round"},
-    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0284C7"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 17, 4]}});
-  map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: kind("point"),
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0284C7"], "line-width": zs(["max", 1.2, ["coalesce", ["get", "width"], 2]])}});
+  // points whose icon could not be loaded fall back to a dot in the icon's tint
+  map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: ["all", kind("point"), ["!", ["has", "img"]]],
     paint: {"circle-color": ["coalesce", ["get", "icon"], "#EC4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
             "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
+  map.addLayer({id: "kmz-icon", type: "symbol", source: "kmz", filter: ["all", kind("point"), ["has", "img"]],
+    layout: {"icon-image": ["get", "img"], "icon-offset": ["coalesce", ["get", "ioff"], ["literal", [0, 0]]],
+             "icon-size": ["interpolate", ["linear"], ["zoom"], 12, ["*", 0.7, ["coalesce", ["get", "icon_scale"], 1]],
+                           16, ["*", 1.3, ["coalesce", ["get", "icon_scale"], 1]]],
+             "icon-allow-overlap": true, "icon-ignore-placement": true}});
   const halo = dark ? {"text-color": "#E6EDF3", "text-halo-color": "#0B1017", "text-halo-width": 1.6}
                     : {"text-color": "#0F172A", "text-halo-color": "#FFFFFF", "text-halo-width": 1.6};
   map.addLayer({id: "kmz-line-label", type: "symbol", source: "kmz", minzoom: 14, filter: kind("line"),
     layout: {"symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-max-angle": 30, "symbol-spacing": 280},
     paint: {...halo, "text-color": dark ? "#7DD3FC" : "#075985"}});
-  map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 15.5, filter: kind("point"),
-    layout: {"text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 10, "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true},
-    paint: halo});
-  map.addLayer({id: "kmz-poly-label", type: "symbol", source: "kmz", minzoom: 15, filter: kind("polygon"),
-    layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-optional": true},
-    paint: {...halo, "text-color": dark ? "#FDBA74" : "#7C2D12"}});
+  // point names in the drawing's own label colour, right of the icon (Google Earth style); scale 0 = no label
+  map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 14,
+    filter: ["all", kind("point"), ["!=", ["coalesce", ["get", "label_scale"], 1], 0]],
+    layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Bold"],
+             "text-size": ["*", 13.5, ["max", 0.85, ["min", 1.3, ["coalesce", ["get", "label_scale"], 1]]]],
+             "text-anchor": "left", "text-offset": ["coalesce", ["get", "toff"], ["literal", [0.9, 0]]], "text-max-width": 16,
+             "text-optional": true},
+    paint: {"text-color": ["coalesce", ["get", "label"], "#FFFFFF"], "text-halo-color": "#1F2937", "text-halo-width": 1.3}});
   map.addLayer({id: "kmz-fault-halo", type: "circle", source: "kmz", filter: ["has", "fault"],
     paint: {"circle-color": "transparent", "circle-stroke-color": "#BE123C", "circle-stroke-width": 3, "circle-radius": 12, "circle-stroke-opacity": 0.8}});
 
@@ -589,7 +627,7 @@ function bindMapEvents() {
     map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
   }
   const hover = new maplibregl.Popup({closeButton: false, closeOnClick: false, offset: 10, className: "kmz-hover"});
-  for (const id of ["kmz-point", "kmz-line", "kmz-fill"]) {
+  for (const id of ["kmz-icon", "kmz-point", "kmz-line", "kmz-fill"]) {
     map.on("click", id, (e) => {
       if (map.queryRenderedFeatures(e.point, {layers: ["job-icon", "fault-dot"]}).length) return;
       hover.remove();
@@ -1015,26 +1053,162 @@ async function openKmz(site) {
   dockCallout();
   await loadKmz(site, 0);
 }
+// Google Earth icons: load each (href, tint) once, multiply the tint in like Earth does, register it with the map.
+// Stock icons are 64 px drawn at 32 px; the hotspot ("pin tip") is placed on the point.
+const kmzIcons = {};   // key -> {name, w, h, thumb} | null (failed)
+function iconUrl(href, site, i) {
+  return /^https?:\/\//i.test(href) ? "/api/map/icon?u=" + encodeURIComponent(href)
+    : `/api/map/kmz/${encodeURIComponent(site)}/${i}/res?p=` + encodeURIComponent(href);
+}
+function loadIcon(key, url, tint, opacity) {
+  if (key in kmzIcons) return Promise.resolve(kmzIcons[key]);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height);
+      if (tint) {
+        const r = parseInt(tint.slice(1, 3), 16) / 255, gg = parseInt(tint.slice(3, 5), 16) / 255, b = parseInt(tint.slice(5, 7), 16) / 255;
+        const a = opacity == null ? 1 : opacity;
+        for (let k = 0; k < d.data.length; k += 4) { d.data[k] *= r; d.data[k + 1] *= gg; d.data[k + 2] *= b; d.data[k + 3] *= a; }
+        g.putImageData(d, 0, 0);
+      }
+      const pr = Math.max(1, img.width / 32), name = "kmzi-" + Object.keys(kmzIcons).length;
+      kmzIcons[key] = {name, pr, w: img.width / pr, h: img.height / pr, data: d, thumb: c.toDataURL()};
+      resolve(kmzIcons[key]);
+    };
+    img.onerror = () => { kmzIcons[key] = null; resolve(null); };
+    img.src = url;
+  });
+}
+function ensureIconsOnMap() {
+  for (const ic of Object.values(kmzIcons)) if (ic && !map.hasImage(ic.name)) map.addImage(ic.name, ic.data, {pixelRatio: ic.pr});
+}
+async function prepareIcons(g, site, i) {
+  const jobsByKey = {};
+  for (const f of g.features) {
+    const p = f.properties;
+    if (p.kind !== "point" || !p.icon_href) continue;
+    const key = p.icon_href + "|" + (p.icon || "") + "|" + (p.icon_opacity ?? 1);
+    (jobsByKey[key] = jobsByKey[key] || []).push(p);
+  }
+  await Promise.all(Object.entries(jobsByKey).map(async ([key, ps]) => {
+    const ic = await loadIcon(key, iconUrl(ps[0].icon_href, site, i), ps[0].icon, ps[0].icon_opacity);
+    if (!ic) return;
+    for (const p of ps) {
+      // hotspot: KML counts y from the bottom; MapLibre offsets from the icon centre
+      let hx = ic.w / 2, hy = ic.h / 2;
+      if (p.hot) {
+        const [x, y, xu, yu] = p.hot;
+        hx = xu === "fraction" ? x * ic.w : x / ic.pr;
+        hy = ic.h - (yu === "fraction" ? y * ic.h : y / ic.pr);
+      }
+      p.img = ic.name; p.thumb = key;
+      p.ioff = [ic.w / 2 - hx, ic.h / 2 - hy];   // icon-offset is scaled by icon-size, so it stays on the hotspot
+      p.toff = [Math.max(0.6, 1.3 * (ic.w - hx) / 12 + 0.25), 1.3 * (ic.h / 2 - hy) / 12];   // label: right of the icon, at its middle
+    }
+  }));
+  ensureIconsOnMap();
+}
+
+// ---------------- the Places-style tree
+function glyphFor(p, kind) {
+  if (kind === "point") {
+    const ic = p && p.thumb && kmzIcons[p.thumb];
+    if (ic) return `<img class="tg" src="${ic.thumb}" alt="">`;
+    return `<i class="tg dot" style="background:${esc((p && p.icon) || "#EC4899")}"></i>`;
+  }
+  if (kind === "line") return `<i class="tg ln" style="background:${esc((p && p.stroke) || "#0284C7")}"></i>`;
+  return `<i class="tg pg" style="background:${esc((p && p.fill) || "#22D3EE")};border-color:${esc((p && p.stroke) || "#0891B2")}"></i>`;
+}
+function renderNode(n, depth) {
+  kmzNodes[n.id] = n;
+  const has = n.children.length || n.items.length;
+  const open = n._open ?? (depth < 1 || n.open);
+  n._open = open;
+  return `<div class="tn" data-f="${n.id}">
+    <div class="trow" style="padding-left:${depth * 14}px">
+      ${has ? `<button class="tw" data-tog="${n.id}" aria-expanded="${open}" aria-label="${open ? "ย่อ" : "ขยาย"} ${esc(n.name)}">${icon(open ? "i-chev-down" : "i-chev-right", 'style="width:14px;height:14px"')}</button>` : `<span class="tw"></span>`}
+      <input type="checkbox" data-cf="${n.id}" ${kmzFolderOff.has(n.id) ? "" : "checked"} aria-label="แสดง ${esc(n.name)}">
+      ${icon("i-folder", 'style="width:15px;height:15px;color:var(--muted)"')}
+      <span class="tname" title="${esc(n.name)}">${esc(n.name)}</span><span class="c">${n.count}</span>
+    </div>
+    <div class="tkids" ${open ? "" : "hidden"}>${open ? renderKids(n, depth) : ""}</div>
+  </div>`;
+}
+function renderKids(n, depth) {
+  const byPid = kmzByPid();
+  const items = n.items.slice(0, 400).map(([pid, name, kind]) => `
+    <div class="titem" style="padding-left:${(depth + 1) * 14 + 18}px">
+      <input type="checkbox" data-cp="${pid}" ${kmzItemOff.has(pid) ? "" : "checked"} aria-label="แสดง ${esc(name)}">
+      ${glyphFor(byPid[pid], kind)}
+      <button class="tlink" data-go="${pid}" title="${esc(name)}">${esc(name || "(ไม่มีชื่อ)")}</button>
+    </div>`).join("");
+  const more = n.items.length > 400 ? `<div class="note" style="padding-left:${(depth + 1) * 14 + 18}px">และอีก ${n.items.length - 400} รายการ</div>` : "";
+  return n.children.map(c => renderNode(c, depth + 1)).join("") + items + more;
+}
+let _byPid = null;
+function kmzByPid() {
+  if (!_byPid && kmz) { _byPid = {}; for (const f of kmz.features) if (!_byPid[f.properties.pid]) _byPid[f.properties.pid] = f.properties; }
+  return _byPid || {};
+}
+function renderTree() {
+  kmzNodes = {};
+  $("kmzLayers").innerHTML = `<div class="tree" role="tree">${kmz.tree.map(n => renderNode(n, 0)).join("")}</div>`;
+}
+$("kmzLayers").addEventListener("click", (e) => {
+  const tog = e.target.closest("[data-tog]");
+  if (tog) {
+    const n = kmzNodes[tog.dataset.tog], wrap = tog.closest(".tn"), kids = wrap.querySelector(":scope > .tkids");
+    const depth = Math.round(parseInt(tog.parentElement.style.paddingLeft || "0", 10) / 14);
+    n._open = !n._open;
+    if (n._open && !kids.innerHTML) kids.innerHTML = renderKids(n, depth);
+    kids.hidden = !n._open;
+    tog.setAttribute("aria-expanded", String(n._open));
+    tog.innerHTML = icon(n._open ? "i-chev-down" : "i-chev-right", 'style="width:14px;height:14px"');
+    return;
+  }
+  const go = e.target.closest("[data-go]");
+  if (go) {
+    const pid = +go.dataset.go, fs = kmz.features.filter(f => f.properties.pid === pid);
+    if (!fs.length) return;
+    const pts = fs.flatMap(f => { const c = f.geometry.coordinates; return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0]; });
+    const box = bbox({coordinates: pts});
+    map.fitBounds(box, {padding: 120, maxZoom: 18, duration: 800});
+    new maplibregl.Popup({offset: 10, maxWidth: "300px"}).setLngLat(fs[0].geometry.type === "Point" ? fs[0].geometry.coordinates : [(box[0][0] + box[1][0]) / 2, (box[0][1] + box[1][1]) / 2])
+      .setHTML(kmzInfo(fs[0], true)).addTo(map);
+  }
+});
+$("kmzLayers").addEventListener("change", (e) => {
+  const cb = e.target;
+  if (cb.dataset.cf != null) { const id = +cb.dataset.cf; cb.checked ? kmzFolderOff.delete(id) : kmzFolderOff.add(id); }
+  else if (cb.dataset.cp != null) { const id = +cb.dataset.cp; cb.checked ? kmzItemOff.delete(id) : kmzItemOff.add(id); }
+  else return;
+  applyKmzFilter();
+});
+
 async function loadKmz(site, i) {
   $("kmzLayers").innerHTML = '<div class="empty">กำลังเปิดไฟล์…</div>';
   $("kmzFaults").innerHTML = "";
   const g = await kmzFetch(`/api/map/kmz/${encodeURIComponent(site)}/${i}`);
   if (!g) { $("kmzLayers").innerHTML = ""; return; }
-  kmz = g; kmzHidden = new Set();
+  kmz = g; kmzSiteIdx = [site, i]; _byPid = null;
+  // start from the file's own visibility, like Google Earth
+  kmzFolderOff = new Set(); kmzItemOff = new Set();
+  const offWalk = (n) => { if (!n.visible) kmzFolderOff.add(n.id); n.children.forEach(offWalk); };
+  g.tree.forEach(offWalk);
+  for (const f of g.features) if (f.properties.hidden) kmzItemOff.add(f.properties.pid);
   const wanted = jobs.filter(j => j.site === site).flatMap(j => (j.faults || []).map(f => [f.key, j.id]));
   const found = {};
   for (const f of g.features) {
     const p = f.properties, name = (p.name || "").replace(/\s+/g, "").toUpperCase();
-    p.label = (p.name || "").replace(/^OB_[A-Z0-9()]+_ZZ_[A-Z0-9]+_/, "");
     if (f.geometry.type !== "Point") continue;
     for (const [key, job] of wanted) if (name.includes(key)) { p.fault = key; p.fault_job = job; found[key] = f.geometry.coordinates; }
   }
+  await prepareIcons(g, site, i);
   map.getSource("kmz").setData({type: "FeatureCollection", features: g.features});
   applyKmzFilter();
-  const colorOf = (name) => {
-    const f = g.features.find(x => x.properties.folder === name);
-    return f ? (f.properties.stroke || f.properties.fill || f.properties.icon || "#0284C7") : "#0284C7";
-  };
   const keys = [...new Set(wanted.map(w => w[0]))];
   if (keys.length) {
     $("kmzFaults").innerHTML = `<div class="faults"><div class="fh">${icon("i-alert", 'style="width:14px;height:14px"')}Splitter ที่แจ้งในใบงานของไซต์นี้</div>` +
@@ -1044,35 +1218,27 @@ async function loadKmz(site, i) {
     $("kmzFaults").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
       map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: 17.5, duration: 800}));
   }
-  $("kmzLayers").innerHTML = `<label class="layer"><input type="checkbox" checked id="kmzAll"><b>ทุกชั้น</b><span class="c">${g.features.length}</span></label>` +
-    g.groups.map((x, k) => `<label class="layer"><input type="checkbox" checked data-g="${k}"><span class="sw" style="background:${colorOf(x.name)}"></span>${esc(x.name)}<span class="c">${x.count}</span></label>`).join("");
+  renderTree();
   $("kmzNote").textContent = `${g.date} · ${g.title}` + (g.truncated ? " · ไฟล์ใหญ่ แสดงบางส่วน" : "");
-  $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.onchange = () => {
-    const name = g.groups[+cb.dataset.g].name;
-    cb.checked ? kmzHidden.delete(name) : kmzHidden.add(name);
-    $("kmzAll").checked = kmzHidden.size === 0;
-    applyKmzFilter();
-  });
-  $("kmzAll").onchange = (e) => {
-    kmzHidden = e.target.checked ? new Set() : new Set(g.groups.map(x => x.name));
-    $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.checked = e.target.checked);
-    applyKmzFilter();
-  };
   const pts = g.features.flatMap(f => { const c = f.geometry.coordinates; return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0]; });
   // keep the drawing clear of the queue (left), the drawing panel and the docked job card (right)
   const wide = window.innerWidth > 860, docked = $("callout").classList.contains("open");
   if (pts.length) map.fitBounds(bbox({coordinates: pts}), {padding: {top: 60, bottom: 60, left: wide ? 420 : 20,
-    right: wide ? (docked ? 400 + $("callout").offsetWidth + 12 : 400) : 20}, maxZoom: 16.5, duration: 900});
+    right: wide ? (docked ? 440 + $("callout").offsetWidth + 12 : 440) : 20}, maxZoom: 16.5, duration: 900});
 }
 function applyKmzFilter() {
-  const vis = ["!", ["in", ["get", "folder"], ["literal", [...kmzHidden]]]];
-  const kind = (k) => ["all", ["==", ["get", "kind"], k], vis];
-  for (const [id, k] of [["kmz-fill", "polygon"], ["kmz-outline", "polygon"], ["kmz-line", "line"], ["kmz-point", "point"],
-                         ["kmz-line-label", "line"], ["kmz-point-label", "point"], ["kmz-poly-label", "polygon"]]) map.setFilter(id, kind(k));
+  const f = (k) => kmzFilter(k);
+  map.setFilter("kmz-fill", f("polygon"));
+  map.setFilter("kmz-outline", ["all", f("polygon"), ["!=", ["get", "outline"], 0]]);
+  map.setFilter("kmz-line", f("line"));
+  map.setFilter("kmz-line-label", f("line"));
+  map.setFilter("kmz-point", ["all", f("point"), ["!", ["has", "img"]]]);
+  map.setFilter("kmz-icon", ["all", f("point"), ["has", "img"]]);
+  map.setFilter("kmz-point-label", ["all", f("point"), ["!=", ["coalesce", ["get", "label_scale"], 1], 0]]);
 }
 $("kmzClose").onclick = () => {
   map.getSource("kmz").setData({type: "FeatureCollection", features: []});
-  $("kmzCard").classList.remove("open"); kmz = null;
+  $("kmzCard").classList.remove("open"); kmz = null; _byPid = null;
   $("legend").style.display = "";
   undockCallout();
 };
