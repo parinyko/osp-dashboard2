@@ -59,7 +59,7 @@ button{font:inherit}
 /* map stage */
 .stage{position:relative;min-height:0}
 #map{position:absolute;inset:0}
-.panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10)}
+.panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10);backdrop-filter:blur(6px)}
 .queue{position:absolute;left:14px;top:14px;bottom:14px;width:400px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
 .qhead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px 14px}
 .qhead b{font-size:14px}.qhead small{font-size:11.5px;color:var(--muted)}
@@ -475,10 +475,13 @@ function setupLayers() {
   map.addSource("kmz", {type: "geojson", data: kmz ? {type: "FeatureCollection", features: kmz.features} : empty});
   const dark = basemap === "dark";
   const sev = ["coalesce", ["get", "sev"], 0];
+  // solid status colour (no blinking), fading out when zoomed in to streets / an opened drawing
+  const base = basemap === "streets" || basemap === "bright" ? 0.7 : 1;   // let the streets show through
+  const fade = (o) => ["interpolate", ["linear"], ["zoom"], 11.5, o * base, 14.5, 0.03];
   map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", sev, 0],
-    paint: {"fill-color": "#16A34A", "fill-opacity": 0.12}});
+    paint: {"fill-color": "#16A34A", "fill-opacity": fade(0.12)}});
   map.addLayer({id: "district-alert", type: "fill", source: "districts", filter: [">", sev, 0],
-    paint: {"fill-color": ["match", sev, 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.2}});
+    paint: {"fill-color": ["match", sev, 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": fade(0.28)}});
   map.addLayer({id: "district-line", type: "line", source: "districts",
     paint: {"line-color": dark ? "#334155" : "#FFFFFF", "line-width": 1, "line-opacity": 0.8}});
   map.addLayer({id: "zone-line", type: "line", source: "zones",
@@ -611,13 +614,8 @@ function animate() {
   if (REDUCED) return;
   let last = 0;
   const frame = (t) => {
-    if (t - last > 50 && !map.isMoving() && map.getLayer("district-alert")) {
+    if (t - last > 33 && map.getLayer("job-halo")) {
       last = t;
-      const blink = 0.5 + 0.5 * Math.sin(t / 1600 * 2 * Math.PI);
-      const fade = Math.min(1, Math.max(0.1, (14.5 - map.getZoom()) / 3));
-      const base = basemap === "streets" || basemap === "bright" ? 0.7 : 1;   // let the streets show through
-      map.setPaintProperty("district-alert", "fill-opacity", (0.12 + 0.26 * blink) * fade * base);
-      map.setPaintProperty("district-ok", "fill-opacity", 0.12 * fade * base);
       const ph = (t % 1800) / 1800;
       map.setPaintProperty("job-halo", "circle-radius", 8 + ph * 18);
       map.setPaintProperty("job-halo", "circle-stroke-opacity", 0.7 * (1 - ph));
