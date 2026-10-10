@@ -259,6 +259,52 @@ thead th {
   font-size: 9px;
 }
 
+td[data-others] {
+  cursor: pointer;
+}
+
+.more-jobs.clickable {
+  background: rgba(0, 0, 0, 0.22);
+  text-decoration: underline;
+}
+
+.jobs-pop {
+  position: fixed;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #b9d3ab;
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  padding: 9px 12px;
+  font-size: 12px;
+  color: #214b24;
+  min-width: 210px;
+  display: none;
+}
+
+.jobs-pop b {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.jobs-pop .jp-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  border-top: 1px dashed #dfe9da;
+  font-weight: 800;
+}
+
+.jobs-pop .jp-row.main {
+  border-top: 0;
+}
+
+.jobs-pop .jp-st {
+  font-weight: 700;
+  color: #5d6d5a;
+}
+
 .zoom-box {
   display: inline-flex;
   align-items: center;
@@ -596,7 +642,7 @@ tr.row-hidden {
 
       รูปแบบ = Job ID (Status) — Indue / Outdue |
 
-      Job ID + สถานะเดิมติดกันจะรวมช่อง | +N = มีงานอื่นค้างอีก N งาน
+      Job ID + สถานะเดิมติดกันจะรวมช่อง | +N = มีงานอื่นค้างอีก N งาน (กดที่ช่องเพื่อดูเลข JB)
 
     </span>
 
@@ -709,7 +755,8 @@ tr.row-hidden {
                 {% endif %}"
 
                 colspan="{{ cell.span }}"
-                {% if jid %}title="{{ cell.time }} · {{ jid }} ({{ st or '-' }}){% if cell.priority %} · {{ cell.priority }}{% endif %}{% if cell.others %} · มีงานอื่นอีก {{ cell.others }} งาน{% endif %}"{% endif %}
+                {% if jid %}title="{{ cell.time }} · {{ jid }} ({{ st or '-' }}){% if cell.priority %} · {{ cell.priority }}{% endif %}{% for o in cell.other_jobs %}&#10;+ {{ o.job_id }} ({{ o.status or '-' }}){% endfor %}{% if cell.others and not cell.other_jobs %} · มีงานอื่นอีก {{ cell.others }} งาน{% endif %}"{% endif %}
+                {% if cell.other_jobs %}data-main='{{ {"job_id": jid, "status": st, "time": cell.time}|tojson }}' data-others='{{ cell.other_jobs|tojson }}' onclick="showJobs(this, event)"{% endif %}
 
               >
 
@@ -725,7 +772,7 @@ tr.row-hidden {
                   <!-- STATUS -->
 
                   <span class="job-status">
-                    ({{ st or '-' }}){% if cell.others %} <span class="more-jobs">+{{ cell.others }}</span>{% endif %}
+                    ({{ st or '-' }}){% if cell.others %} <span class="more-jobs{% if cell.other_jobs %} clickable{% endif %}">+{{ cell.others }}</span>{% endif %}
                   </span>
 
 
@@ -877,6 +924,31 @@ tr.row-hidden {
   window.addEventListener('resize', centerLatestTime);
   window.centerLatestTime = centerLatestTime;
 })();
+
+/* =========================================================
+   JOBS POPUP — every job the team held at that time (click a cell with +N)
+========================================================= */
+function showJobs(td, e) {
+  e.stopPropagation();
+  let pop = document.getElementById('jobsPop');
+  if (!pop) {
+    pop = document.createElement('div');
+    pop.id = 'jobsPop';
+    pop.className = 'jobs-pop';
+    document.body.appendChild(pop);
+    document.addEventListener('click', () => { pop.style.display = 'none'; });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') pop.style.display = 'none'; });
+  }
+  const main = JSON.parse(td.dataset.main || '{}');
+  const others = JSON.parse(td.dataset.others || '[]');
+  const esc = (v) => String(v || '-').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const row = (j, cls) => '<div class="jp-row ' + cls + '"><span>' + esc(j.job_id) + '</span><span class="jp-st">' + esc(j.status) + '</span></div>';
+  pop.innerHTML = '<b>' + (others.length + 1) + ' งานของทีมนี้ · ' + esc(main.time) + '</b>' + row(main, 'main') + others.map(o => row(o, '')).join('');
+  pop.style.display = 'block';
+  const r = pop.getBoundingClientRect();
+  pop.style.left = Math.max(8, Math.min(e.clientX + 10, document.documentElement.clientWidth - r.width - 8)) + 'px';
+  pop.style.top = Math.max(8, Math.min(e.clientY + 10, document.documentElement.clientHeight - r.height - 8)) + 'px';
+}
 
 /* =========================================================
    FILTER (บริษัท / โซน) + ZOOM — remembered in the URL and this browser

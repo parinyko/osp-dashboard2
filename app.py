@@ -352,7 +352,8 @@ def save_resource_snapshot():
         rows.append({"zone":t["zone"],"user":user,"status":main.get("status",""),"job_id":main.get("job_id",""),
                      "priority":main.get("priority",""),"create_time":main.get("create_time",""),
                      "due_status":resource_due_status(main.get("priority",""),main.get("create_time",""),stamp),
-                     "job_count":len(job_list)})
+                     "job_count":len(job_list),
+                     "others":[{"job_id":j["job_id"],"status":j["status"]} for j in job_list if j is not main]})
     rec={"date":stamp.strftime("%Y-%m-%d"),"time":stamp.strftime("%H:%M"),"timestamp":stamp.isoformat(),"rows":rows}
     RESOURCE_HISTORY.append(rec)
     RESOURCE_HISTORY=RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
@@ -844,7 +845,8 @@ def resource_monitor():
         for row in rec.get("rows",[]):
             if row.get("user") in matrix:
                 cell={k:clean_text(row.get(k,"")) for k in ("job_id","status","priority","create_time","due_status")}
-                cell["others"]=max(int(row.get("job_count") or 0)-1,0)
+                cell["other_jobs"]=[o for o in (row.get("others") or []) if isinstance(o,dict)]
+                cell["others"]=max(int(row.get("job_count") or 0)-1,len(cell["other_jobs"]),0)
                 matrix[row["user"]][rec.get("time","")]=cell
     def cell_at(user, slot):
         c=matrix[user].get(slot,{})
@@ -864,7 +866,8 @@ def resource_monitor():
             last=cell_at(u["user"],slots[pos+span-1])   # latest snapshot of the span: Indue may have become Outdue
             cells.append({"job_id":jid,"status":st,"priority":clean_text(cur.get("priority","")),
                 "create_time":clean_text(cur.get("create_time","")),"due_status":clean_text(last.get("due_status","")),
-                "others":last.get("others",0) if jid else 0,"span":span,"time":slots[pos]})
+                "others":last.get("others",0) if jid else 0,"other_jobs":last.get("other_jobs",[]) if jid else [],
+                "span":span,"time":slots[pos]})
             pos+=span
         display_rows.append({"zone":u["zone"],"user":u["user"],"company":zone_company(u["zone"]),"cells":cells})
     companies=list(dict.fromkeys(r["company"] for r in display_rows))
