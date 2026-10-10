@@ -343,7 +343,7 @@ def background_scheduler():
             try:
                 if now.minute in (0,30):
                     save_resource_snapshot()
-                if now.minute==0 and now.hour in (8,12,16,20):
+                if now.minute==0 and now.hour in (6,18):   # matches the page text: 06:00 and 18:00
                     save_daily_osp_snapshot(f"{now.hour:02d}:00")
             except Exception:
                 app.logger.exception("Scheduled snapshot failed")
