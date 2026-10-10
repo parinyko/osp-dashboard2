@@ -130,6 +130,8 @@ button{font:inherit}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 14px 10px;border-bottom:1px solid var(--line);cursor:grab;touch-action:none;user-select:none}
 .callout.dragging .ch{cursor:grabbing}
+.callout.gliding{transition:left .45s cubic-bezier(.2,.8,.2,1),top .45s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion: reduce){.callout.gliding{transition:none}}
 .callout.dragging{box-shadow:0 18px 48px rgba(15,23,42,.25)}
 .grip{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--muted);margin-top:6px}
 .ch .id{font-family:var(--mono);font-size:18px;font-weight:600}
@@ -847,11 +849,37 @@ function select(id, fly) {
   $("callout").classList.add("open");
   // a refresh keeps the card as it was (folded or not); picking a job shows it in full
   foldCallout(fly === null ? $("callout").classList.contains("compact") : false);
+  if (fly !== null && $("kmzCard").classList.contains("open")) dockCallout();
   history.replaceState(null, "", "/map?job=" + encodeURIComponent(id));
 }
 
 // The callout sits beside its pin and follows it while the map moves.
-let calloutPinned = false;   // true after the user drags the card: it stays where they put it
+let calloutPinned = false;   // true after the user drags the card (or it docks by a drawing): it stays put
+// Slide the card to (x, y) instead of jumping there.
+function glideCallout(x, y) {
+  const el = $("callout");
+  el.classList.add("gliding");
+  el.style.left = x + "px"; el.style.top = y + "px";
+  clearTimeout(el._glide);
+  el._glide = setTimeout(() => el.classList.remove("gliding"), 480);
+}
+// With a drawing open, the card parks top-right beside the drawing's panel, out of the network's way.
+function dockCallout() {
+  const el = $("callout"), kc = $("kmzCard");
+  if (!el.classList.contains("open") || !kc.classList.contains("open") || window.innerWidth <= 860) return;
+  const stage = el.parentElement.getBoundingClientRect(), k = kc.getBoundingClientRect();
+  calloutPinned = true;
+  glideCallout(Math.max(428, k.left - stage.left - el.offsetWidth - 12), 14);
+}
+function undockCallout() {
+  calloutPinned = false;
+  const el = $("callout");
+  if (!el.classList.contains("open")) return;
+  el.classList.add("gliding");
+  placeCallout();
+  clearTimeout(el._glide);
+  el._glide = setTimeout(() => el.classList.remove("gliding"), 480);
+}
 function placeCallout() {
   const el = $("callout");
   if (!el.classList.contains("open") || window.innerWidth <= 860 || calloutPinned) return;
@@ -946,7 +974,7 @@ async function openKmz(site) {
   $("kmzCard").classList.add("open");
   $("legend").style.display = "none";
   closeBasemap();
-  placeCallout();
+  dockCallout();
   await loadKmz(site, 0);
 }
 async function loadKmz(site, i) {
@@ -993,7 +1021,10 @@ async function loadKmz(site, i) {
     applyKmzFilter();
   };
   const pts = g.features.flatMap(f => { const c = f.geometry.coordinates; return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0]; });
-  if (pts.length) map.fitBounds(bbox({coordinates: pts}), {padding: {top: 60, bottom: 60, left: window.innerWidth > 860 ? 420 : 20, right: window.innerWidth > 860 ? 400 : 20}, maxZoom: 16.5, duration: 900});
+  // keep the drawing clear of the queue (left), the drawing panel and the docked job card (right)
+  const wide = window.innerWidth > 860, docked = $("callout").classList.contains("open");
+  if (pts.length) map.fitBounds(bbox({coordinates: pts}), {padding: {top: 60, bottom: 60, left: wide ? 420 : 20,
+    right: wide ? (docked ? 400 + $("callout").offsetWidth + 12 : 400) : 20}, maxZoom: 16.5, duration: 900});
 }
 function applyKmzFilter() {
   const vis = ["!", ["in", ["get", "folder"], ["literal", [...kmzHidden]]]];
@@ -1005,7 +1036,7 @@ $("kmzClose").onclick = () => {
   map.getSource("kmz").setData({type: "FeatureCollection", features: []});
   $("kmzCard").classList.remove("open"); kmz = null;
   $("legend").style.display = "";
-  placeCallout();
+  undockCallout();
 };
 
 // ---------------------------------------------------------------- basemap + toggles
