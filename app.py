@@ -730,6 +730,40 @@ def build_done_not_leave_by_group(source_df):
     return result
 
 
+# Zone columns of the home page; a job's Zone looks like "MNM-AREA1 (Bangkok-ST2)".
+HOME_ZONE_RULES = [("SCT", "Bangkok-ST2"), ("CWT", "Bangkok-CWT"), ("ONT", "Bangkok-ONT"), ("TLC", "Bangkok-TLC")]
+
+def build_zone_group_summary(job_df):
+    """Pivot like the team's Excel: rows = EDS / FBB / MBB with Critical / Major / Minor
+    underneath, columns = zones. Counts the same jobs as OSP Job Aging Summary."""
+    zones = [name for name, _ in HOME_ZONE_RULES]
+    priorities = ["Critical", "Major", "Minor"]
+    empty = lambda: {**{z: 0 for z in zones}, "อื่นๆ": 0, "total": 0}
+    groups = [{"group": g, "totals": empty(), "rows": [{"priority": p, **empty()} for p in priorities]}
+              for g, _ in OSP_AGING_GROUPS]
+    grand = empty()
+    if job_df is not None and not job_df.empty and "Sub System" in job_df.columns:
+        sub = job_df["Sub System"].fillna("").astype(str).str.strip()
+        pri = normalize_priority_series(job_df)
+        status = normalize_status_series(job_df)
+        zone_text = job_df["Zone"].fillna("").astype(str) if "Zone" in job_df.columns else pd.Series("", index=job_df.index)
+        group_of = {s: i for i, (_, subs) in enumerate(OSP_AGING_GROUPS) for s in subs}
+        for idx in job_df.index:
+            gi = group_of.get(sub.loc[idx])
+            p = pri.loc[idx]
+            if gi is None or p not in ("critical", "major", "minor") or "done(not leave)" in status.loc[idx]:
+                continue
+            z = next((name for name, token in HOME_ZONE_RULES if token.lower() in zone_text.loc[idx].lower()), "อื่นๆ")
+            g = groups[gi]
+            row = g["rows"][["critical", "major", "minor"].index(p)]
+            for bucket in (row, g["totals"], grand):
+                bucket[z] += 1
+                bucket["total"] += 1
+    for g in groups:
+        g["rows"] = [r for r in g["rows"] if r["total"]]
+    cols = zones + (["อื่นๆ"] if grand["อื่นๆ"] else [])
+    return {"zones": cols, "groups": groups, "grand": grand}
+
 def build_home_summary():
     """Build the summary tables/cards used by Dashboard OSP BKK."""
     job_df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
@@ -748,6 +782,7 @@ def build_home_summary():
         subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
 
     osp_aging_summary = build_osp_aging_summary(job_df)
+    zone_group_summary = build_zone_group_summary(job_df)
     # Done(Not Leave) must be counted from the original upload because
     # prepare_job_dataframe() intentionally removes those rows.
     done_source_df = pd.DataFrame(ORIGINAL_DATA) if ORIGINAL_DATA else pd.DataFrame()
@@ -804,6 +839,7 @@ def build_home_summary():
     return {
         "subsystem_summary": subsystem_summary,
         "osp_aging_summary": osp_aging_summary,
+        "zone_group_summary": zone_group_summary,
         "done_not_leave_by_group": done_not_leave_by_group,
         "done_not_leave_total": done_not_leave_total,
         "zone_summary": zone_summary,

@@ -106,6 +106,25 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 .osp-age-table tfoot td.grand-total{background:#c5ddeb!important;font-size:12px}
 .osp-age-table .age-label{display:block;font-size:11px;font-weight:900}
 .osp-age-table .age-sub{display:block;margin-top:2px;font-size:9px;font-weight:700;opacity:.78}
+.team-row{margin-bottom:10px}
+.team-panel .team-cards{grid-template-columns:repeat(7,minmax(110px,1fr))}
+.zone-group-panel{margin-bottom:10px}
+.zone-group-table{min-width:640px;font-size:13px}
+.zone-group-table th,.zone-group-table td{padding:7px 8px}
+.zone-group-table .zone-head{background:#dcebd6;color:#234c27;font-size:13px}
+.zone-group-table .subsystem-head{width:190px}
+.zone-group-table .grand-total-head{width:120px}
+.zone-group-table tr.zg-group td{font-weight:900;font-size:14px}
+.zone-group-table tr.zg-eds td{background:#f6d3d0!important;color:#7a2a24}
+.zone-group-table tr.zg-fbb td{background:#fbd7b8!important;color:#7a3f0c}
+.zone-group-table tr.zg-mbb td{background:#fff27a!important;color:#5b5000}
+.zone-group-table tr.zg-group td.grand-total{background:#cfe2ef!important;color:#245775}
+.zone-group-table td.zg-pri{padding-left:30px;font-weight:700;background:#fff!important}
+.zone-group-table td.zg-pri-critical{color:#b4232e}
+.zone-group-table td.zg-pri-major{color:#a56a00}
+.zone-group-table td.zg-pri-minor{color:#7d7000}
+.zone-group-table tfoot td.zg-foot{background:#e8f1e4!important;color:#234c27;font-size:13px}
+@media(max-width:900px){.team-panel .team-cards{grid-template-columns:repeat(2,1fr)}}
 .osp-age-note{padding:8px 11px;color:#647262;font-size:10.5px;background:#f7fbf5;border-top:1px solid #dfe9db}
 .done-summary{margin-top:10px;background:#fff;border:1px solid #d8e7d2;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(50,90,40,.05)}
 .done-summary-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:#f2f8ef;border-bottom:1px solid #dce8d7}
@@ -210,11 +229,51 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 </section>
 
 <div class="section-title">จำนวน Job แยกตาม Zone และสถานะทีม</div>
-<section class="grid-2">
-<div class="panel zone-summary-panel"><div class="panel-head"><div class="panel-title">Zone Summary</div><div class="panel-note">จำนวน Job ตาม Zone</div></div><div class="team-cards zone-cards">{% for r in zone_summary if r.zone != 'Total' %}<div class="team-stat zone-click"><div class="label">{{ r.zone }}</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}{% for r in zone_summary if r.zone == 'Total' %}<div class="team-stat total-zone"><div class="label">Total</div><div class="value ready">{{ r.jobs }}</div></div>{% endfor %}</div></div>
-<div class="panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">On-site</div><div class="value onsite">{{ team_summary.onsite }}</div></div><div class="team-stat"><div class="label">Departed</div><div class="value departed">{{ team_summary.departed }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
+<section class="team-row">
+<div class="panel team-panel"><div class="panel-head"><div class="panel-title">ทีมพร้อมทำงาน</div><div class="panel-note">รวม {{ team_summary.total }} ทีม</div></div><div class="team-cards"><div class="team-stat"><div class="label">Working</div><div class="value working">{{ team_summary.working }}</div></div><div class="team-stat"><div class="label">On-site</div><div class="value onsite">{{ team_summary.onsite }}</div></div><div class="team-stat"><div class="label">Departed</div><div class="value departed">{{ team_summary.departed }}</div></div><div class="team-stat"><div class="label">ว่าง</div><div class="value free">{{ team_summary.free }}</div></div><div class="team-stat"><div class="label">ทีมขาด</div><div class="value missing">{{ team_summary.missing }}</div></div><div class="team-stat"><div class="label">ทีมเลิกดึก</div><div class="value late">{{ team_summary.late }}</div></div><div class="team-stat"><div class="label">พร้อมทำงาน</div><div class="value ready ready-total">
     {{ team_summary.ready }} / {{ team_summary.total }}
 </div></div></div><div class="legend"><span><i class="dot work"></i>Working</span><span><i class="dot onsite"></i>On-site</span><span><i class="dot departed"></i>Departed</span><span><i class="dot free"></i>ว่าง</span><span><i class="dot missing"></i>ทีมขาด</span><span><i class="dot late"></i>ทีมเลิกดึก</span></div><div class="team-detail">Remark ที่มีคำว่า <b>ลา / ไม่มีทีม / รถเสีย</b> จะถูกนับเป็น “ทีมขาด” โดยไม่ขึ้นกับ Job Count · Remark <b>Available on HH:MM</b> จะเป็น “ทีมเลิกดึก” จนถึงเวลาที่กำหนด แล้วเปลี่ยนกลับเป็นพร้อมทำงานอัตโนมัติ</div></div>
+</section>
+
+<section class="panel zone-group-panel">
+  <div class="panel-head">
+    <div class="panel-title">Job แยก Zone · กลุ่มงาน</div>
+    <div class="panel-note">EDS → FBB → MBB · แยก Critical / Major / Minor · นับชุดเดียวกับ OSP Job Aging Summary</div>
+  </div>
+  <div class="osp-age-wrap">
+    <table class="osp-age-table zone-group-table">
+      <thead>
+        <tr>
+          <th class="subsystem-head">กลุ่ม / Priority</th>
+          {% for z in zone_group_summary.zones %}<th class="zone-head">{{ z }}</th>{% endfor %}
+          <th class="grand-total-head">Grand Total</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for g in zone_group_summary.groups %}
+        <tr class="zg-group zg-{{ g.group|lower }}">
+          <td class="subsystem-cell">⊟ {{ g.group }}</td>
+          {% for z in zone_group_summary.zones %}<td class="num">{{ g.totals[z] or '' }}</td>{% endfor %}
+          <td class="num grand-total">{{ g.totals.total or '' }}</td>
+        </tr>
+        {% for r in g.rows %}
+        <tr class="zg-priority">
+          <td class="subsystem-cell zg-pri zg-pri-{{ r.priority|lower }}">{{ r.priority }}</td>
+          {% for z in zone_group_summary.zones %}<td class="num">{{ r[z] or '' }}</td>{% endfor %}
+          <td class="num grand-total">{{ r.total or '' }}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="subsystem-head"><b>Grand Total</b></td>
+          {% for z in zone_group_summary.zones %}<td class="num zg-foot">{{ zone_group_summary.grand[z] or '' }}</td>{% endfor %}
+          <td class="num grand-total">{{ zone_group_summary.grand.total or '' }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </section>
 
 <section class="panel osp-age-panel">
