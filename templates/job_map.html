@@ -426,6 +426,10 @@ const view = {area: "", company: "", pri: "", status: "", flags: new Set(), q: "
 const COMPANIES = [["DMP", "DMP"], ["Origin", "Origin"], ["Ex-Press", "Ex-Press"], ["AIS", "AIS"], ["Workforce", "Workforce"]];
 const STATUSES = [["assigned", "Assigned", "#E11D48"], ["accepted", "Accepted", "#DB2777"], ["departed", "Departed", "#D97706"],
                   ["onsite", "On-Site", "#16A34A"], ["held", "Held", "#2563EB"], ["transfered", "Transfered", "#7C3AED"], ["done", "Done", "#475569"]];
+// map label colours per status: [light basemap, dark basemap] — darker / lighter than the chip dots so text stays readable
+const STATUS_TEXT = {assigned: ["#BE123C", "#FDA4AF"], accepted: ["#BE185D", "#F9A8D4"], departed: ["#B45309", "#FCD34D"],
+                     onsite: ["#15803D", "#86EFAC"], held: ["#1D4ED8", "#93C5FD"], transfered: ["#6D28D9", "#C4B5FD"],
+                     done: ["#475569", "#CBD5E1"], other: ["#334155", "#CBD5E1"]};
 const statusKey = (j) => {
   if (j.done) return "done";
   const s = (j.status || "").toLowerCase().replace(/[^a-z]/g, "");
@@ -555,14 +559,24 @@ function setupLayers() {
              "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.75, 14, 1.05], "symbol-sort-key": ["get", "rank"]}});
   // Site code at every zoom: labels try 8 spots around their pin before giving up, and
   // late / critical jobs get first pick when they compete for space.
-  map.addLayer({id: "job-label", type: "symbol", source: "jobs",
-    layout: {"text-field": ["step", ["zoom"], ["get", "site"], 14,
-               ["format", ["get", "site"], {}, "\n", {}, ["get", "site_name"], {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]}]],
-             "text-font": ["Noto Sans Bold"], "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9.5, 12, 11, 15, 12],
-             "text-variable-anchor": ["top", "bottom", "right", "left", "top-right", "top-left", "bottom-right", "bottom-left"],
-             "text-radial-offset": 0.85, "text-justify": "auto", "text-padding": 1, "text-max-width": 14,
-             "symbol-sort-key": ["-", 0, ["get", "rank"]], "text-optional": true},
-    paint: {"text-color": dark ? "#E2E8F0" : "#0F172A", "text-halo-color": dark ? "#0F172A" : "#FFFFFF", "text-halo-width": 1.8}});
+  // zoom 12+: the job's status under the code (same font, coloured by status) · 14+: plus the site name.
+  // One layer per zoom band: a per-section colour inside "format" is dropped when the format sits
+  // inside a zoom "step", so each band gets its own plain format.
+  const statusColor = ["match", ["get", "sk"], ...Object.entries(STATUS_TEXT).flatMap(([k, c]) => [k, c[dark ? 1 : 0]]), STATUS_TEXT.other[dark ? 1 : 0]];
+  const siteName = ["get", "site_name"], nameStyle = {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]};
+  const bands = [
+    ["job-label", 0, 12, ["get", "site"]],
+    ["job-label-status", 12, 14, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}]],
+    ["job-label-full", 14, 24, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}, "\n", {}, siteName, nameStyle]],
+  ];
+  for (const [id, minzoom, maxzoom, field] of bands) {
+    map.addLayer({id, type: "symbol", source: "jobs", minzoom, maxzoom,
+      layout: {"text-field": field, "text-font": ["Noto Sans Bold"], "text-size": ["interpolate", ["linear"], ["zoom"], 8, 9.5, 12, 11, 15, 12],
+               "text-variable-anchor": ["top", "bottom", "right", "left", "top-right", "top-left", "bottom-right", "bottom-left"],
+               "text-radial-offset": 0.85, "text-justify": "auto", "text-padding": 1, "text-max-width": 14,
+               "symbol-sort-key": ["-", 0, ["get", "rank"]], "text-optional": true},
+      paint: {"text-color": dark ? "#E2E8F0" : "#0F172A", "text-halo-color": dark ? "#0F172A" : "#FFFFFF", "text-halo-width": 1.8}});
+  }
   applyToggles();
   if (jobs.length) render();
 }
@@ -590,7 +604,7 @@ function applyToggles() {
   if (!map.getLayer("district-ok")) return;
   const v = (on) => on ? "visible" : "none";
   for (const id of ["district-ok", "district-alert"]) map.setLayoutProperty(id, "visibility", v(show.zones));
-  map.setLayoutProperty("job-label", "visibility", v(show.labels));
+  for (const id of ["job-label", "job-label-status", "job-label-full"]) map.setLayoutProperty(id, "visibility", v(show.labels));
   for (const id of ["fault-dot", "fault-halo", "fault-label"]) map.setLayoutProperty(id, "visibility", v(show.faults));
 }
 
@@ -776,7 +790,8 @@ function render() {
   map.getSource("jobs").setData({type: "FeatureCollection", features: shown.filter(j => j._lat != null).map(j => ({
     type: "Feature", geometry: {type: "Point", coordinates: [j._lon, j._lat]},
     properties: {id: j.id, p: PCOL[j._p] ? j._p : "minor", fill: isExact(j) ? "exact" : "approx", out: j._out ? 1 : 0,
-                 rank: (j._out ? 10 : 0) + (PRANK[j._p] || 0), site: j.site || "", site_name: j.site_name || ""},
+                 rank: (j._out ? 10 : 0) + (PRANK[j._p] || 0), site: j.site || "", site_name: j.site_name || "",
+                 status: statusLabel(j), sk: j._s},
   }))});
   map.getSource("faults").setData({type: "FeatureCollection", features: shown.flatMap(j => (j.faults || [])
     .filter(f => f.lat != null)
