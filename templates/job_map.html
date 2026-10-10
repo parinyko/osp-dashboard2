@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Map — OSP BKK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+:root{
+  --bg:#f3f7f1;--panel:#ffffff;--line:#dfe9da;--ink:#1f3322;--muted:#6b7b69;--brand:#4f9517;
+  --crit:#e5484d;--major:#f59e0b;--minor:#d4b106;--ok:#22a052;--due:#c62828;--info:#2563eb;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sans-serif;color:var(--ink);background:var(--bg)}
+.app{display:grid;grid-template-columns:350px 1fr;grid-template-rows:54px 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 14px;background:linear-gradient(135deg,#fff 0%,#f4faef 55%,#dff1c9 100%);border-bottom:1px solid var(--line)}
+.topbar h1{margin:0;font-size:19px;color:#3f7d12;font-weight:800;white-space:nowrap}
+.topbar .upd{font-size:12px;color:var(--muted);white-space:nowrap}
+.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:nowrap;overflow:auto}
+.topbar nav a{font-size:12px;font-weight:700;text-decoration:none;color:#3c6b26;background:#fff;border:1px solid #d3e5c8;border-radius:8px;padding:6px 10px;white-space:nowrap}
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 10px 6px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:6px 7px;text-align:center;background:#fafcf9}
+.stat b{display:block;font-size:20px;line-height:1.1}.stat span{font-size:10.5px;color:var(--muted);font-weight:600}
+.stat.due b{color:var(--due)}.stat.crit b{color:var(--crit)}.stat.approx b{color:#7c5cc4}
+.zones{display:flex;flex-wrap:wrap;gap:5px;padding:2px 10px 6px}
+.chip{border:1px solid #d3e3cb;background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:700;color:#3d5a33;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.chip.on{background:#2f4a26;border-color:#2f4a26;color:#fff}
+.chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.chip .n{font-size:11px;opacity:.75}
+.search{padding:4px 10px 8px}
+.search input{width:100%;padding:9px 11px;border:1px solid #d3e3cb;border-radius:10px;font:inherit;font-size:13px;outline:none}
+.search input:focus{border-color:#8cc152;box-shadow:0 0 0 3px rgba(140,193,82,.18)}
+.sitebox{display:flex;gap:6px;padding:0 10px 8px}
+.sitebox input{flex:1;padding:7px 10px;border:1px dashed #b9cfad;border-radius:9px;font:inherit;font-size:12.5px;text-transform:uppercase}
+.btn{border:0;border-radius:9px;padding:8px 12px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+.btn.green{background:linear-gradient(135deg,#79bd2d,#4f9517);color:#fff}
+.btn.light{background:#fff;border:1px solid #cfe0c5;color:#397817}
+.btn.dark{background:#22352a;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.listhead{padding:4px 12px 6px;font-size:12px;color:var(--muted);font-weight:700;display:flex;justify-content:space-between}
+.list{overflow:auto;flex:1;padding:0 8px 10px}
+.job{border:1px solid var(--line);border-left:4px solid var(--minor);border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;background:#fff;transition:transform .12s ease,box-shadow .12s ease}
+.job:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(40,70,30,.10)}
+.job.sel{outline:2px solid #4f9517;background:#f6fbf1}
+.job.p-critical{border-left-color:var(--crit)}.job.p-major{border-left-color:var(--major)}
+.job .r1{display:flex;align-items:center;gap:6px;font-weight:800;font-size:13.5px}
+.job .r2{font-size:12px;color:#4b5d48;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job .r3{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.b-critical{background:#fde2e2;color:#b42318}.b-major{background:#fff1d6;color:#a15c00}.b-minor{background:#fff8c5;color:#7a6a00}
+.b-out{background:var(--due);color:#fff}.b-in{background:#dcfce7;color:#166534}
+.b-approx{background:#ede7fb;color:#5b3fa6}.b-kmz{background:#e0f2fe;color:#075985}
+.mapwrap{position:relative;min-height:0}
+#map{position:absolute;inset:0}
+.legend{position:absolute;left:12px;bottom:26px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:11.5px;box-shadow:0 4px 18px rgba(0,0,0,.08);max-width:270px}
+.legend b{display:block;font-size:12px;margin-bottom:4px}
+.legend div{display:flex;align-items:center;gap:7px;margin:3px 0}
+.legend .sw{width:14px;height:10px;border-radius:3px;display:inline-block}
+.legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.legend .hollow{background:#fff!important;border:2.5px solid #7c5cc4;box-shadow:none}
+.detail{position:absolute;top:12px;right:12px;bottom:12px;width:360px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden}
+.detail.open{display:flex;animation:slidein .22s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.detail .dh{padding:12px 14px 8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.detail .dh h2{margin:0;font-size:18px}
+.detail .x{border:0;background:none;font-size:20px;color:#8a978a;cursor:pointer;line-height:1}
+.detail .db{padding:10px 14px;overflow:auto;flex:1}
+.detail .title{font-size:12px;color:#4b5d48;line-height:1.45;background:#f7faf5;border-radius:9px;padding:8px 10px;word-break:break-word}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
+.cell{background:#f7faf5;border-radius:9px;padding:7px 9px}
+.cell span{display:block;font-size:10.5px;color:var(--muted);font-weight:700}
+.cell b{font-size:12.5px;word-break:break-word}
+.pos{border-radius:10px;padding:8px 10px;font-size:12px;margin:8px 0}
+.pos.job{background:#dcfce7;color:#14532d}.pos.site{background:#e0f2fe;color:#0c4a6e}.pos.district{background:#ede7fb;color:#4c1d95}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.kmzcard{position:absolute;top:12px;left:12px;width:300px;max-height:calc(100% - 24px);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden}
+.kmzcard.open{display:flex;animation:slidein .22s ease}
+.kmzcard .kh{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef8ff}
+.kmzcard .kh b{font-size:14px;color:#075985}
+.kmzcard .kb{padding:8px 12px;overflow:auto}
+.kmzcard select{width:100%;padding:6px 8px;border:1px solid #cfe0e8;border-radius:8px;font:inherit;font-size:12px;margin-bottom:8px}
+.layer{display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0;cursor:pointer}
+.layer input{accent-color:#0284c7}.layer .c{margin-left:auto;color:var(--muted);font-size:11px}
+.layer .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.1)}
+.kmzcard .note{font-size:11px;color:var(--muted);margin-top:6px}
+.zonelabel{background:rgba(255,255,255,.92);border:2px solid currentColor;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:6px;align-items:center}
+.zonelabel .cnt{background:currentColor;border-radius:999px;padding:0 7px;min-width:22px;text-align:center}
+.zonelabel .cnt em{font-style:normal;color:#fff}
+.zonelabel.ok .cnt{display:none}
+/* The marker element itself is positioned by MapLibre with a CSS transform — animate the inner bubble only. */
+.distcount{pointer-events:none}
+.distcount b{width:24px;height:24px;border-radius:50%;background:var(--crit);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.distcount.s1 b{background:var(--minor)}.distcount.s2 b{background:var(--major)}.distcount.s3 b{background:var(--crit)}.distcount.s4 b{background:#7f1d1d}
+.distcount.s3 b,.distcount.s4 b{animation:beat 1.4s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.modal{position:fixed;inset:0;background:rgba(15,30,20,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.modal .box{background:#fff;border-radius:14px;padding:18px;width:min(360px,100%);box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 4px;font-size:16px;color:#355e27}
+.modal p{margin:0 0 12px;font-size:12px;color:var(--muted)}
+.modal input{width:100%;padding:10px 12px;border:1px solid #cfe0c5;border-radius:10px;font:inherit;font-size:15px}
+.modal .err{color:var(--due);font-size:12px;min-height:16px;margin-top:6px}
+.modal .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22352a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
+.maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;max-width:260px}
+.empty{color:var(--muted);font-size:12px;text-align:center;padding:24px 8px}
+@media (prefers-reduced-motion: reduce){.distcount b{animation:none!important}.detail.open,.kmzcard.open{animation:none}}
+@media(max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}
+  .topbar{flex-wrap:wrap;padding:8px 10px;gap:6px}.topbar nav{margin-left:0;width:100%}
+  .mapwrap{grid-row:2}.side{grid-row:3;border-right:0;border-top:1px solid var(--line)}
+  .detail{top:auto;left:8px;right:8px;width:auto;height:62%}
+  .kmzcard{width:auto;right:8px;left:8px;max-height:45%}
+  .legend{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>🗺️ Job Map</h1>
+    <span class="upd">ข้อมูล: <b id="upd">{{ last_update or '-' }}</b> · อัปเดตเองทุก 1 นาที</span>
+    <nav>
+      <a href="/">🏠 หน้าแรก</a>
+      <a href="/job_monitor">📋 Job Monitor</a>
+      <a href="/resource_monitor">🕒 Resource Monitor</a>
+      <a href="/daily_osp_remain">📈 Daily OSP</a>
+    </nav>
+  </header>
+
+  <aside class="side">
+    <div class="stats">
+      <div class="stat"><b id="sTotal">-</b><span>งานค้าง</span></div>
+      <div class="stat due"><b id="sDue">-</b><span>Out Due</span></div>
+      <div class="stat crit"><b id="sCrit">-</b><span>Critical</span></div>
+      <div class="stat approx"><b id="sApprox">-</b><span>ตำแหน่งประมาณ</span></div>
+    </div>
+    <div class="zones" id="zoneChips"></div>
+    <div class="zones" id="filterChips"></div>
+    <div class="search"><input id="q" placeholder="ค้นหา Job ID · SITE_CODE · เขต · ทีม" autocomplete="off"></div>
+    <div class="sitebox">
+      <input id="siteInput" placeholder="เปิด KMZ ด้วย SITE_CODE เช่น TNMMM" autocomplete="off">
+      <button class="btn light" id="siteOpen">🗺️ เปิด KMZ</button>
+    </div>
+    <div class="listhead"><span id="listCount">-</span><span>Out Due → Priority → อายุงาน</span></div>
+    <div class="list" id="list"><div class="empty">กำลังโหลด…</div></div>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map"></div>
+
+    <div class="legend" id="legend">
+      <b>คำอธิบาย</b>
+      <div><span class="sw" style="background:rgba(34,160,82,.35)"></span>เขตปกติ (ไม่มีงานค้าง)</div>
+      <div><span class="sw" style="background:rgba(212,177,6,.55)"></span>มีงาน Minor/Major</div>
+      <div><span class="sw" style="background:rgba(229,72,77,.6)"></span>มี Critical / Out Due — กระพริบ</div>
+      <div><span class="dot" style="background:var(--crit)"></span>Critical <span class="dot" style="background:var(--major);margin-left:6px"></span>Major <span class="dot" style="background:var(--minor);margin-left:6px"></span>Minor</div>
+      <div><span class="dot" style="background:#9ca3af"></span>วงกระเพื่อม = Out Due</div>
+      <div><span class="dot hollow"></span>ตำแหน่งประมาณ (ไซต์ / กลางเขต)</div>
+    </div>
+
+    <section class="kmzcard" id="kmzCard">
+      <div class="kh"><b id="kmzTitle">KMZ</b><button class="btn light" id="kmzClose">ปิด KMZ</button></div>
+      <div class="kb">
+        <select id="kmzVersion"></select>
+        <div id="kmzLayers"></div>
+        <div class="note" id="kmzNote"></div>
+      </div>
+    </section>
+
+    <section class="detail" id="detail">
+      <div class="dh"><div><h2 id="dId">-</h2><div id="dBadges" style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap"></div></div><button class="x" id="dClose" aria-label="ปิด">✕</button></div>
+      <div class="db" id="dBody"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="pwModal">
+  <div class="box">
+    <h3>🔒 เปิดโครงข่าย KMZ</h3>
+    <p>แบบโครงข่ายเป็นข้อมูลภายใน กรอกรหัสก่อนเปิด (จำไว้จนปิดแท็บนี้)</p>
+    <input type="password" id="pwInput" inputmode="numeric" autocomplete="off" placeholder="รหัส">
+    <div class="err" id="pwErr"></div>
+    <div class="row"><button class="btn light" id="pwCancel">ยกเลิก</button><button class="btn green" id="pwOk">ยืนยัน</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LOCKED = {{ map_locked|tojson }};
+const AREAS = {
+  "A1": {name: "SCT", color: "#2563eb"}, "A2": {name: "ONT", color: "#db2777"},
+  "A3": {name: "TLC", color: "#7c3aed"}, "A4": {name: "CWT", color: "#ea580c"},
+};
+const PCOL = {critical: "#e5484d", major: "#f59e0b", minor: "#d4b106"};
+const PRANK = {critical: 3, major: 2, minor: 1};
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let jobs = [], view = {area: "", filter: "all", q: ""}, selected = null, lastUpdated = null;
+let districtFC = null, zoneFC = null, zoneMarkers = {}, distMarkers = [];
+let kmz = null, kmzHidden = new Set();
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pkey = (j) => (j.priority || "").toLowerCase();
+const isOut = (j) => (j.due || "").toLowerCase() === "outdue";
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 2600); }
+function ageText(h) {
+  if (h == null) return "-";
+  if (h < 1) return Math.max(1, Math.round(h * 60)) + " นาที";
+  if (h < 48) return Math.floor(h) + " ชม. " + Math.round((h % 1) * 60) + " น.";
+  return Math.floor(h / 24) + " วัน " + Math.round(h % 24) + " ชม.";
+}
+// severity of a set of jobs: 0 none · 1 minor · 2 major · 3 critical · 4 any Out Due
+function severity(list) {
+  if (!list.length) return 0;
+  if (list.some(isOut)) return 4;
+  return Math.max(...list.map(j => PRANK[pkey(j)] || 1));
+}
+const SEVCOL = ["#22a052", "#d4b106", "#f59e0b", "#e5484d", "#b91c1c"];
+
+// ---------------------------------------------------------------- map
+const map = new maplibregl.Map({
+  container: "map",
+  style: "https://tiles.openfreemap.org/styles/positron",
+  center: [100.62, 13.82], zoom: 9.6, attributionControl: {compact: true},
+});
+map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
+map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-right");
+
+map.on("load", async () => {
+  [districtFC, zoneFC] = await Promise.all([
+    fetch("/static/map/districts.geojson").then(r => r.json()),
+    fetch("/static/map/zones.geojson").then(r => r.json()),
+  ]);
+  map.addSource("districts", {type: "geojson", data: districtFC});
+  map.addSource("zones", {type: "geojson", data: zoneFC});
+  map.addSource("jobs", {type: "geojson", data: {type: "FeatureCollection", features: []}});
+  map.addSource("kmz", {type: "geojson", data: {type: "FeatureCollection", features: []}});
+
+  map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", ["get", "sev"], 0],
+    paint: {"fill-color": "#22a052", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0.13, 14.5, 0.02]}});
+  map.addLayer({id: "district-alert", type: "fill", source: "districts", filter: [">", ["coalesce", ["get", "sev"], 0], 0],
+    paint: {"fill-color": ["match", ["get", "sev"], 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.3}});
+  map.addLayer({id: "district-line", type: "line", source: "districts",
+    paint: {"line-color": "#ffffff", "line-width": 1, "line-opacity": 0.9}});
+  map.addLayer({id: "zone-line", type: "line", source: "zones",
+    paint: {"line-color": ["match", ["get", "area"], "A1", AREAS.A1.color, "A2", AREAS.A2.color, "A3", AREAS.A3.color, AREAS.A4.color],
+            "line-width": 2.6, "line-opacity": 0.85}});
+
+  // KMZ network (under the job pins)
+  const visible = ["!", ["in", ["get", "folder"], ["literal", []]]];
+  map.addLayer({id: "kmz-fill", type: "fill", source: "kmz", filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
+    paint: {"fill-color": ["coalesce", ["get", "fill"], "#22d3ee"], "fill-opacity": ["min", 0.35, ["coalesce", ["get", "fill_opacity"], 0.18]]}});
+  map.addLayer({id: "kmz-outline", type: "line", source: "kmz", filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0891b2"], "line-width": 1.2}});
+  map.addLayer({id: "kmz-line", type: "line", source: "kmz", filter: ["all", ["==", ["get", "kind"], "line"], visible],
+    layout: {"line-cap": "round", "line-join": "round"},
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0284c7"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 17, 4]}});
+  map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: ["all", ["==", ["get", "kind"], "point"], visible],
+    paint: {"circle-color": ["coalesce", ["get", "icon"], "#ec4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
+            "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
+
+  // job pins: pulsing ring for Out Due, solid dot = exact position, hollow = approximate
+  map.addLayer({id: "job-halo", type: "circle", source: "jobs", filter: ["==", ["get", "out"], 1],
+    paint: {"circle-color": "transparent", "circle-stroke-color": ["get", "color"], "circle-stroke-width": 2.5,
+            "circle-radius": 10, "circle-stroke-opacity": 0.6}});
+  map.addLayer({id: "job-dot", type: "circle", source: "jobs",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 14, 8],
+      "circle-color": ["case", ["==", ["get", "exact"], 1], ["get", "color"], "#ffffff"],
+      "circle-stroke-color": ["case", ["==", ["get", "exact"], 1], "#ffffff", ["get", "color"]],
+      "circle-stroke-width": ["case", ["==", ["get", "exact"], 1], 2, 2.6],
+    }});
+  map.addLayer({id: "job-sel", type: "circle", source: "jobs", filter: ["==", ["get", "id"], ""],
+    paint: {"circle-radius": 15, "circle-color": "transparent", "circle-stroke-color": "#111827", "circle-stroke-width": 2.5}});
+
+  map.on("click", "job-dot", (e) => select(e.features[0].properties.id, false));
+  map.on("mouseenter", "job-dot", () => map.getCanvas().style.cursor = "pointer");
+  map.on("mouseleave", "job-dot", () => map.getCanvas().style.cursor = "");
+  for (const id of ["kmz-point", "kmz-line", "kmz-fill"]) {
+    map.on("click", id, (e) => {
+      if (map.queryRenderedFeatures(e.point, {layers: ["job-dot"]}).length) return;
+      const p = e.features[0].properties;
+      new maplibregl.Popup({offset: 8}).setLngLat(e.lngLat)
+        .setHTML(`<b>${esc(p.name || "(ไม่มีชื่อ)")}</b><br><span style="color:#64748b">${esc(p.path || p.folder || "")}</span>${p.desc ? "<br>" + esc(p.desc) : ""}`)
+        .addTo(map);
+    });
+    map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
+    map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
+  }
+
+  addZoneLabels();
+  await refresh(true);
+  animate();
+  setInterval(() => refresh(false), 60000);
+});
+
+function addZoneLabels() {
+  for (const f of zoneFC.features) {
+    const p = f.properties, el = document.createElement("div");
+    el.className = "zonelabel ok";
+    el.style.color = AREAS[p.area].color;
+    el.innerHTML = `<span>${p.area} · ${p.name}</span><span class="cnt"><em>0</em></span>`;
+    el.onclick = () => setArea(view.area === p.area ? "" : p.area, true);
+    zoneMarkers[p.area] = new maplibregl.Marker({element: el}).setLngLat([p.cx, p.cy]).addTo(map);
+  }
+}
+
+// ---------------------------------------------------------------- animation (blink + pulse)
+function animate() {
+  if (REDUCED) return;
+  let last = 0;
+  const frame = (t) => {
+    if (t - last > 33 && map.getLayer("district-alert")) {   // ~30 fps is plenty
+      last = t;
+      const blink = 0.5 + 0.5 * Math.sin(t / 1600 * 2 * Math.PI);
+      // zoomed in to a street / an opened KMZ the area colour fades out so it doesn't hide them
+      const fade = Math.min(1, Math.max(0.12, (14.5 - map.getZoom()) / 3));
+      map.setPaintProperty("district-alert", "fill-opacity", (0.16 + 0.34 * blink) * fade);
+      map.setPaintProperty("district-ok", "fill-opacity", 0.13 * fade);
+      const ph = (t % 1800) / 1800;
+      map.setPaintProperty("job-halo", "circle-radius", 8 + ph * 18);
+      map.setPaintProperty("job-halo", "circle-stroke-opacity", 0.75 * (1 - ph));
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- data
+async function refresh(first) {
+  try {
+    const r = await fetch("/api/map/jobs", {cache: "no-store"});
+    const d = await r.json();
+    if (!first && d.updated === lastUpdated) return;
+    lastUpdated = d.updated;
+    $("upd").textContent = d.updated || "-";
+    jobs = d.jobs.map(j => ({...j, _out: isOut(j), _p: pkey(j)}));
+    spreadOverlaps(jobs);
+    render();
+    if (first) {
+      const qs = new URLSearchParams(location.search);
+      if (qs.get("job")) select(qs.get("job"), true);
+      else if (qs.get("site")) openKmz(qs.get("site"));
+    }
+  } catch (e) {
+    if (first) $("list").innerHTML = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message)}</div>`;
+  }
+}
+
+// Jobs placed on the same spot (same site / district centre) fan out in a small ring.
+function spreadOverlaps(list) {
+  const groups = {};
+  for (const j of list) {
+    if (j.lat == null) continue;
+    const k = j.lat.toFixed(5) + "," + j.lon.toFixed(5);
+    (groups[k] = groups[k] || []).push(j);
+  }
+  for (const g of Object.values(groups)) {
+    g.forEach((j, i) => {
+      if (g.length === 1) { j._lat = j.lat; j._lon = j.lon; return; }
+      const ring = Math.floor(i / 8), a = (i % 8) / 8 * 2 * Math.PI + ring * 0.4, r = 0.0016 * (1 + ring);
+      j._lat = j.lat + r * Math.sin(a); j._lon = j.lon + r * Math.cos(a) * 1.03;
+    });
+  }
+}
+
+function matches(j) {
+  if (view.area && j.area !== view.area) return false;
+  if (view.filter === "out" && !j._out) return false;
+  if (view.filter === "critical" && j._p !== "critical") return false;
+  if (view.filter === "approx" && j.precision === "job") return false;
+  if (view.filter === "kmz" && !j.kmz) return false;
+  if (view.q) {
+    const hay = [j.id, j.site, j.site_name, j.district, j.assign, j.team_zone, j.area_name].join(" ").toLowerCase();
+    if (!hay.includes(view.q)) return false;
+  }
+  return true;
+}
+
+function render() {
+  const shown = jobs.filter(matches).sort((a, b) =>
+    (b._out - a._out) || ((PRANK[b._p] || 0) - (PRANK[a._p] || 0)) || ((b.age_h || 0) - (a.age_h || 0)));
+
+  // stats (whole area filter, not the search)
+  const scope = jobs.filter(j => !view.area || j.area === view.area);
+  $("sTotal").textContent = scope.length;
+  $("sDue").textContent = scope.filter(j => j._out).length;
+  $("sCrit").textContent = scope.filter(j => j._p === "critical").length;
+  $("sApprox").textContent = scope.filter(j => j.precision !== "job").length;
+
+  // area chips
+  const chips = [["", "ทุกโซน", "#334155"], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
+  $("zoneChips").innerHTML = chips.map(([a, label, c]) => {
+    const n = jobs.filter(j => !a || j.area === a).length;
+    return `<button class="chip ${view.area === a ? "on" : ""}" data-area="${a}"><i style="background:${c}"></i>${label}<span class="n">${n}</span></button>`;
+  }).join("");
+  const filters = [["all", "ทั้งหมด"], ["out", "Out Due"], ["critical", "Critical"], ["kmz", "มี KMZ"], ["approx", "ตำแหน่งประมาณ"]];
+  $("filterChips").innerHTML = filters.map(([k, l]) => `<button class="chip ${view.filter === k ? "on" : ""}" data-filter="${k}">${l}</button>`).join("");
+
+  // list
+  $("listCount").textContent = `${shown.length} งาน`;
+  $("list").innerHTML = shown.length ? shown.map(j => `
+    <div class="job p-${j._p} ${selected === j.id ? "sel" : ""}" data-id="${esc(j.id)}">
+      <div class="r1">${esc(j.id)} <span class="badge b-${j._p}">${esc(j.priority)}</span>
+        ${j._out ? '<span class="badge b-out">Out Due</span>' : (j.due ? '<span class="badge b-in">In Due</span>' : "")}
+        ${j.precision !== "job" ? '<span class="badge b-approx">≈</span>' : ""}${j.kmz ? '<span class="badge b-kmz">KMZ</span>' : ""}</div>
+      <div class="r2">${esc(j.site || "-")} · ${esc(j.site_name || j.sub)}</div>
+      <div class="r3"><span>⏱ ${ageText(j.age_h)}</span><span>📍 ${esc(j.district || "-")}</span><span>👷 ${esc(j.assign || "-")}</span></div>
+    </div>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้ 🎉</div>';
+
+  // map: pins
+  if (!map.getSource("jobs")) return;
+  map.getSource("jobs").setData({type: "FeatureCollection", features: shown.filter(j => j._lat != null).map(j => ({
+    type: "Feature", geometry: {type: "Point", coordinates: [j._lon, j._lat]},
+    properties: {id: j.id, color: PCOL[j._p] || "#64748b", out: j._out ? 1 : 0, exact: j.precision === "job" ? 1 : 0},
+  }))});
+
+  // map: districts green / blinking by the jobs inside them (all jobs, so the map shows the whole picture)
+  const byDistrict = {};
+  for (const j of jobs) {
+    if (view.area && j.area !== view.area) continue;
+    const k = (j.district || "").replace(/^(เขต|อำเภอ)\s*/, "").replace(/\s+/g, "");
+    (byDistrict[k] = byDistrict[k] || []).push(j);
+  }
+  for (const f of districtFC.features) {
+    const list = byDistrict[f.properties.district.replace(/\s+/g, "")] || [];
+    f.properties.sev = severity(list);
+    f.properties.n = list.length;
+  }
+  map.getSource("districts").setData(districtFC);
+  distMarkers.forEach(m => m.remove());
+  distMarkers = districtFC.features.filter(f => f.properties.n > 0).map(f => {
+    const el = document.createElement("div");
+    el.className = `distcount s${f.properties.sev}`;
+    el.innerHTML = `<b>${f.properties.n}</b>`;
+    el.title = `${f.properties.district}: ${f.properties.n} งาน`;
+    return new maplibregl.Marker({element: el}).setLngLat([f.properties.cx, f.properties.cy]).addTo(map);
+  });
+
+  // zone labels: job count, green when the zone has nothing open
+  for (const [a, m] of Object.entries(zoneMarkers)) {
+    const list = jobs.filter(j => j.area === a);
+    const el = m.getElement();
+    el.classList.toggle("ok", !list.length);
+    el.querySelector("em").textContent = list.length;
+    el.style.color = list.length ? AREAS[a].color : "#22a052";
+    el.style.opacity = view.area && view.area !== a ? 0.45 : 1;
+  }
+  map.setFilter("job-sel", ["==", ["get", "id"], selected || ""]);
+}
+
+function setArea(a, fly) {
+  view.area = a;
+  render();
+  if (fly) {
+    const f = zoneFC.features.find(z => z.properties.area === a);
+    if (f) map.fitBounds(bbox(f.geometry), {padding: 40, duration: 900});
+    else map.flyTo({center: [100.62, 13.82], zoom: 9.6, duration: 900});
+  }
+}
+
+function bbox(geom) {
+  let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
+  const walk = (c) => typeof c[0] === "number" ? (x0 = Math.min(x0, c[0]), y0 = Math.min(y0, c[1]), x1 = Math.max(x1, c[0]), y1 = Math.max(y1, c[1])) : c.forEach(walk);
+  walk(geom.coordinates);
+  return [[x0, y0], [x1, y1]];
+}
+
+// ---------------------------------------------------------------- selection / detail
+function select(id, fly) {
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  selected = id;
+  render();
+  if (j._lat != null) map.flyTo({center: [j._lon, j._lat], zoom: Math.max(map.getZoom(), j.precision === "district" ? 12 : 14.5), duration: fly === false ? 600 : 900});
+  const card = document.querySelector(`.job[data-id="${CSS.escape(id)}"]`);
+  if (card) card.scrollIntoView({block: "nearest"});
+
+  $("dId").textContent = j.id;
+  $("dBadges").innerHTML = `<span class="badge b-${j._p}">${esc(j.priority)}</span>` +
+    (j._out ? '<span class="badge b-out">Out Due</span>' : (j.due ? '<span class="badge b-in">In Due</span>' : "")) +
+    `<span class="badge" style="background:#eef2f7;color:#334155">${esc(j.status)}</span>`;
+  const pos = {
+    job: ["job", "📍 พิกัดจากใบงาน (ตรงจุด)"],
+    site: ["site", "📡 ตำแหน่งไซต์ " + esc(j.site) + " — งานจริงอาจอยู่ห่างจากไซต์"],
+    district: ["district", "🗺️ ไม่มีพิกัด — วางไว้กลางเขต " + esc(j.district) + " (ประมาณ)"],
+  }[j.precision] || ["district", "ไม่พบตำแหน่ง"];
+  const nav = j.precision === "job" || j.precision === "site";
+  $("dBody").innerHTML = `
+    <div class="title">${esc(j.title)}</div>
+    <div class="pos ${pos[0]}">${pos[1]}</div>
+    <div class="grid2">
+      <div class="cell"><span>ไซต์</span><b>${esc(j.site || "-")}</b><br><small>${esc(j.site_name)}</small></div>
+      <div class="cell"><span>ทีม</span><b>${esc(j.assign || "-")}</b><br><small>${esc(j.team_zone)}</small></div>
+      <div class="cell"><span>เขต / จังหวัด</span><b>${esc(j.district || "-")}</b><br><small>${esc(j.province)}</small></div>
+      <div class="cell"><span>โซน</span><b>${esc(j.area ? j.area + " · " + j.area_name : "-")}</b><br><small>${esc(j.sub)}</small></div>
+      <div class="cell"><span>สร้างเมื่อ</span><b>${esc(j.create || "-")}</b></div>
+      <div class="cell"><span>อายุงาน</span><b>${ageText(j.age_h)}</b></div>
+    </div>
+    <div class="actions">
+      ${j.kmz ? `<button class="btn green" onclick="openKmz('${esc(j.site)}')">🗺️ เปิด KMZ ไซต์ ${esc(j.site)}</button>` : `<span style="font-size:12px;color:var(--muted)">ไซต์นี้ไม่มีไฟล์ KMZ</span>`}
+      ${nav ? `<a class="btn light" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lon}">🧭 นำทาง</a>` : ""}
+      <button class="btn light" onclick="navigator.clipboard.writeText('${esc(j.id)}').then(()=>toast('คัดลอก ${esc(j.id)} แล้ว'))">📋 คัดลอก JB</button>
+    </div>`;
+  $("detail").classList.add("open");
+  history.replaceState(null, "", "/map?job=" + encodeURIComponent(id));
+}
+$("dClose").onclick = () => { $("detail").classList.remove("open"); selected = null; render(); history.replaceState(null, "", "/map"); };
+
+// ---------------------------------------------------------------- KMZ
+function mapKey() { try { return sessionStorage.getItem("mapKey") || ""; } catch (e) { return ""; } }
+function askPassword() {
+  return new Promise((resolve) => {
+    $("pwErr").textContent = ""; $("pwInput").value = ""; $("pwModal").classList.add("open"); $("pwInput").focus();
+    const done = (v) => { $("pwModal").classList.remove("open"); $("pwOk").onclick = $("pwCancel").onclick = $("pwInput").onkeydown = null; resolve(v); };
+    $("pwCancel").onclick = () => done(null);
+    const ok = async () => {
+      const pw = $("pwInput").value;
+      if (!pw) return;
+      const r = await fetch("/api/map/unlock", {method: "POST", headers: {"X-Map-Key": pw}});
+      if (r.ok) { try { sessionStorage.setItem("mapKey", pw); } catch (e) {} done(pw); }
+      else { const j = await r.json().catch(() => ({})); $("pwErr").textContent = j.message || "รหัสไม่ถูกต้อง"; }
+    };
+    $("pwOk").onclick = ok;
+    $("pwInput").onkeydown = (e) => { if (e.key === "Enter") ok(); };
+  });
+}
+async function kmzFetch(url) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (LOCKED && !mapKey()) { if (!(await askPassword())) return null; }
+    const r = await fetch(url, {headers: {"X-Map-Key": mapKey()}});
+    if (r.status === 401) { try { sessionStorage.removeItem("mapKey"); } catch (e) {} continue; }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(j.message || "เปิด KMZ ไม่สำเร็จ"); return null; }
+    return j;
+  }
+  return null;
+}
+async function openKmz(site) {
+  site = String(site || "").trim().toUpperCase();
+  if (!site) return;
+  const v = await kmzFetch("/api/map/kmz/" + encodeURIComponent(site));
+  if (!v) return;
+  if (!v.versions.length) { toast(`ไม่พบไฟล์ KMZ ของไซต์ ${site}`); return; }
+  $("kmzVersion").innerHTML = v.versions.map(x => `<option value="${x.i}">${esc(x.date)} · ${esc(x.title)}</option>`).join("");
+  $("kmzVersion").onchange = () => loadKmz(site, +$("kmzVersion").value);
+  $("kmzTitle").textContent = `🗺️ KMZ · ${site} (${v.versions.length} เวอร์ชัน)`;
+  $("kmzCard").classList.add("open");
+  $("legend").style.display = "none";
+  await loadKmz(site, 0);
+}
+async function loadKmz(site, i) {
+  $("kmzLayers").innerHTML = '<div class="empty">กำลังเปิดไฟล์…</div>';
+  const g = await kmzFetch(`/api/map/kmz/${encodeURIComponent(site)}/${i}`);
+  if (!g) { $("kmzLayers").innerHTML = ""; return; }
+  kmz = g; kmzHidden = new Set();
+  map.getSource("kmz").setData({type: "FeatureCollection", features: g.features});
+  applyKmzFilter();
+  const colorOf = (name) => {
+    const f = g.features.find(x => x.properties.folder === name);
+    return f ? (f.properties.stroke || f.properties.fill || f.properties.icon || "#0284c7") : "#0284c7";
+  };
+  $("kmzLayers").innerHTML = `<label class="layer"><input type="checkbox" checked id="kmzAll"><b>ทุกชั้น</b><span class="c">${g.features.length}</span></label>` +
+    g.groups.map((x, k) => `<label class="layer"><input type="checkbox" checked data-g="${k}"><span class="sw" style="background:${colorOf(x.name)}"></span>${esc(x.name)}<span class="c">${x.count}</span></label>`).join("");
+  $("kmzNote").textContent = `${g.date} · ${g.title}` + (g.truncated ? " · ไฟล์ใหญ่ แสดงบางส่วน" : "");
+  $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.onchange = () => {
+    const name = g.groups[+cb.dataset.g].name;
+    cb.checked ? kmzHidden.delete(name) : kmzHidden.add(name);
+    $("kmzAll").checked = kmzHidden.size === 0;
+    applyKmzFilter();
+  });
+  $("kmzAll").onchange = (e) => {
+    kmzHidden = e.target.checked ? new Set() : new Set(g.groups.map(x => x.name));
+    $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.checked = e.target.checked);
+    applyKmzFilter();
+  };
+  const all = {type: "Polygon", coordinates: [g.features.flatMap(f => {
+    const c = f.geometry.coordinates;
+    return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0];
+  })]};
+  if (all.coordinates[0].length) map.fitBounds(bbox(all), {padding: 60, maxZoom: 16, duration: 900});
+}
+function applyKmzFilter() {
+  const hidden = ["literal", [...kmzHidden]];
+  const vis = ["!", ["in", ["get", "folder"], hidden]];
+  map.setFilter("kmz-fill", ["all", ["==", ["get", "kind"], "polygon"], vis]);
+  map.setFilter("kmz-outline", ["all", ["==", ["get", "kind"], "polygon"], vis]);
+  map.setFilter("kmz-line", ["all", ["==", ["get", "kind"], "line"], vis]);
+  map.setFilter("kmz-point", ["all", ["==", ["get", "kind"], "point"], vis]);
+}
+$("kmzClose").onclick = () => {
+  map.getSource("kmz").setData({type: "FeatureCollection", features: []});
+  $("kmzCard").classList.remove("open"); kmz = null;
+  $("legend").style.display = "";
+};
+$("siteOpen").onclick = () => openKmz($("siteInput").value);
+$("siteInput").onkeydown = (e) => { if (e.key === "Enter") openKmz($("siteInput").value); };
+
+// ---------------------------------------------------------------- sidebar events
+$("list").onclick = (e) => { const c = e.target.closest(".job"); if (c) select(c.dataset.id, true); };
+$("zoneChips").onclick = (e) => { const c = e.target.closest("[data-area]"); if (c) setArea(c.dataset.area, true); };
+$("filterChips").onclick = (e) => { const c = e.target.closest("[data-filter]"); if (c) { view.filter = c.dataset.filter; render(); } };
+$("q").oninput = (e) => { view.q = e.target.value.trim().toLowerCase(); render(); };
+</script>
+</body>
+</html>

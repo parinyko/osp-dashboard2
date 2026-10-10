@@ -16,6 +16,8 @@ import pandas as pd
 from flask import Flask, render_template, request, redirect, jsonify, flash, send_file
 from werkzeug.utils import secure_filename
 
+import network_map as nm
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 
@@ -407,6 +409,8 @@ def background_scheduler():
                 hhmm = now.strftime("%H:%M")
                 if hhmm in DAILY_OSP_TIMES:
                     save_daily_osp_snapshot(hhmm)
+                if hhmm == "03:15":   # Job Map: refresh the site position table once a day
+                    threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
             except Exception:
                 app.logger.exception("Scheduled snapshot failed")
         time.sleep(15)
@@ -939,6 +943,109 @@ def resource_version():
     last=RESOURCE_HISTORY[-1] if RESOURCE_HISTORY else {}
     return jsonify(date=last.get("date",""),time=last.get("time",""),stamp=last.get("timestamp",""))
 
+# ---------------------------------------------------------------- Job Map
+
+# The network drawings are AIS internal data: opening them needs this password
+# (set in the server's compose file, never in this public repo). Unset = open (local dev).
+MAP_PASSWORD = os.environ.get("NETWORK_PASSWORD", "")
+MAP_FAILS = {}
+TEAM_ZONE = {t["user"].casefold(): t["zone"] for t in TEAM_DATA}
+AREA_NAMES = {"1": "SCT", "2": "ONT", "3": "TLC", "4": "CWT"}
+
+def map_password_error():
+    """None when the X-Map-Key header is right, else a (json, status) response."""
+    if not MAP_PASSWORD:
+        return None
+    ip, now_ts = client_ip(), time.time()
+    fails = [t for t in MAP_FAILS.get(ip, []) if now_ts - t < 600]
+    if len(fails) >= 5:
+        return jsonify(success=False, message="ใส่รหัสผิดหลายครั้ง ลองใหม่ใน 10 นาที"), 429
+    if request.headers.get("X-Map-Key", "") != MAP_PASSWORD:
+        MAP_FAILS[ip] = fails + [now_ts]
+        return jsonify(success=False, message="รหัสไม่ถูกต้อง"), 401
+    MAP_FAILS.pop(ip, None)
+    return None
+
+def rebuild_site_table():
+    try:
+        sites, from_kmz, hist = nm.build_site_table()
+        app.logger.info("Site table rebuilt: %s sites (%s from KMZ OLT, %s from job history)", sites, from_kmz, hist)
+    except Exception:
+        app.logger.exception("Site table rebuild failed")
+
+def map_jobs():
+    now = now_local()
+    rows = list(RAW_DATA)
+    # Positions written in titles teach us where those sites are, for jobs that have none.
+    nm.learn_sites([(site_code_from_title(r.get("Job Title", "")), nm.title_coords(r.get("Job Title", "")))
+                    for r in rows if nm.title_coords(r.get("Job Title", ""))])
+    kmz = nm.kmz_index()
+    out = []
+    for r in rows:
+        title = clean_text(r.get("Job Title", ""))
+        site = site_code_from_title(title)
+        lat, lon, precision = nm.locate(title, site, r.get("District Name", ""))
+        priority = clean_text(r.get("Priority", ""))
+        create = clean_text(r.get("Create Time", ""))
+        age = None
+        try:
+            dt = pd.to_datetime(create, errors="coerce")
+            if not pd.isna(dt):
+                dt = dt.tz_localize(TZ) if getattr(dt, "tzinfo", None) is None else dt.tz_convert(TZ)
+                age = round((now - dt.to_pydatetime()).total_seconds() / 3600, 1)
+        except Exception:
+            pass
+        area = re.search(r"AREA\s*(\d)", clean_text(r.get("Zone", "")), re.I)
+        assign = clean_text(r.get("Assign to", ""))
+        out.append({
+            "id": clean_text(r.get("Job ID", r.get("JobID", ""))), "priority": priority,
+            "status": clean_text(r.get("Status", "")), "due": resource_due_status(priority, create, now),
+            "create": create, "age_h": age, "sub": clean_text(r.get("Sub System", "")),
+            "assign": assign, "team_zone": TEAM_ZONE.get(assign.casefold(), ""),
+            "area": f"A{area.group(1)}" if area else "", "area_name": AREA_NAMES.get(area.group(1), "") if area else "",
+            "district": clean_text(r.get("District Name", "")), "province": clean_text(r.get("Province Name", "")),
+            "site": site, "site_name": clean_text(r.get("Site Name", "")), "title": title[:400],
+            "lat": lat, "lon": lon, "precision": precision, "kmz": bool(site and site in kmz),
+        })
+    return out
+
+@app.route("/map")
+def job_map():
+    if not RAW_DATA: load_latest_excel_into_memory()
+    return render_template("job_map.html", last_update=LAST_UPDATE, map_locked=bool(MAP_PASSWORD))
+
+@app.route("/api/map/jobs")
+def api_map_jobs():
+    if not RAW_DATA: load_latest_excel_into_memory()
+    return jsonify(updated=LAST_UPDATE, jobs=map_jobs())
+
+@app.route("/api/map/unlock", methods=["POST"])
+def api_map_unlock():
+    err = map_password_error()
+    return err if err else jsonify(success=True)
+
+@app.route("/api/map/kmz/<site>")
+def api_map_kmz_versions(site):
+    err = map_password_error()
+    if err: return err
+    versions = nm.kmz_versions(site)
+    return jsonify(site=site.upper(), versions=[{"i": i, "title": v["title"], "date": v["date"], "size": v["size"]}
+                                                for i, v in enumerate(versions)])
+
+@app.route("/api/map/kmz/<site>/<int:i>")
+def api_map_kmz(site, i):
+    err = map_password_error()
+    if err: return err
+    versions = nm.kmz_versions(site)
+    if not 0 <= i < len(versions):
+        return jsonify(success=False, message="ไม่พบไฟล์ KMZ ของไซต์นี้"), 404
+    try:
+        gj = nm.kmz_geojson(versions[i]["file"])
+    except Exception as exc:
+        app.logger.exception("KMZ %s", versions[i]["file"])
+        return jsonify(success=False, message=f"เปิดไฟล์ไม่สำเร็จ: {exc}"), 500
+    return jsonify(site=site.upper(), title=versions[i]["title"], date=versions[i]["date"], **gj)
+
 @app.route("/daily_osp_remain")
 def daily_osp_remain():
     if not RAW_DATA: load_latest_excel_into_memory()
@@ -1023,4 +1130,6 @@ if __name__ == "__main__":
         except Exception: app.logger.exception("Initial resource snapshot failed")
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("FLASK_DEBUG") != "1":
         threading.Thread(target=background_scheduler,name="dashboard-scheduler",daemon=True).start()
+        if nm.KMZ_DIR.is_dir() and not nm.SITE_TABLE_FILE.exists():
+            threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)),debug=os.environ.get("FLASK_DEBUG")=="1")
