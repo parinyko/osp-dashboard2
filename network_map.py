@@ -26,8 +26,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 DISTRICTS_FILE = BASE_DIR / "static" / "map" / "districts.geojson"
-LEARNED_FILE = BASE_DIR / "site_coords_learned.json"
 NETWORK_DIR = Path(os.environ.get("NETWORK_DIR", "/network"))
+# kept with the network data on the server (not in the code checkout, which auto-deploy pulls over)
+LEARNED_FILE = (NETWORK_DIR if NETWORK_DIR.is_dir() else BASE_DIR) / "site_coords_learned.json"
 KMZ_DIR = NETWORK_DIR / "kmz"
 SITE_TABLE_FILE = NETWORK_DIR / "site_coords.json"
 # Official site positions (SITE_MASTER sheet "พิกัด SITE AIS", ~4,200 sites): {"sites": {CODE: {"lat","lon","name"}}}
