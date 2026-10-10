@@ -973,9 +973,28 @@ def rebuild_site_table():
     except Exception:
         app.logger.exception("Site table rebuild failed")
 
+def map_company(team_zone):
+    """Company of the team a job is assigned to — the Job Map's first filter row."""
+    if not team_zone:
+        return "Pool"          # Workforce BKK Pool: not dispatched to a team yet
+    if team_zone in DASHBOARD_EXCLUDED_ZONES:
+        return "AIS"
+    return zone_company(team_zone)
+
 def map_jobs():
     now = now_local()
-    rows = list(RAW_DATA)
+    rows = [dict(r, _done=False) for r in RAW_DATA]
+    # Done(Not Leave) jobs are dropped from RAW_DATA (Job Monitor hides them); the map lists
+    # them under its "Done" status filter, taken from the original upload.
+    if ORIGINAL_DATA:
+        odf = pd.DataFrame(ORIGINAL_DATA)
+        if {"Sub System", "Status", "Priority"} <= set(odf.columns):
+            sub = odf["Sub System"].fillna("").astype(str).str.strip()
+            st = normalize_status_series(odf)
+            pri = normalize_priority_series(odf)
+            done = odf[sub.isin(VALID_SUBSYSTEMS) & st.str.contains("done(not leave)", regex=False)
+                       & pri.ne("") & pri.ne("none")]
+            rows += [dict(r, _done=True) for r in done.to_dict("records")]
     # Positions written in titles teach us where those sites are, for jobs that have none.
     nm.learn_sites([(site_code_from_title(r.get("Job Title", "")), nm.title_coords(r.get("Job Title", "")))
                     for r in rows if nm.title_coords(r.get("Job Title", ""))])
@@ -1004,11 +1023,12 @@ def map_jobs():
             pass
         area = re.search(r"AREA\s*(\d)", clean_text(r.get("Zone", "")), re.I)
         assign = clean_text(r.get("Assign to", ""))
+        team_zone = TEAM_ZONE.get(assign.casefold(), "")
         out.append({
             "id": clean_text(r.get("Job ID", r.get("JobID", ""))), "priority": priority,
-            "status": clean_text(r.get("Status", "")), "due": resource_due_status(priority, create, now),
+            "status": clean_text(r.get("Status", "")), "due": "" if r["_done"] else resource_due_status(priority, create, now),
             "create": create, "age_h": age, "sub": clean_text(r.get("Sub System", "")),
-            "assign": assign, "team_zone": TEAM_ZONE.get(assign.casefold(), ""),
+            "assign": assign, "team_zone": team_zone, "company": map_company(team_zone), "done": r["_done"],
             "area": f"A{area.group(1)}" if area else "", "area_name": AREA_NAMES.get(area.group(1), "") if area else "",
             "district": clean_text(r.get("District Name", "")), "province": clean_text(r.get("Province Name", "")),
             "site": site, "site_name": clean_text(r.get("Site Name", "")), "title": title[:400],

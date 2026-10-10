@@ -54,29 +54,45 @@ button{font:inherit}
 .stage{position:relative;min-height:0}
 #map{position:absolute;inset:0}
 .panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10);backdrop-filter:blur(6px)}
-.queue{position:absolute;left:14px;top:14px;bottom:14px;width:384px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
+.queue{position:absolute;left:14px;top:14px;bottom:14px;width:400px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
 .qhead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px 14px}
 .qhead b{font-size:14px}.qhead small{font-size:11.5px;color:var(--muted)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
-.chip{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-size:12px;cursor:pointer}
+.filters{display:flex;flex-direction:column;gap:6px;padding:0 14px 10px}
+.frow{display:flex;align-items:flex-start;gap:8px}
+.frow > span{flex:none;width:52px;font-size:11px;color:var(--muted);font-weight:600;line-height:26px}
+.fchips{display:flex;gap:5px;flex-wrap:wrap;min-width:0}
+.chip{flex:none;height:26px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.chip .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.chip.on .n{color:var(--accent)}
+.chip[disabled]{opacity:.45;cursor:default}
+.chip .dot{width:7px;height:7px;border-radius:50%}
 .cols{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:6px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line);letter-spacing:.03em}
 .rows{overflow:auto;flex:1}
-.row{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:9px 14px;border-bottom:1px solid #EEF2F6;cursor:pointer;width:100%;text-align:left;background:transparent;border-left:0;border-right:0;border-top:0;color:inherit}
+.row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:2px 8px;padding:9px 14px;border-bottom:1px solid #EEF2F6;cursor:pointer;width:100%;text-align:left;background:transparent;border-left:0;border-right:0;border-top:0;color:inherit}
 .row:hover{background:#F8FAFC}
 .row.sel{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
 .row .id{font-family:var(--mono);font-size:13px;font-weight:600}
 .row .site{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .site b{font-family:var(--mono);font-weight:600;color:var(--accent)}
 .row .meta{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .rt{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.row .tags{grid-column:2 / 4;display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
 .row .age{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
 .row .age.late{color:var(--late);font-weight:600}
-.tag{font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted);white-space:nowrap;line-height:18px}
+.tag{font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted);white-space:nowrap;line-height:18px;display:inline-flex;align-items:center;gap:4px}
+.tag .dot{width:6px;height:6px;border-radius:50%}
+.st-assigned{background:#FFF1F2;border-color:#FECDD3;color:#9F1239}
+.st-accepted{background:#FDF2F8;border-color:#FBCFE8;color:#9D174D}
+.st-departed{background:#FFFBEB;border-color:#FDE68A;color:#92400E}
+.st-onsite{background:#F0FDF4;border-color:#BBF7D0;color:#166534}
+.st-held{background:#EFF6FF;border-color:#BFDBFE;color:#1E40AF}
+.st-transfered{background:#F5F3FF;border-color:#DDD6FE;color:#5B21B6}
+.st-done{background:#F1F5F9;border-color:#CBD5E1;color:#334155}
+.st-other{background:#F8FAFC;border-color:var(--line);color:var(--ink2)}
 .tag.sp{border-color:#FECDD3;background:#FFF1F2;color:var(--late)}
 .tag.net{border-color:#BAE6FD;background:#F0F9FF;color:var(--accent)}
 .queue.min{bottom:auto}
-.queue.min .chips,.queue.min .cols,.queue.min .rows{display:none}
+.queue.min .filters,.queue.min .cols,.queue.min .rows{display:none}
 .qhead .iconbtn{width:32px;height:32px;margin-left:8px}
 .callout.compact .cb{display:none}
 .callout.compact .ch{border-bottom:0}
@@ -243,7 +259,7 @@ button{font:inherit}
       <div class="qhead"><b>คิวงาน · <span id="qCount" class="mono">-</span></b>
         <span style="display:flex;align-items:center"><small>เกินเวลา › ความรุนแรง › อายุงาน</small>
         <button class="iconbtn" id="qToggle" aria-label="ย่อคิวงาน" aria-expanded="true"><svg class="ico" aria-hidden="true"><use href="#i-chev-up"/></svg></button></span></div>
-      <div class="chips" id="chips"></div>
+      <div class="filters" id="filters"></div>
       <div class="cols"><span></span><span>งาน / ไซต์</span><span>อายุงาน</span></div>
       <div class="rows" id="rows"><div class="empty">กำลังโหลด…</div></div>
     </aside>
@@ -332,7 +348,18 @@ const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const store = {get: (k) => { try { return localStorage.getItem("jm." + k); } catch (e) { return null; } },
                set: (k, v) => { try { localStorage.setItem("jm." + k, v); } catch (e) {} }};
 
-let jobs = [], view = {area: "", filter: "all", q: ""}, selected = null, lastUpdated = null;
+let jobs = [], selected = null, lastUpdated = null;
+// filters: zone (header), company / priority / status rows, extra toggles; status "" = every open job (not Done)
+const view = {area: "", company: "", pri: "", status: "", flags: new Set(), q: ""};
+const COMPANIES = [["DMP", "DMP"], ["Origin", "Origin"], ["Ex-Press", "Ex-Press"], ["AIS", "AIS"], ["Pool", "ยังไม่จ่ายทีม"]];
+const STATUSES = [["assigned", "Assigned", "#E11D48"], ["accepted", "Accepted", "#DB2777"], ["departed", "Departed", "#D97706"],
+                  ["onsite", "On-Site", "#16A34A"], ["held", "Held", "#2563EB"], ["transfered", "Transfered", "#7C3AED"], ["done", "Done", "#475569"]];
+const statusKey = (j) => {
+  if (j.done) return "done";
+  const s = (j.status || "").toLowerCase().replace(/[^a-z]/g, "");
+  return ({assigned: 1, accepted: 1, departed: 1, onsite: 1, held: 1, transfered: 1, transferred: 1}[s] ? (s === "transferred" ? "transfered" : s) : "other");
+};
+const statusLabel = (j) => j.done ? "Done (Not Leave)" : (j.status || "-");
 let districtFC = null, zoneFC = null, zoneMarkers = {}, kmz = null, kmzHidden = new Set();
 let basemap = BASEMAPS[store.get("basemap")] ? store.get("basemap") : "light";   // owner's pick: light basemap, all layers on
 const show = {zones: store.get("zones") !== "0", labels: store.get("labels") !== "0", faults: store.get("faults") !== "0"};
@@ -564,7 +591,7 @@ async function refresh(first) {
     if (!first && d.updated === lastUpdated) return;
     lastUpdated = d.updated;
     $("upd").textContent = d.updated || "-";
-    jobs = d.jobs.map(j => ({...j, _out: isOut(j), _p: pkey(j)}));
+    jobs = d.jobs.map(j => ({...j, _out: isOut(j), _p: pkey(j), _s: statusKey(j)}));
     spreadOverlaps(jobs);
     render();
     if (!first && selected) select(selected, null);
@@ -594,17 +621,42 @@ function spreadOverlaps(list) {
   }
 }
 
-function matches(j) {
-  if (view.area && j.area !== view.area) return false;
-  if (view.filter === "out" && !j._out) return false;
-  if (view.filter === "critical" && j._p !== "critical") return false;
-  if (view.filter === "approx" && isExact(j)) return false;
-  if (view.filter === "kmz" && !j.kmz) return false;
+// skip = one filter dimension to ignore, so a chip row can count what each of its options would show
+function matches(j, skip) {
+  if (skip !== "area" && view.area && j.area !== view.area) return false;
+  if (skip !== "company" && view.company && j.company !== view.company) return false;
+  if (skip !== "pri" && view.pri && j._p !== view.pri) return false;
+  if (skip !== "status") {
+    if (view.status ? j._s !== view.status : j.done) return false;   // Done jobs only under their own chip
+  }
+  if (view.flags.has("out") && !j._out) return false;
+  if (view.flags.has("kmz") && !j.kmz) return false;
+  if (view.flags.has("approx") && isExact(j)) return false;
   if (view.q) {
-    const hay = [j.id, j.site, j.site_name, j.district, j.assign, j.team_zone, j.area_name].join(" ").toLowerCase();
+    const hay = [j.id, j.site, j.site_name, j.district, j.assign, j.team_zone, j.area_name, j.status, j.company].join(" ").toLowerCase();
     if (!hay.includes(view.q)) return false;
   }
   return true;
+}
+
+function renderFilters() {
+  const chip = (dim, value, label, n, extra = "") =>
+    `<button class="chip ${view[dim] === value ? "on" : ""}" data-dim="${dim}" data-val="${value}" aria-pressed="${view[dim] === value}" ${n === 0 && value !== "" && view[dim] !== value ? "disabled" : ""}>${extra}${label}<span class="n">${n}</span></button>`;
+  const count = (dim, test) => jobs.filter(j => matches(j, dim) && test(j)).length;
+  const openOnly = (j) => !j.done;
+  const rows = [
+    ["บริษัท", [chip("company", "", "ทั้งหมด", count("company", () => true)),
+                ...COMPANIES.map(([k, l]) => chip("company", k, l, count("company", j => j.company === k)))]],
+    ["Priority", [chip("pri", "", "ทั้งหมด", count("pri", () => true)),
+                  ...["critical", "major", "minor"].map(p => chip("pri", p, p[0].toUpperCase() + p.slice(1),
+                     count("pri", j => j._p === p), `<svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="${SHAPES[p]}" fill="${PCOL[p]}"/></svg>`))]],
+    ["สถานะ", [chip("status", "", "งานค้าง", count("status", openOnly)),
+                ...STATUSES.map(([k, l, c]) => chip("status", k, l, count("status", j => j._s === k), `<i class="dot" style="background:${c}"></i>`))]],
+  ];
+  const flags = [["out", "เกินเวลา"], ["kmz", "มีแบบโครงข่าย"], ["approx", "ตำแหน่งประมาณ"]];
+  $("filters").innerHTML = rows.map(([label, chips]) => `<div class="frow"><span>${label}</span><div class="fchips">${chips.join("")}</div></div>`).join("") +
+    `<div class="frow"><span>เพิ่มเติม</span><div class="fchips">${flags.map(([k, l]) =>
+      `<button class="chip ${view.flags.has(k) ? "on" : ""}" data-flag="${k}" aria-pressed="${view.flags.has(k)}">${l}</button>`).join("")}</div></div>`;
 }
 
 function setKpi(key, n, total, sub) {
@@ -616,7 +668,7 @@ function setKpi(key, n, total, sub) {
 function render() {
   const shown = jobs.filter(matches).sort((a, b) =>
     (b._out - a._out) || ((PRANK[b._p] || 0) - (PRANK[a._p] || 0)) || ((b.age_h || 0) - (a.age_h || 0)));
-  const scope = jobs.filter(j => !view.area || j.area === view.area);
+  const scope = jobs.filter(j => !j.done && (!view.area || j.area === view.area) && (!view.company || j.company === view.company));
   const late = scope.filter(j => j._out).length, crit = scope.filter(j => j._p === "critical").length, exact = scope.filter(isExact).length;
   setKpi("Total", scope.length, scope.length, view.area ? `โซน ${view.area} ${AREAS[view.area].name}` : "ทุกโซน");
   setKpi("Late", late, scope.length, scope.length ? Math.round(late / scope.length * 100) + "% ของงานค้าง" : "");
@@ -625,11 +677,10 @@ function render() {
 
   const segs = [["", "ทุกโซน", null], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
   $("zoneSeg").innerHTML = segs.map(([a, label, c]) => {
-    const n = jobs.filter(j => !a || j.area === a).length;
+    const n = jobs.filter(j => !j.done && (!a || j.area === a) && (!view.company || j.company === view.company)).length;
     return `<button class="${view.area === a ? "on" : ""}" data-area="${a}" aria-pressed="${view.area === a}">${c ? `<span class="sw" style="background:${c}"></span>` : ""}${label}<span class="n">${n}</span></button>`;
   }).join("");
-  const filters = [["all", "ทั้งหมด"], ["out", `เกินเวลา ${late}`], ["critical", `Critical ${crit}`], ["kmz", "มีแบบโครงข่าย"], ["approx", "ตำแหน่งประมาณ"]];
-  $("chips").innerHTML = filters.map(([k, l]) => `<button class="chip ${view.filter === k ? "on" : ""}" data-filter="${k}" aria-pressed="${view.filter === k}">${l}</button>`).join("");
+  renderFilters();
 
   $("qCount").textContent = shown.length;
   $("rows").innerHTML = shown.length ? shown.map(j => `
@@ -640,11 +691,13 @@ function render() {
         <span class="site"><b>${esc(j.site || "-")}</b> ${esc(j.site_name || j.sub)}</span>
         <span class="meta">${esc(j.district || "-")} · ${esc(j.assign || "-")}</span>
       </span>
-      <span class="rt">
-        <span class="age ${j._out ? "late" : ""}">${ageText(j.age_h)}</span>
+      <span class="age ${j._out ? "late" : ""}">${ageText(j.age_h)}</span>
+      <span class="tags">
+        <span class="tag st-${j._s}"><i class="dot" style="background:currentColor"></i>${esc(statusLabel(j))}</span>
+        ${j._out ? `<span class="tag" style="color:var(--late);border-color:#FECDD3">เกินเวลา</span>` : ""}
         ${(j.faults || []).length ? `<span class="tag sp">SP ${j.faults.length}</span>` : ""}
-        ${j.kmz ? `<span class="tag net">แบบ</span>` : ""}
-        ${isExact(j) ? "" : `<span class="tag">ประมาณ</span>`}
+        ${j.kmz ? `<span class="tag net">แบบโครงข่าย</span>` : ""}
+        ${isExact(j) ? "" : `<span class="tag">ตำแหน่งประมาณ</span>`}
       </span>
     </button>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้</div>';
 
@@ -660,7 +713,7 @@ function render() {
 
   const byDistrict = {};
   for (const j of jobs) {
-    if (view.area && j.area !== view.area) continue;
+    if (j.done || (view.area && j.area !== view.area) || (view.company && j.company !== view.company)) continue;
     const k = (j.district || "").replace(/^(เขต|อำเภอ)\s*/, "").replace(/\s+/g, "");
     (byDistrict[k] = byDistrict[k] || []).push(j);
   }
@@ -670,7 +723,7 @@ function render() {
   }
   map.getSource("districts").setData(districtFC);
   for (const [a, m] of Object.entries(zoneMarkers)) {
-    const n = jobs.filter(j => j.area === a).length, el = m.getElement();
+    const n = jobs.filter(j => !j.done && j.area === a && (!view.company || j.company === view.company)).length, el = m.getElement();
     el.classList.toggle("ok", !n);
     el.querySelector("i").textContent = n;
     el.style.color = n ? AREAS[a].color : "#15803D";
@@ -710,7 +763,8 @@ function select(id, fly) {
   $("cId").textContent = j.id;
   const pb = {critical: "b-crit", major: "b-major", minor: "b-minor"}[j._p] || "b-status";
   $("cBadges").innerHTML = (j._out ? `<span class="badge b-late">เกินเวลา</span>` : "") +
-    `<span class="badge ${pb}">${esc(j.priority)}</span><span class="badge b-status">${esc(j.status)}</span>`;
+    `<span class="badge ${pb}">${esc(j.priority)}</span><span class="badge tag st-${j._s}" style="font-size:11.5px">${esc(statusLabel(j))}</span>` +
+    `<span class="badge b-status">${esc({Pool: "ยังไม่จ่ายทีม", AIS: "AIS"}[j.company] || j.company)}</span>`;
   const pos = {
     job: ["exact", "pin", "ตำแหน่งตรงจุดจากพิกัดในใบงาน"],
     kmz: ["exact", "pin", "ตำแหน่ง Splitter ในแบบโครงข่าย (ตามชื่อในใบงาน)"],
@@ -758,7 +812,7 @@ function placeCallout() {
   const j = jobs.find(x => x.id === selected);
   const stage = el.parentElement.getBoundingClientRect();
   const kmzOpen = $("kmzCard").classList.contains("open");
-  const w = el.offsetWidth, h = el.offsetHeight, minX = 412, maxX = stage.width - w - (kmzOpen ? 400 : 70);
+  const w = el.offsetWidth, h = el.offsetHeight, minX = 428, maxX = stage.width - w - (kmzOpen ? 400 : 70);
   let x = (stage.width - w) / 2, y = 20;
   if (j && j._lat != null) {
     const p = map.project([j._lon, j._lat]);
@@ -918,7 +972,13 @@ $("zHome").onclick = () => setArea("", true);
 // ---------------------------------------------------------------- sidebar events
 $("rows").onclick = (e) => { const c = e.target.closest(".row"); if (c) select(c.dataset.id, true); };
 $("zoneSeg").onclick = (e) => { const c = e.target.closest("[data-area]"); if (c) setArea(c.dataset.area, true); };
-$("chips").onclick = (e) => { const c = e.target.closest("[data-filter]"); if (c) { view.filter = c.dataset.filter; render(); } };
+$("filters").onclick = (e) => {
+  const c = e.target.closest("button");
+  if (!c || c.disabled) return;
+  if (c.dataset.flag) { view.flags.has(c.dataset.flag) ? view.flags.delete(c.dataset.flag) : view.flags.add(c.dataset.flag); }
+  else view[c.dataset.dim] = c.dataset.val;
+  render();
+};
 $("q").oninput = (e) => { view.q = e.target.value.trim().toLowerCase(); render(); };
 $("q").onkeydown = (e) => {
   // Enter on a SITE_CODE that no open job uses: open that site's drawing straight away
