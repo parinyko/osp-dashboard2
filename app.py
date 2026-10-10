@@ -7,7 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from collections import Counter
 
-app = Flask(__name__)
+app = Flask(name)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 
 UPLOAD_FOLDER = "uploads"
@@ -90,14 +90,23 @@ ASSIGN_ORDER = [
 "Excwt E",
 "Extrcwt F",
 "Extrcwt G",
+"Extrcwt H",
 "Exspare A",
-"Exspare B",
-"Exspare C",
-"Exspare D",
-"Exspare F",
-"Exspare G",
-"Exspare H",
-"Exspare I"
+"Kitsada Wiraphan",
+"Poolsak Saenmee",
+"Chawalit Bunrod",
+"Sittikorn Pantanoo",
+"Phongsakron Topradit",
+"Preecha Ruamsungneon",
+"Piriya Sripoon",
+"Cherdchai Wandee",
+"Piyanut Wattanonda",
+"Ruj Chalanun",
+"Parinya Khoonkrong",
+"Songwat Sintanarot",
+"Boonsom Duangjun",
+"Nares Vongkasigum",
+"Workforce BKK Pool"
 ]
 TEAM_DATA = [
 
@@ -146,20 +155,31 @@ TEAM_DATA = [
 {"zone": "CWT", "user": "Excwt E"},
 {"zone": "CWT", "user": "Extrcwt F"},
 {"zone": "CWT", "user": "Extrcwt G"},
+{"zone": "CWT", "user": "Extrcwt H"},
 
 {"zone": "Team Spare", "user": "Exspare A"},
-{"zone": "Team Spare", "user": "Exspare B"},
-{"zone": "Team Spare", "user": "Exspare C"},
-{"zone": "Team Spare", "user": "Exspare D"},
-{"zone": "Team Spare", "user": "Exspare E"},
-{"zone": "Team Spare", "user": "Exspare F"},
-{"zone": "Team Spare", "user": "Exspare G"},
-{"zone": "Team Spare", "user": "Exspare H"},
-{"zone": "Team Spare", "user": "Exspare I"},
+
+{"zone": "BKK2", "user": "Kitsada Wiraphan"},
+{"zone": "BKK2", "user": "Poolsak Saenmee"},
+{"zone": "BKK2", "user": "Chawalit Bunrod"},
+
+{"zone": "SPK", "user": "Sittikorn Pantanoo"},
+{"zone": "SPK", "user": "Phongsakron Topradit"},
+{"zone": "SPK", "user": "Preecha Ruamsungneon"},
+
+{"zone": "NTB", "user": "Piriya Sripoon"},
+{"zone": "NTB", "user": "Cherdchai Wandee"},
+{"zone": "NTB", "user": "Piyanut Wattanonda"},
+
+{"zone": "AIS", "user": "Ruj Chalanun"},
+{"zone": "AIS", "user": "Parinya Khoonkrong"},
+{"zone": "AIS", "user": "Songwat Sintanarot"},
+{"zone": "AIS", "user": "Boonsom Duangjun"},
+{"zone": "AIS", "user": "Nares Vongkasigum"},
+
 ]
 
-#Teams shown/managed on the BKK dashboard. 
-#These legacy groups are intentionally excluded.
+Teams shown/managed on the BKK dashboard. These legacy groups are intentionally excluded.
 
 DASHBOARD_EXCLUDED_ZONES = {"BKK2", "SPK", "NTB", "AIS"}
 
@@ -211,20 +231,13 @@ AREA_DATA = {
 "Excwt D": "ธัญบุรี(คลอง7 เป็นต้นไป) คลองหลวง(คลอง7 เป็นต้นไป) หนองเสือ",
 "Excwt E": "บางซื่อ หลักสี่ เมืองนนทบุรี ปากเกร็ด ดอนเมือง",
 "Extrcwt F": "เมืองปทุม(ฝั่งตะวันตก) สามโคก(ฝั่งตะวันตก) ลาดหลุมแก้ว",
-"Extrcwt G": "คันนายาว บึงกุ่ม ลาดพร้าว บางเขน สายไหม จตุจักร",
+"Extrcwt G": "Around the zone (Night)",
+"Extrcwt H": "คันนายาว บึงกุ่ม ลาดพร้าว บางเขน สายไหม จตุจักร",
 
 "Exeds A": "All Zone (เน้น RRU กับงานภายในห้าง ทุกโซน)",
 "Exeds B": "All Zone",
 
-"Exspare A": "All Zone",
-"Exspare B": "All Zone",
-"Exspare C": "All Zone",
-"Exspare D": "All Zone",
-"Exspare E": "All Zone",
-"Exspare F": "All Zone",
-"Exspare G": "All Zone",
-"Exspare H": "All Zone",
-"Exspare I": "All Zone",
+"Exspare A": "ปากเกร็ด บางบัวทอง ไทรน้อย"
 
 }
 
@@ -242,11 +255,11 @@ if "held" in status_text:
 return "#9fd5ff"
 return "#ffffff"
 
-#-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
-#Persistent team information
+Persistent team information
 
-#-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
 from io import BytesIO
 from threading import Lock, RLock, Thread, Event
@@ -262,7 +275,7 @@ DAILY_OSP_FILE = "daily_osp_remain.json"
 DAILY_OSP_MAX_RECORDS = 730
 DAILY_OSP_STOP = Event()
 
-# Resource Monitor: keep a 30-minute status history for every dashboard user.
+Resource Monitor: keep a 30-minute status history for every dashboard user.
 
 RESOURCE_MONITOR_FILE = "resource_monitor_history.json"
 RESOURCE_MONITOR_MAX_RECORDS = 20000
@@ -1431,7 +1444,7 @@ total_tlc=TOTAL_TLC,
 last_update=LAST_UPDATE,
 )
 
-if __name__ == "__main__":
+if name == "main":
 load_latest_excel_into_memory()
 try:
 save_resource_snapshot()
