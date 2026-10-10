@@ -91,12 +91,6 @@ html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sa
 .zonelabel .cnt{background:currentColor;border-radius:999px;padding:0 7px;min-width:22px;text-align:center}
 .zonelabel .cnt em{font-style:normal;color:#fff}
 .zonelabel.ok .cnt{display:none}
-/* The marker element itself is positioned by MapLibre with a CSS transform — animate the inner bubble only. */
-.distcount{pointer-events:none}
-.distcount b{width:24px;height:24px;border-radius:50%;background:var(--crit);color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.distcount.s1 b{background:var(--minor)}.distcount.s2 b{background:var(--major)}.distcount.s3 b{background:var(--crit)}.distcount.s4 b{background:#7f1d1d}
-.distcount.s3 b,.distcount.s4 b{animation:beat 1.4s ease-in-out infinite}
-@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
 .modal{position:fixed;inset:0;background:rgba(15,30,20,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal.open{display:flex}
 .modal .box{background:#fff;border-radius:14px;padding:18px;width:min(360px,100%);box-shadow:0 18px 50px rgba(0,0,0,.25)}
@@ -114,7 +108,7 @@ html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sa
 .fault[data-lat]{cursor:pointer}.fault[data-lat]:hover{background:#fee2e2;border-radius:6px}
 .kmz-hover .maplibregl-popup-content{padding:6px 9px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .empty{color:var(--muted);font-size:12px;text-align:center;padding:24px 8px}
-@media (prefers-reduced-motion: reduce){.distcount b{animation:none!important}.detail.open,.kmzcard.open{animation:none}}
+@media (prefers-reduced-motion: reduce){.detail.open,.kmzcard.open{animation:none}}
 @media(max-width:900px){
   .app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}
   .topbar{flex-wrap:wrap;padding:8px 10px;gap:6px}.topbar nav{margin-left:0;width:100%}
@@ -208,7 +202,7 @@ const PRANK = {critical: 3, major: 2, minor: 1};
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let jobs = [], view = {area: "", filter: "all", q: ""}, selected = null, lastUpdated = null;
-let districtFC = null, zoneFC = null, zoneMarkers = {}, distMarkers = [];
+let districtFC = null, zoneFC = null, zoneMarkers = {};
 let kmz = null, kmzHidden = new Set();
 
 const $ = (id) => document.getElementById(id);
@@ -521,14 +515,6 @@ function render() {
     f.properties.n = list.length;
   }
   map.getSource("districts").setData(districtFC);
-  distMarkers.forEach(m => m.remove());
-  distMarkers = districtFC.features.filter(f => f.properties.n > 0).map(f => {
-    const el = document.createElement("div");
-    el.className = `distcount s${f.properties.sev}`;
-    el.innerHTML = `<b>${f.properties.n}</b>`;
-    el.title = `${f.properties.district}: ${f.properties.n} งาน`;
-    return new maplibregl.Marker({element: el}).setLngLat([f.properties.cx, f.properties.cy]).addTo(map);
-  });
 
   // zone labels: job count, green when the zone has nothing open
   for (const [a, m] of Object.entries(zoneMarkers)) {
