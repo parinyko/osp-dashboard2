@@ -7,7 +7,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from collections import Counter
 
-app = Flask(name)
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 
 UPLOAD_FOLDER = "uploads"
@@ -158,7 +158,8 @@ TEAM_DATA = [
 {"zone": "Team Spare", "user": "Exspare I"},
 ]
 
-Teams shown/managed on the BKK dashboard. These legacy groups are intentionally excluded.
+#Teams shown/managed on the BKK dashboard. 
+#These legacy groups are intentionally excluded.
 
 DASHBOARD_EXCLUDED_ZONES = {"BKK2", "SPK", "NTB", "AIS"}
 
@@ -215,15 +216,15 @@ AREA_DATA = {
 "Exeds A": "All Zone (เน้น RRU กับงานภายในห้าง ทุกโซน)",
 "Exeds B": "All Zone",
 
-"Exspare A": "All Zone"
-"Exspare B": "All Zone"
-"Exspare C": "All Zone"
-"Exspare D": "All Zone"
-"Exspare E": "All Zone"
-"Exspare F": "All Zone"
-"Exspare G": "All Zone"
-"Exspare H": "All Zone"
-"Exspare I": "All Zone"
+"Exspare A": "All Zone",
+"Exspare B": "All Zone",
+"Exspare C": "All Zone",
+"Exspare D": "All Zone",
+"Exspare E": "All Zone",
+"Exspare F": "All Zone",
+"Exspare G": "All Zone",
+"Exspare H": "All Zone",
+"Exspare I": "All Zone",
 
 }
 
@@ -241,11 +242,11 @@ if "held" in status_text:
 return "#9fd5ff"
 return "#ffffff"
 
------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 
-Persistent team information
+#Persistent team information
 
------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 
 from io import BytesIO
 from threading import Lock, RLock, Thread, Event
@@ -261,7 +262,7 @@ DAILY_OSP_FILE = "daily_osp_remain.json"
 DAILY_OSP_MAX_RECORDS = 730
 DAILY_OSP_STOP = Event()
 
-Resource Monitor: keep a 30-minute status history for every dashboard user.
+# Resource Monitor: keep a 30-minute status history for every dashboard user.
 
 RESOURCE_MONITOR_FILE = "resource_monitor_history.json"
 RESOURCE_MONITOR_MAX_RECORDS = 20000
@@ -1430,7 +1431,7 @@ total_tlc=TOTAL_TLC,
 last_update=LAST_UPDATE,
 )
 
-if name == "main":
+if __name__ == "__main__":
 load_latest_excel_into_memory()
 try:
 save_resource_snapshot()
