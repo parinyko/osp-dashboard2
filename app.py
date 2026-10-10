@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import time
 import threading
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -118,7 +120,7 @@ def load_json_file(path, default):
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return data if isinstance(data, type(default)) else default
+        return data if isinstance(data, (dict, list)) else default
     except (OSError, json.JSONDecodeError, TypeError):
         return default.copy() if isinstance(default, (dict, list)) else default
 
@@ -132,9 +134,18 @@ def atomic_save_json(path, data):
 
 REMARKS = load_json_file(REMARK_FILE, {})
 CONTACTS = load_json_file(CONTACT_FILE, {})
-DAILY_OSP_HISTORY = load_json_file(DAILY_OSP_FILE, [])
-RESOURCE_HISTORY = load_json_file(RESOURCE_FILE, [])
-DATA, RAW_DATA = [], []
+def load_history(path):
+    data = load_json_file(path, {})
+    if isinstance(data, dict):
+        data = data.get("records", [])
+    return data if isinstance(data, list) else []
+
+def save_history(path, records):
+    atomic_save_json(path, {"version": 1, "updated_at": now_local().isoformat(), "records": records})
+
+DAILY_OSP_HISTORY = load_history(DAILY_OSP_FILE)
+RESOURCE_HISTORY = load_history(RESOURCE_FILE)
+DATA, RAW_DATA, ORIGINAL_DATA = [], [], []
 LAST_UPDATE = "-"
 TOTAL_JOBS = TOTAL_CRITICAL = TOTAL_MAJOR = TOTAL_MINOR = 0
 TOTAL_SCT = TOTAL_CWT = TOTAL_ONT = TOTAL_TLC = 0
@@ -210,17 +221,19 @@ def apply_group_rowspans(rows):
     for r in out: counts[r["zone"]] = counts.get(r["zone"],0)+1
     seen = set()
     for r in out:
-        r["zone_rowspan"] = counts[r["zone"]] if r["zone"] not in seen else 0
+        r["show_zone"] = r["zone"] not in seen
+        r["rowspan"] = counts[r["zone"]] if r["show_zone"] else 0
         seen.add(r["zone"])
     return out
 
 def update_global_data(df):
-    global DATA, RAW_DATA, LAST_UPDATE, TOTAL_JOBS, TOTAL_CRITICAL, TOTAL_MAJOR, TOTAL_MINOR
+    global DATA, RAW_DATA, ORIGINAL_DATA, LAST_UPDATE, TOTAL_JOBS, TOTAL_CRITICAL, TOTAL_MAJOR, TOTAL_MINOR
     global TOTAL_SCT, TOTAL_CWT, TOTAL_ONT, TOTAL_TLC
     prepared = prepare_job_dataframe(df)
     totals = calculate_totals(prepared)
     with DATA_LOCK:
-        RAW_DATA = df.where(pd.notna(df), None).to_dict(orient="records")
+        ORIGINAL_DATA = df.fillna("").to_dict(orient="records")
+        RAW_DATA = prepared.fillna("").to_dict(orient="records")
         DATA = build_dashboard_data(prepared)
         TOTAL_JOBS, TOTAL_CRITICAL, TOTAL_MAJOR, TOTAL_MINOR = totals["jobs"], totals["critical"], totals["major"], totals["minor"]
         TOTAL_SCT, TOTAL_CWT, TOTAL_ONT, TOTAL_TLC = totals["sct"], totals["cwt"], totals["ont"], totals["tlc"]
@@ -242,28 +255,38 @@ def load_latest_excel_into_memory():
 
 def load_daily_osp_history():
     global DAILY_OSP_HISTORY
-    DAILY_OSP_HISTORY = load_json_file(DAILY_OSP_FILE, [])
+    DAILY_OSP_HISTORY = load_history(DAILY_OSP_FILE)
     return DAILY_OSP_HISTORY
 
 def save_daily_osp_snapshot(slot="Manual", allow_duplicate=False):
     global DAILY_OSP_HISTORY
     if not RAW_DATA: load_latest_excel_into_memory()
     if not RAW_DATA: raise ValueError("ยังไม่มีข้อมูล กรุณา Upload Excel ก่อน")
-    df = pd.DataFrame(RAW_DATA)
-    prepared = prepare_job_dataframe(df)
-    counts = prepared["Sub System"].value_counts().to_dict()
-    record = {"date":now_local().strftime("%Y-%m-%d"),"time":now_local().strftime("%H:%M"),
-              "slot":slot,"total":len(prepared),"counts":{s:int(counts.get(s,0)) for s in VALID_SUBSYSTEMS}}
-    if not allow_duplicate and any(r.get("date")==record["date"] and r.get("time")==record["time"] and r.get("slot")==slot for r in DAILY_OSP_HISTORY):
+    prepared = pd.DataFrame(RAW_DATA)
+    now = now_local()
+    sub = prepared["Sub System"].fillna("").astype(str).str.strip()
+    pri = normalize_priority_series(prepared)
+    rows = []
+    for name in VALID_SUBSYSTEMS:
+        m = sub.eq(name)
+        rows.append({"subsystem": name, "critical": int((m & pri.eq("critical")).sum()),
+                     "major": int((m & pri.eq("major")).sum()), "minor": int((m & pri.eq("minor")).sum()),
+                     "total": int(m.sum())})
+    record = {"timestamp": now.strftime("%d/%m/%Y %H:%M:%S"), "iso_timestamp": now.isoformat(),
+              "date": now.strftime("%Y-%m-%d"), "slot": slot, "last_update": LAST_UPDATE,
+              "totals": {"critical": sum(r["critical"] for r in rows), "major": sum(r["major"] for r in rows),
+                         "minor": sum(r["minor"] for r in rows), "grand_total": sum(r["total"] for r in rows)},
+              "subsystems": rows}
+    if not allow_duplicate and any(r.get("date")==record["date"] and r.get("slot")==slot for r in DAILY_OSP_HISTORY):
         return DAILY_OSP_HISTORY[-1], False
     DAILY_OSP_HISTORY.append(record)
     DAILY_OSP_HISTORY = DAILY_OSP_HISTORY[-DAILY_OSP_MAX_RECORDS:]
-    atomic_save_json(DAILY_OSP_FILE, DAILY_OSP_HISTORY)
+    save_history(DAILY_OSP_FILE, DAILY_OSP_HISTORY)
     return record, True
 
 def load_resource_history():
     global RESOURCE_HISTORY
-    RESOURCE_HISTORY = load_json_file(RESOURCE_FILE, [])
+    RESOURCE_HISTORY = load_history(RESOURCE_FILE)
     return RESOURCE_HISTORY
 
 def save_resource_snapshot():
@@ -282,7 +305,7 @@ def save_resource_snapshot():
     rec={"date":stamp.strftime("%Y-%m-%d"),"time":stamp.strftime("%H:%M"),"timestamp":stamp.isoformat(),"rows":rows}
     RESOURCE_HISTORY.append(rec)
     RESOURCE_HISTORY=RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
-    atomic_save_json(RESOURCE_FILE,RESOURCE_HISTORY)
+    save_history(RESOURCE_FILE,RESOURCE_HISTORY)
     return rec
 
 def resource_due_status(priority, create_time, now=None):
@@ -303,16 +326,20 @@ def resource_due_status(priority, create_time, now=None):
     return ""
 
 def background_scheduler():
+    last_minute = None
     while True:
-        try:
-            now=now_local()
-            if now.minute in (0,30):
-                save_resource_snapshot()
-            if now.minute==0 and now.hour in (8,12,16,20):
-                save_daily_osp_snapshot(f"{now.hour:02d}:00")
-        except Exception:
-            app.logger.exception("Scheduled snapshot failed")
-        threading.Event().wait(60)
+        now=now_local()
+        minute = now.strftime("%Y-%m-%d %H:%M")
+        if minute != last_minute:
+            last_minute = minute
+            try:
+                if now.minute in (0,30):
+                    save_resource_snapshot()
+                if now.minute==0 and now.hour in (8,12,16,20):
+                    save_daily_osp_snapshot(f"{now.hour:02d}:00")
+            except Exception:
+                app.logger.exception("Scheduled snapshot failed")
+        time.sleep(15)
 
 def get_request_value(name):
     payload=request.get_json(silent=True) or {}
@@ -332,11 +359,397 @@ def save_contact():
     CONTACTS[user]=contact; atomic_save_json(CONTACT_FILE,CONTACTS)
     return jsonify(success=True,user=user,contact=contact)
 
+def parse_available_on(remark, now=None):
+    """Return the datetime when a team becomes available from Remark.
+
+    Supported examples:
+      - Available on 22:00
+      - Available on 22.00
+      - Available on 03/10/2026 22:00
+      - Available on 03-10-2026 22:00
+      - Available on 03/10/26 22:00
+
+    If no date is supplied, today's date in Asia/Bangkok is used.
+    Returns None when the remark does not contain a usable Available on time.
+    """
+    text = clean_text(remark)
+    if not text:
+        return None
+
+    now = now or datetime.now(ZoneInfo("Asia/Bangkok"))
+
+    m = re.search(
+        r"available\s+on\s+"
+        r"(?:(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\s+)?"
+        r"(\d{1,2})[:.](\d{2})",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not m:
+        return None
+
+    day, month, year, hour, minute = m.groups()
+    hour = int(hour)
+    minute = int(minute)
+    if hour > 23 or minute > 59:
+        return None
+
+    if day and month and year:
+        year = int(year)
+        if year < 100:
+            year += 2000
+        try:
+            return datetime(
+                year, int(month), int(day), hour, minute,
+                tzinfo=ZoneInfo("Asia/Bangkok")
+            )
+        except ValueError:
+            return None
+
+    return datetime(
+        now.year, now.month, now.day, hour, minute,
+        tzinfo=ZoneInfo("Asia/Bangkok")
+    )
+
+
+# -----------------------------------------------------------------------------
+# OSP Job Aging Summary
+# -----------------------------------------------------------------------------
+# Order requested for Dashboard OSP BKK.  FTTX / EDS IPLC are intentionally
+# excluded from this summary because they are not part of the requested groups.
+OSP_AGING_GROUPS = [
+    ("EDS", [
+    "EDS-OSP",
+    "ETS-OSP",
+    "EDS SW NODE-OSP",
+    "EDS IPLC-OSP",
+]),
+    ("FBB", ["FTTB-OSP", "FTTH-OSP", "Splitter-OSP"]),
+    ("MBB", ["Transmission-OSP"]),
+]
+
+# The Excel export may use one of these names for the Job title.  Create Time
+# is handled separately below.
+TITLE_COLUMN_CANDIDATES = [
+    "Title", "Job Title", "Job title", "Job_Title", "TITLE",
+    "ชื่อ Job", "Job Name", "Description", "รายละเอียด",
+]
+CREATE_TIME_COLUMN_CANDIDATES = [
+    "Create Time", "Created Time", "CreateTime", "CreatedTime",
+    "Create Date", "Created Date", "วันที่สร้าง", "เวลาสร้าง",
+]
+
+
+def _find_column(df, candidates):
+    if df.empty:
+        return None
+    exact = {str(c).strip().casefold(): c for c in df.columns}
+    for candidate in candidates:
+        found = exact.get(candidate.casefold())
+        if found is not None:
+            return found
+    # Small fallback for exports with extra spaces / punctuation.
+    normalized = {}
+    for c in df.columns:
+        key = re.sub(r"[^a-z0-9ก-๙]+", "", str(c).strip().casefold())
+        normalized[key] = c
+    for candidate in candidates:
+        key = re.sub(r"[^a-z0-9ก-๙]+", "", candidate.casefold())
+        if key in normalized:
+            return normalized[key]
+    return None
+
+
+def _parse_aging_datetime(value):
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            dt = pd.to_datetime(value, dayfirst=True, errors="coerce")
+            if pd.isna(dt):
+                return None
+            if hasattr(dt, "to_pydatetime"):
+                dt = dt.to_pydatetime()
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=ZoneInfo("Asia/Bangkok"))
+        return dt.astimezone(ZoneInfo("Asia/Bangkok"))
+    except Exception:
+        return None
+
+
+def _transmission_type(title):
+    """Classify Transmission-OSP by keywords in the Job title."""
+    text = clean_text(title).casefold()
+    if "node b down" in text:
+        return "BBU"
+    if "rru" in text:
+        return "RRU"
+    if "highloss" in text or "high loss" in text:
+        return "High loss"
+    if "ร้องเรียน" in text:
+        return "ร้องเรียน"
+    return "Optic LOS"
+
+
+def _empty_aging_counts():
+    return {
+        "today": 0,
+        "lt3": 0,
+        "lt7": 0,
+        "lt15": 0,
+        "over15": 0,
+        "total": 0,
+    }
+
+
+def _add_aging_bucket(counts, age_days):
+    # Buckets are mutually exclusive and follow the requested display order.
+    if age_days < 1:
+        counts["today"] += 1
+    elif age_days < 3:
+        counts["lt3"] += 1
+    elif age_days < 7:
+        counts["lt7"] += 1
+    elif age_days < 15:
+        counts["lt15"] += 1
+    else:
+        counts["over15"] += 1
+    counts["total"] += 1
+
+
+def build_osp_aging_summary(job_df):
+    """Build the requested grouped OSP aging table from Create Time."""
+    rows = []
+    if job_df is None or job_df.empty:
+        return rows
+
+    subsystem_col = "Sub System" if "Sub System" in job_df.columns else None
+    if subsystem_col is None:
+        return rows
+
+    title_col = _find_column(job_df, TITLE_COLUMN_CANDIDATES)
+    create_col = _find_column(job_df, CREATE_TIME_COLUMN_CANDIDATES)
+    if create_col is None:
+        # Keep the table structure valid when an old Excel file has no Create Time.
+        create_col = None
+
+    now = datetime.now(ZoneInfo("Asia/Bangkok"))
+    subsystem_series = job_df[subsystem_col].fillna("").astype(str).str.strip()
+    priority_series = normalize_priority_series(job_df)
+
+    # Filter exactly like the main Job Monitor before aging the jobs.
+    status_series = normalize_status_series(job_df)
+    valid_mask = subsystem_series.isin({s for _, subs in OSP_AGING_GROUPS for s in subs})
+    valid_mask &= ~status_series.str.contains("done(not leave)", regex=False)
+    valid_mask &= priority_series.ne("") & priority_series.ne("none")
+    filtered = job_df.loc[valid_mask].copy()
+    filtered_subsystems = subsystem_series.loc[filtered.index]
+    filtered_priority = priority_series.loc[filtered.index]
+
+    # Build one accumulator per requested display row.
+    accumulators = {}
+    for group_name, subsystems in OSP_AGING_GROUPS:
+        for subsystem in subsystems:
+            if subsystem == "Transmission-OSP":
+                for kind in ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน"):
+                    accumulators[(group_name, subsystem, kind)] = {
+                        "critical": _empty_aging_counts(),
+                        "major": _empty_aging_counts(),
+                        "minor": _empty_aging_counts(),
+                    }
+            else:
+                accumulators[(group_name, subsystem, None)] = {
+                    "critical": _empty_aging_counts(),
+                    "major": _empty_aging_counts(),
+                    "minor": _empty_aging_counts(),
+                }
+
+    for idx, row in filtered.iterrows():
+        subsystem = str(filtered_subsystems.loc[idx]).strip()
+        priority = str(filtered_priority.loc[idx]).strip().casefold()
+        if priority not in ("critical", "major", "minor"):
+            continue
+
+        create_dt = _parse_aging_datetime(row[create_col]) if create_col else None
+        # A Job without a usable Create Time cannot be assigned an age bucket.
+        if create_dt is None:
+            continue
+        age_days = max((now - create_dt).total_seconds() / 86400.0, 0.0)
+
+        kind = _transmission_type(row[title_col]) if subsystem == "Transmission-OSP" and title_col else (
+            "Optic LOS" if subsystem == "Transmission-OSP" else None
+        )
+        key = ("MBB", subsystem, kind) if subsystem == "Transmission-OSP" else next(
+            (k for k in accumulators if k[1] == subsystem and k[2] is None), None
+        )
+        if key is None:
+            continue
+        _add_aging_bucket(accumulators[key][priority], age_days)
+
+    for group_name, subsystems in OSP_AGING_GROUPS:
+        for subsystem in subsystems:
+            if subsystem == "Transmission-OSP":
+                for kind in ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน"):
+                    a = accumulators[(group_name, subsystem, kind)]
+                    rows.append(_make_aging_row(group_name, kind, a, subsystem=subsystem, transmission=True))
+            else:
+                a = accumulators[(group_name, subsystem, None)]
+                rows.append(_make_aging_row(group_name, subsystem, a, subsystem=subsystem, transmission=False))
+    return rows
+
+
+def _make_aging_row(group_name, label, a, subsystem="", transmission=False):
+    row = {
+        "group": group_name,
+        "subsystem": subsystem,
+        "label": label,
+        "transmission": transmission,
+    }
+    grand = 0
+    for priority in ("critical", "major", "minor"):
+        counts = a[priority]
+        for key, value in counts.items():
+            row[f"{priority}_{key}"] = value
+        grand += counts["total"]
+    row["total"] = grand
+    return row
+
+
+DONE_SUBSYSTEM_GROUPS = {
+    "all": [
+        "EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP", "EDS IPLC-OSP",
+        "FTTB-OSP", "FTTH-OSP", "FTTX-OSP", "Splitter-OSP",
+        "Transmission-OSP",
+    ],
+    "mbb": ["Transmission-OSP"],
+    "eds": ["EDS-OSP", "ETS-OSP", "EDS SW NODE-OSP", "EDS IPLC-OSP"],
+    "fbb": ["FTTB-OSP", "FTTH-OSP", "FTTX-OSP", "Splitter-OSP"],
+}
+
+
+def build_done_not_leave_by_group(source_df):
+    """Return JSON-safe Done(Not Leave) totals grouped by the selected OSP subsystem group."""
+    result = {}
+    if source_df is None or source_df.empty or "Sub System" not in source_df.columns:
+        for key in DONE_SUBSYSTEM_GROUPS:
+            result[key] = {"total": 0, "rows": []}
+        return result
+
+    subsystem = source_df["Sub System"].fillna("").astype(str).str.strip()
+    status = (source_df["Status"].fillna("").astype(str).str.strip().str.casefold()
+              if "Status" in source_df.columns else pd.Series("", index=source_df.index))
+    user = (source_df["Assign to"].fillna("").astype(str).str.strip()
+            if "Assign to" in source_df.columns else pd.Series("", index=source_df.index))
+
+    done_mask = status.eq("done(not leave)")
+
+    for group_key, allowed in DONE_SUBSYSTEM_GROUPS.items():
+        mask = done_mask & subsystem.isin(allowed)
+        counts = user.loc[mask].replace("", "(ไม่ระบุ User)").value_counts()
+        rows = [
+            {"user": str(name), "count": int(count)}
+            for name, count in counts.items()
+        ]
+        result[group_key] = {
+            "total": int(mask.sum()),
+            "rows": rows,
+        }
+
+    return result
+
+
+def build_home_summary():
+    """Build the summary tables/cards used by Dashboard OSP BKK."""
+    job_df = pd.DataFrame(RAW_DATA) if RAW_DATA else pd.DataFrame()
+
+    # Existing subsystem summary is kept for the chart above the aging table.
+    priority_names = ["Critical", "Major", "Minor"]
+    subsystem_summary = []
+    if not job_df.empty and "Sub System" in job_df.columns:
+        subsystem_series = job_df["Sub System"].fillna("").astype(str).str.strip()
+        priority_series = normalize_priority_series(job_df)
+        for subsystem in VALID_SUBSYSTEMS:
+            counts = {name: int(((subsystem_series.eq(subsystem)) & (priority_series.eq(name.lower()))).sum()) for name in priority_names}
+            counts["total"] = sum(counts.values())
+            subsystem_summary.append({"subsystem": subsystem, **{k.lower(): v for k, v in counts.items()}})
+    else:
+        subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
+
+    osp_aging_summary = build_osp_aging_summary(job_df)
+    # Done(Not Leave) must be counted from the original upload because
+    # prepare_job_dataframe() intentionally removes those rows.
+    done_source_df = pd.DataFrame(ORIGINAL_DATA) if ORIGINAL_DATA else pd.DataFrame()
+    done_not_leave_by_group = build_done_not_leave_by_group(done_source_df)
+    done_not_leave_total = int(done_not_leave_by_group.get("all", {}).get("total", 0))
+
+    zone_rules = [
+        ("SCT", "Bangkok-ST2"),
+        ("CWT", "Bangkok-CWT"),
+        ("ONT", "Bangkok-ONT"),
+        ("TLC", "Bangkok-TLC"),
+    ]
+    zone_summary = []
+    if not job_df.empty and "Zone" in job_df.columns:
+        zone_series = job_df["Zone"].fillna("").astype(str)
+        for name, token in zone_rules:
+            zone_summary.append({"zone": name, "jobs": int(zone_series.str.contains(token, case=False, na=False).sum())})
+    else:
+        zone_summary = [{"zone": name, "jobs": 0} for name, _ in zone_rules]
+    zone_summary.append({"zone": "Total", "jobs": sum(x["jobs"] for x in zone_summary)})
+
+    team_rows = build_dashboard_data(job_df) if not job_df.empty else empty_dashboard_data()
+    missing_keywords = ("ลา", "ไม่มีทีม", "รถเสีย")
+    working = onsite = departed = free = missing = late = 0
+    team_status_rows = []
+    now = datetime.now(ZoneInfo("Asia/Bangkok"))
+
+    for row in team_rows:
+        remark = clean_text(row.get("remark", ""))
+        remark_cf = remark.casefold()
+        if any(word in remark_cf for word in missing_keywords):
+            status = "ทีมขาด"
+            missing += 1
+        else:
+            available_at = parse_available_on(remark, now)
+            if available_at is not None and available_at > now:
+                status = "ทีมเลิกดึก"
+                late += 1
+            elif row.get("work_status") == "On-site":
+                status = "On-site"
+                onsite += 1
+            elif row.get("work_status") == "Departed":
+                status = "Departed"
+                departed += 1
+            elif row.get("work_status") == "Working":
+                status = "Working"
+                working += 1
+            else:
+                status = "ว่าง"
+                free += 1
+        team_status_rows.append({"zone": row.get("zone", ""), "user": row.get("user", ""), "status": status})
+
+    total_teams = len(team_status_rows)
+    return {
+        "subsystem_summary": subsystem_summary,
+        "osp_aging_summary": osp_aging_summary,
+        "done_not_leave_by_group": done_not_leave_by_group,
+        "done_not_leave_total": done_not_leave_total,
+        "zone_summary": zone_summary,
+        "team_summary": {
+            "working": working, "onsite": onsite, "departed": departed,
+            "free": free, "missing": missing,
+            "late": late, "ready": working + onsite + departed + free, "total": total_teams,
+        },
+    }
+
+
 @app.route("/", methods=["GET"])
 def index():
     latest=DAILY_OSP_HISTORY[-1] if DAILY_OSP_HISTORY else None
     return render_template("home.html",total_jobs=TOTAL_JOBS,total_critical=TOTAL_CRITICAL,total_major=TOTAL_MAJOR,
-        total_minor=TOTAL_MINOR,last_update=LAST_UPDATE,latest_osp=latest)
+        total_minor=TOTAL_MINOR,last_update=LAST_UPDATE,latest_osp=latest,**build_home_summary())
 
 @app.route("/dashboard", methods=["GET","POST"])
 def dashboard():
