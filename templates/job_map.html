@@ -5,345 +5,499 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Map — OSP BKK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
 :root{
-  --bg:#f3f7f1;--panel:#ffffff;--line:#dfe9da;--ink:#1f3322;--muted:#6b7b69;--brand:#4f9517;
-  --crit:#e5484d;--major:#f59e0b;--minor:#d4b106;--ok:#22a052;--due:#c62828;--info:#2563eb;
+  --ground:#F4F6F9;--surface:#FFFFFF;--line:#E2E8F0;--line2:#CBD5E1;--ink:#0F172A;--ink2:#334155;--muted:#64748B;
+  --accent:#0369A1;--accent-soft:#E0F2FE;--accent-line:#7DD3FC;
+  --crit:#E11D48;--major:#EA580C;--minor:#CA8A04;--late:#BE123C;--ok:#15803D;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sans-serif;color:var(--ink);background:var(--bg)}
-.app{display:grid;grid-template-columns:350px 1fr;grid-template-rows:54px 1fr;height:100vh}
-.topbar{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 14px;background:linear-gradient(135deg,#fff 0%,#f4faef 55%,#dff1c9 100%);border-bottom:1px solid var(--line)}
-.topbar h1{margin:0;font-size:19px;color:#3f7d12;font-weight:800;white-space:nowrap}
-.topbar .upd{font-size:12px;color:var(--muted);white-space:nowrap}
-.topbar nav{margin-left:auto;display:flex;gap:6px;flex-wrap:nowrap;overflow:auto}
-.topbar nav a{font-size:12px;font-weight:700;text-decoration:none;color:#3c6b26;background:#fff;border:1px solid #d3e5c8;border-radius:8px;padding:6px 10px;white-space:nowrap}
-.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 10px 6px}
-.stat{border:1px solid var(--line);border-radius:10px;padding:6px 7px;text-align:center;background:#fafcf9}
-.stat b{display:block;font-size:20px;line-height:1.1}.stat span{font-size:10.5px;color:var(--muted);font-weight:600}
-.stat.due b{color:var(--due)}.stat.crit b{color:var(--crit)}.stat.approx b{color:#7c5cc4}
-.zones{display:flex;flex-wrap:wrap;gap:5px;padding:2px 10px 6px}
-.chip{border:1px solid #d3e3cb;background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:700;color:#3d5a33;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
-.chip.on{background:#2f4a26;border-color:#2f4a26;color:#fff}
-.chip i{width:9px;height:9px;border-radius:50%;display:inline-block}
-.chip .n{font-size:11px;opacity:.75}
-.search{padding:4px 10px 8px}
-.search input{width:100%;padding:9px 11px;border:1px solid #d3e3cb;border-radius:10px;font:inherit;font-size:13px;outline:none}
-.search input:focus{border-color:#8cc152;box-shadow:0 0 0 3px rgba(140,193,82,.18)}
-.sitebox{display:flex;gap:6px;padding:0 10px 8px}
-.sitebox input{flex:1;padding:7px 10px;border:1px dashed #b9cfad;border-radius:9px;font:inherit;font-size:12.5px;text-transform:uppercase}
-.btn{border:0;border-radius:9px;padding:8px 12px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
-.btn.green{background:linear-gradient(135deg,#79bd2d,#4f9517);color:#fff}
-.btn.light{background:#fff;border:1px solid #cfe0c5;color:#397817}
-.btn.dark{background:#22352a;color:#fff}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.listhead{padding:4px 12px 6px;font-size:12px;color:var(--muted);font-weight:700;display:flex;justify-content:space-between}
-.list{overflow:auto;flex:1;padding:0 8px 10px}
-.job{border:1px solid var(--line);border-left:4px solid var(--minor);border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;background:#fff;transition:transform .12s ease,box-shadow .12s ease}
-.job:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(40,70,30,.10)}
-.job.sel{outline:2px solid #4f9517;background:#f6fbf1}
-.job.p-critical{border-left-color:var(--crit)}.job.p-major{border-left-color:var(--major)}
-.job .r1{display:flex;align-items:center;gap:6px;font-weight:800;font-size:13.5px}
-.job .r2{font-size:12px;color:#4b5d48;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.job .r3{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
-.badge{font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 6px;white-space:nowrap}
-.b-critical{background:#fde2e2;color:#b42318}.b-major{background:#fff1d6;color:#a15c00}.b-minor{background:#fff8c5;color:#7a6a00}
-.b-out{background:var(--due);color:#fff}.b-in{background:#dcfce7;color:#166534}
-.b-approx{background:#ede7fb;color:#5b3fa6}.b-kmz{background:#e0f2fe;color:#075985}
-.mapwrap{position:relative;min-height:0}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans Thai",system-ui,sans-serif}
+button{font:inherit}
+.mono{font-family:var(--mono)}
+.ico{width:18px;height:18px;flex:none}
+.app{display:grid;grid-template-rows:auto auto minmax(0,1fr);height:100vh}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand b{display:block;font-size:16px;letter-spacing:.01em}
+.brand small{display:block;font-size:12px;color:var(--muted)}
+.seg{display:flex;gap:3px;padding:3px;background:var(--ground);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.seg button{height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button .n{font-family:var(--mono);font-size:12px;opacity:.75}
+.seg button .sw{width:8px;height:8px;border-radius:2px}
+.seg button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.grow{flex:1 1 40px}
+.search{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--ground);border:1px solid var(--line);border-radius:10px;min-width:260px;color:var(--muted)}
+.search input{flex:1;border:0;outline:none;background:transparent;font:inherit;font-size:14px;color:var(--ink);min-width:0}
+.search:focus-within{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.links{display:flex;gap:2px}
+.links a{display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;border-radius:9px;color:var(--ink2);text-decoration:none;font-size:13px}
+.links a:hover{background:var(--ground)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.kpi{background:var(--surface);padding:10px 18px;display:flex;flex-direction:column;gap:5px}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi .v{display:flex;align-items:baseline;gap:10px}
+.kpi .v b{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1.1}
+.kpi .v small{font-size:12px;color:var(--muted)}
+.bar{height:4px;border-radius:2px;background:var(--line)}
+.bar i{display:block;height:4px;border-radius:2px}
+
+/* map stage */
+.stage{position:relative;min-height:0}
 #map{position:absolute;inset:0}
-.legend{position:absolute;left:12px;bottom:26px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:11.5px;box-shadow:0 4px 18px rgba(0,0,0,.08);max-width:270px}
-.legend b{display:block;font-size:12px;margin-bottom:4px}
-.legend div{display:flex;align-items:center;gap:7px;margin:3px 0}
-.legend .sw{width:14px;height:10px;border-radius:3px;display:inline-block}
-.legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
-.legend .hollow{background:#fff!important;border:2.5px solid #7c5cc4;box-shadow:none}
-.detail{position:absolute;top:12px;right:12px;bottom:12px;width:360px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden}
-.detail.open{display:flex;animation:slidein .22s ease}
-@keyframes slidein{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
-.detail .dh{padding:12px 14px 8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
-.detail .dh h2{margin:0;font-size:18px}
-.detail .x{border:0;background:none;font-size:20px;color:#8a978a;cursor:pointer;line-height:1}
-.detail .db{padding:10px 14px;overflow:auto;flex:1}
-.detail .title{font-size:12px;color:#4b5d48;line-height:1.45;background:#f7faf5;border-radius:9px;padding:8px 10px;word-break:break-word}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
-.cell{background:#f7faf5;border-radius:9px;padding:7px 9px}
-.cell span{display:block;font-size:10.5px;color:var(--muted);font-weight:700}
-.cell b{font-size:12.5px;word-break:break-word}
-.pos{border-radius:10px;padding:8px 10px;font-size:12px;margin:8px 0}
-.pos.job{background:#dcfce7;color:#14532d}.pos.site{background:#e0f2fe;color:#0c4a6e}.pos.district{background:#ede7fb;color:#4c1d95}
-.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.kmzcard{position:absolute;top:12px;left:12px;width:300px;max-height:calc(100% - 24px);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden}
-.kmzcard.open{display:flex;animation:slidein .22s ease}
-.kmzcard .kh{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef8ff}
-.kmzcard .kh b{font-size:14px;color:#075985}
-.kmzcard .kb{padding:8px 12px;overflow:auto}
-.kmzcard select{width:100%;padding:6px 8px;border:1px solid #cfe0e8;border-radius:8px;font:inherit;font-size:12px;margin-bottom:8px}
-.layer{display:flex;align-items:center;gap:7px;font-size:12px;padding:3px 0;cursor:pointer}
-.layer input{accent-color:#0284c7}.layer .c{margin-left:auto;color:var(--muted);font-size:11px}
-.layer .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.1)}
-.kmzcard .note{font-size:11px;color:var(--muted);margin-top:6px}
-.zonelabel{background:rgba(255,255,255,.92);border:2px solid currentColor;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.12);cursor:pointer;display:flex;gap:6px;align-items:center}
-.zonelabel .cnt{background:currentColor;border-radius:999px;padding:0 7px;min-width:22px;text-align:center}
-.zonelabel .cnt em{font-style:normal;color:#fff}
-.zonelabel.ok .cnt{display:none}
-.modal{position:fixed;inset:0;background:rgba(15,30,20,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
-.modal.open{display:flex}
-.modal .box{background:#fff;border-radius:14px;padding:18px;width:min(360px,100%);box-shadow:0 18px 50px rgba(0,0,0,.25)}
-.modal h3{margin:0 0 4px;font-size:16px;color:#355e27}
-.modal p{margin:0 0 12px;font-size:12px;color:var(--muted)}
-.modal input{width:100%;padding:10px 12px;border:1px solid #cfe0c5;border-radius:10px;font:inherit;font-size:15px}
-.modal .err{color:var(--due);font-size:12px;min-height:16px;margin-top:6px}
-.modal .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22352a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
-.maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;max-width:260px}
-.faults{margin:8px 0;border:1px solid #fecaca;background:#fff7f7;border-radius:10px;padding:6px 8px}
-.faults .fh{font-size:11px;font-weight:800;color:#b91c1c;margin-bottom:4px}
-.fault{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;padding:3px 2px;border-top:1px dashed #fde2e2}
+.panel{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.10);backdrop-filter:blur(6px)}
+.queue{position:absolute;left:14px;top:14px;bottom:14px;width:384px;display:flex;flex-direction:column;overflow:hidden;z-index:3}
+.qhead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px 14px}
+.qhead b{font-size:14px}.qhead small{font-size:11.5px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.chip{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-size:12px;cursor:pointer}
+.chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.cols{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:6px 14px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line);letter-spacing:.03em}
+.rows{overflow:auto;flex:1}
+.row{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:9px 14px;border-bottom:1px solid #EEF2F6;cursor:pointer;width:100%;text-align:left;background:transparent;border-left:0;border-right:0;border-top:0;color:inherit}
+.row:hover{background:#F8FAFC}
+.row.sel{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.row .id{font-family:var(--mono);font-size:13px;font-weight:600}
+.row .site{font-size:12.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .site b{font-family:var(--mono);font-weight:600;color:var(--accent)}
+.row .meta{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .rt{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.row .age{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+.row .age.late{color:var(--late);font-weight:600}
+.tag{font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted);white-space:nowrap;line-height:18px}
+.tag.sp{border-color:#FECDD3;background:#FFF1F2;color:var(--late)}
+.tag.net{border-color:#BAE6FD;background:#F0F9FF;color:var(--accent)}
+.queue.min{bottom:auto}
+.queue.min .chips,.queue.min .cols,.queue.min .rows{display:none}
+.qhead .iconbtn{width:32px;height:32px;margin-left:8px}
+.callout.compact .cb{display:none}
+.callout.compact .ch{border-bottom:0}
+.empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:13px}
+
+.ctrls{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:8px;z-index:4}
+.cgroup{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 4px 14px rgba(15,23,42,.08)}
+.cgroup button{width:42px;height:42px;border:0;background:var(--surface);color:var(--ink2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cgroup button+button{border-top:1px solid var(--line)}
+.cgroup button:hover{background:var(--ground)}
+.cgroup button[aria-expanded="true"]{background:var(--accent-soft);color:var(--accent)}
+.basemap{position:absolute;right:64px;top:14px;width:260px;padding:10px;display:none;z-index:8}
+.basemap.open{display:block}
+.basemap h3{margin:2px 4px 8px;font-size:12px;color:var(--muted);font-weight:600}
+.bm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bm button{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:6px;cursor:pointer;text-align:left;font-size:12.5px;color:var(--ink2)}
+.bm button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft);color:var(--ink);font-weight:600}
+.bm i{display:block;height:46px;border-radius:7px;margin-bottom:5px}
+.toggle{display:flex;align-items:center;gap:10px;padding:8px 4px 2px;font-size:13px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+
+.legend{position:absolute;right:14px;bottom:30px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:7px 12px;border-radius:999px;font-size:12px;color:var(--ink2);z-index:2}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend svg{width:12px;height:12px}
+
+/* detail callout */
+.callout{position:absolute;width:360px;display:none;flex-direction:column;z-index:6}
+.callout.open{display:flex;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.ch .id{font-family:var(--mono);font-size:18px;font-weight:600}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.badge{font-size:11.5px;font-weight:600;border-radius:6px;padding:1px 8px;line-height:20px;border:1px solid transparent}
+.b-late{background:var(--late);color:#fff}
+.b-crit{color:var(--crit);border-color:#FECDD3;background:#FFF1F2}
+.b-major{color:#C2410C;border-color:#FED7AA;background:#FFF7ED}
+.b-minor{color:#A16207;border-color:#FDE68A;background:#FEFCE8}
+.b-status{color:var(--ink2);border-color:var(--line)}
+.iconbtn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);cursor:pointer;flex:none}
+.iconbtn:hover{color:var(--ink);border-color:var(--line2)}
+.cb{padding:12px 14px;overflow:auto;max-height:calc(100vh - 300px)}
+.title{font-size:12.5px;line-height:1.55;color:var(--ink2);background:var(--ground);border-radius:9px;padding:8px 10px;word-break:break-word;max-height:96px;overflow:auto}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:12px 0}
+.facts span{display:block;font-size:11px;color:var(--muted)}
+.facts b{font-size:13px;font-weight:500;word-break:break-word}
+.facts .mono{font-weight:600;color:var(--accent)}
+.pos{display:flex;gap:8px;align-items:center;font-size:12px;padding:7px 10px;border-radius:9px;margin-bottom:10px}
+.pos.exact{background:#F0FDF4;color:#166534}.pos.site{background:var(--accent-soft);color:#075985}.pos.area{background:#F1F5F9;color:var(--ink2)}
+.faults{border:1px solid #FECDD3;background:#FFF5F6;border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.faults .fh{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--late);margin-bottom:4px}
+.fault{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;padding:4px 2px;width:100%;border:0;background:transparent;color:inherit;text-align:left;border-top:1px dashed #FBD5DC}
 .fault:first-of-type{border-top:0}
-.fault[data-lat]{cursor:pointer}.fault[data-lat]:hover{background:#fee2e2;border-radius:6px}
-.kmz-hover .maplibregl-popup-content{padding:6px 9px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
-.empty{color:var(--muted);font-size:12px;text-align:center;padding:24px 8px}
-@media (prefers-reduced-motion: reduce){.detail.open,.kmzcard.open{animation:none}}
-@media(max-width:900px){
-  .app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}
-  .topbar{flex-wrap:wrap;padding:8px 10px;gap:6px}.topbar nav{margin-left:0;width:100%}
-  .mapwrap{grid-row:2}.side{grid-row:3;border-right:0;border-top:1px solid var(--line)}
-  .detail{top:auto;left:8px;right:8px;width:auto;height:62%}
-  .kmzcard{width:auto;right:8px;left:8px;max-height:45%}
+.fault[data-lat]{cursor:pointer}.fault[data-lat]:hover{background:#FFE4E8;border-radius:6px}
+.fault .src{font-size:11.5px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:42px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-size:13.5px;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--line2);color:var(--ink)}
+.btn.primary{flex:1 1 170px;background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#075985}
+.btn.sq{width:42px;padding:0}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.note{font-size:12px;color:var(--muted)}
+
+/* KMZ card */
+.kmz{position:absolute;right:64px;top:14px;width:320px;max-height:calc(100% - 90px);display:none;flex-direction:column;overflow:hidden;z-index:5}
+.kmz.open{display:flex}
+.kh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.kh b{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.kb{padding:10px 12px;overflow:auto}
+.kb select{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12.5px;margin-bottom:8px;background:var(--surface);color:var(--ink)}
+.layer{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0;cursor:pointer}
+.layer input{width:16px;height:16px;accent-color:var(--accent)}
+.layer .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.layer .sw{width:12px;height:12px;border-radius:3px;border:1px solid rgba(15,23,42,.12)}
+
+/* zone labels on the map */
+.zl{display:flex;align-items:center;gap:6px;padding:3px 4px 3px 10px;border-radius:999px;background:rgba(255,255,255,.95);border:1.5px solid currentColor;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,.12)}
+.zl em{font-style:normal;font-family:var(--mono);background:currentColor;border-radius:999px;padding:0 7px;line-height:18px}
+.zl em i{font-style:normal;color:#fff}
+.zl.ok{padding-right:10px}.zl.ok em{display:none}
+
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.modal .box{width:min(360px,100%);padding:18px}
+.modal h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+.modal p{margin:0 0 12px;font-size:12.5px;color:var(--muted)}
+.modal input{width:100%;height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:15px}
+.modal .err{color:var(--late);font-size:12px;min-height:18px;margin-top:6px}
+.modal .row2{display:flex;justify-content:flex-end;gap:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
+.maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;box-shadow:0 6px 20px rgba(15,23,42,.15)}
+.kmz-hover .maplibregl-popup-content{padding:6px 9px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (prefers-reduced-motion: reduce){.callout.open{animation:none}}
+@media (max-width: 1100px){.links span{display:none}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width: 860px){
+  .app{height:auto;grid-template-rows:auto auto auto}
+  .stage{height:auto;display:flex;flex-direction:column}
+  #map{position:relative;height:60vh}
+  .queue{position:static;width:auto;margin:10px;max-height:none}
+  .callout{position:fixed;left:8px !important;right:8px;top:auto !important;bottom:8px;width:auto}
+  .kmz{position:fixed;left:8px;right:8px;top:8px;width:auto;max-height:45vh}
   .legend{display:none}
+  .search{min-width:0;flex:1 1 200px}
 }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M9 4v13M15 7v13" stroke="currentColor" stroke-width="1.75"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="m3 13 9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-net" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/></g></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8-8-2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></g></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></g></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></g></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3v-9Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></symbol>
+  <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M6 16l4-5 4 3 5-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
 <div class="app">
-  <header class="topbar">
-    <h1>🗺️ Job Map</h1>
-    <span class="upd">ข้อมูล: <b id="upd">{{ last_update or '-' }}</b> · อัปเดตเองทุก 1 นาที</span>
-    <nav>
-      <a href="/">🏠 หน้าแรก</a>
-      <a href="/job_monitor">📋 Job Monitor</a>
-      <a href="/resource_monitor">🕒 Resource Monitor</a>
-      <a href="/daily_osp_remain">📈 Daily OSP</a>
+  <header class="top">
+    <div class="brand">
+      <svg class="ico" style="width:28px;height:28px;color:var(--accent)" aria-hidden="true"><use href="#i-map"/></svg>
+      <div><b>OSP Job Map</b><small>ข้อมูล <span id="upd" class="mono">{{ last_update or '-' }}</span> · อัปเดตเองทุก 1 นาที</small></div>
+    </div>
+    <nav class="seg" id="zoneSeg" aria-label="เลือกโซน"></nav>
+    <div class="grow"></div>
+    <label class="search">
+      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="sr">ค้นหางาน</span>
+      <input id="q" type="search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
+    </label>
+    <nav class="links" aria-label="หน้าอื่น">
+      <a href="/"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>หน้าแรก</span></a>
+      <a href="/job_monitor"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg><span>Job Monitor</span></a>
+      <a href="/resource_monitor"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg><span>Resource</span></a>
+      <a href="/daily_osp_remain"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg><span>Daily OSP</span></a>
     </nav>
   </header>
 
-  <aside class="side">
-    <div class="stats">
-      <div class="stat"><b id="sTotal">-</b><span>งานค้าง</span></div>
-      <div class="stat due"><b id="sDue">-</b><span>Out Due</span></div>
-      <div class="stat crit"><b id="sCrit">-</b><span>Critical</span></div>
-      <div class="stat approx"><b id="sApprox">-</b><span>ตำแหน่งประมาณ</span></div>
-    </div>
-    <div class="zones" id="zoneChips"></div>
-    <div class="zones" id="filterChips"></div>
-    <div class="search"><input id="q" placeholder="ค้นหา Job ID · SITE_CODE · เขต · ทีม" autocomplete="off"></div>
-    <div class="sitebox">
-      <input id="siteInput" placeholder="เปิด KMZ ด้วย SITE_CODE เช่น TNMMM" autocomplete="off">
-      <button class="btn light" id="siteOpen">🗺️ เปิด KMZ</button>
-    </div>
-    <div class="listhead"><span id="listCount">-</span><span>Out Due → Priority → อายุงาน</span></div>
-    <div class="list" id="list"><div class="empty">กำลังโหลด…</div></div>
-  </aside>
+  <section class="kpis" aria-label="ภาพรวม">
+    <div class="kpi"><span>งานค้างทั้งหมด</span><div class="v"><b id="kTotal">-</b><small id="kTotalSub"></small></div><div class="bar"><i id="kTotalBar" style="width:100%;background:var(--ink2)"></i></div></div>
+    <div class="kpi"><span>เกินเวลา (Out Due)</span><div class="v"><b id="kLate" style="color:var(--late)">-</b><small id="kLateSub"></small></div><div class="bar"><i id="kLateBar" style="background:var(--late)"></i></div></div>
+    <div class="kpi"><span>Critical</span><div class="v"><b id="kCrit" style="color:var(--crit)">-</b><small id="kCritSub"></small></div><div class="bar"><i id="kCritBar" style="background:var(--crit)"></i></div></div>
+    <div class="kpi"><span>ตำแหน่งตรงจุด</span><div class="v"><b id="kExact" style="color:var(--accent)">-</b><small id="kExactSub"></small></div><div class="bar"><i id="kExactBar" style="background:var(--accent)"></i></div></div>
+  </section>
 
-  <main class="mapwrap">
-    <div id="map"></div>
+  <main class="stage">
+    <div id="map" role="region" aria-label="แผนที่งานค้าง"></div>
 
-    <div class="legend" id="legend">
-      <b>คำอธิบาย</b>
-      <div><span class="sw" style="background:rgba(34,160,82,.35)"></span>เขตปกติ (ไม่มีงานค้าง)</div>
-      <div><span class="sw" style="background:rgba(212,177,6,.55)"></span>มีงาน Minor/Major</div>
-      <div><span class="sw" style="background:rgba(229,72,77,.6)"></span>มี Critical / Out Due — กระพริบ</div>
-      <div><span class="dot" style="background:var(--crit)"></span>Critical <span class="dot" style="background:var(--major);margin-left:6px"></span>Major <span class="dot" style="background:var(--minor);margin-left:6px"></span>Minor</div>
-      <div><span class="dot" style="background:#9ca3af"></span>วงกระเพื่อม = Out Due</div>
-      <div><span class="dot hollow"></span>ตำแหน่งประมาณ (ไซต์ / กลางเขต)</div>
-      <div><span class="dot" style="background:#111827;border-color:#dc2626"></span>จุด SP fault ตามชื่อในใบงาน</div>
+    <aside class="queue panel" aria-label="คิวงาน">
+      <div class="qhead"><b>คิวงาน · <span id="qCount" class="mono">-</span></b>
+        <span style="display:flex;align-items:center"><small>เกินเวลา › ความรุนแรง › อายุงาน</small>
+        <button class="iconbtn" id="qToggle" aria-label="ย่อคิวงาน" aria-expanded="true"><svg class="ico" aria-hidden="true"><use href="#i-chev-up"/></svg></button></span></div>
+      <div class="chips" id="chips"></div>
+      <div class="cols"><span></span><span>งาน / ไซต์</span><span>อายุงาน</span></div>
+      <div class="rows" id="rows"><div class="empty">กำลังโหลด…</div></div>
+    </aside>
+
+    <div class="ctrls">
+      <div class="cgroup">
+        <button id="zIn" aria-label="ซูมเข้า"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg></button>
+        <button id="zOut" aria-label="ซูมออก"><svg class="ico" aria-hidden="true"><use href="#i-minus"/></svg></button>
+        <button id="zHome" aria-label="กลับมุมมองทั้งหมด"><svg class="ico" aria-hidden="true"><use href="#i-target"/></svg></button>
+      </div>
+      <div class="cgroup">
+        <button id="bmBtn" aria-label="เลือกแผนที่พื้นหลังและชั้นข้อมูล" aria-expanded="false"><svg class="ico" aria-hidden="true"><use href="#i-layers"/></svg></button>
+      </div>
     </div>
 
-    <section class="kmzcard" id="kmzCard">
-      <div class="kh"><b id="kmzTitle">KMZ</b><button class="btn light" id="kmzClose">ปิด KMZ</button></div>
+    <div class="basemap panel" id="bmPanel" role="dialog" aria-label="แผนที่พื้นหลัง">
+      <h3>แผนที่พื้นหลัง</h3>
+      <div class="bm" id="bmList"></div>
+      <h3 style="margin-top:12px">ชั้นข้อมูล</h3>
+      <label class="toggle"><input type="checkbox" id="tZones" checked>สีสถานะของเขต / โซน</label>
+      <label class="toggle"><input type="checkbox" id="tLabels" checked>ชื่อไซต์ใต้หมุด</label>
+      <label class="toggle"><input type="checkbox" id="tFaults" checked>จุด Splitter ที่แจ้งในใบงาน</label>
+    </div>
+
+    <div class="legend panel" id="legend" aria-label="คำอธิบายสัญลักษณ์">
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 15 14H1Z" fill="var(--crit)"/></svg>Critical</span>
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 15 8 8 15 1 8Z" fill="var(--major)"/></svg>Major</span>
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="var(--minor)"/></svg>Minor</span>
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="#fff" stroke="var(--ink2)" stroke-width="2"/></svg>ตำแหน่งประมาณ</span>
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--late)" stroke-width="2"/></svg>เกินเวลา</span>
+      <span><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="3" fill="rgba(21,128,61,.25)" stroke="var(--ok)"/></svg>เขตปกติ</span>
+    </div>
+
+    <section class="kmz panel" id="kmzCard" aria-label="แบบโครงข่าย">
+      <div class="kh"><b><svg class="ico" style="color:var(--accent)" aria-hidden="true"><use href="#i-net"/></svg><span id="kmzTitle">แบบโครงข่าย</span></b>
+        <button class="iconbtn" id="kmzClose" aria-label="ปิดแบบโครงข่าย"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button></div>
       <div class="kb">
+        <label class="sr" for="kmzVersion">เวอร์ชันของแบบ</label>
         <select id="kmzVersion"></select>
+        <div id="kmzFaults"></div>
         <div id="kmzLayers"></div>
         <div class="note" id="kmzNote"></div>
       </div>
     </section>
 
-    <section class="detail" id="detail">
-      <div class="dh"><div><h2 id="dId">-</h2><div id="dBadges" style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap"></div></div><button class="x" id="dClose" aria-label="ปิด">✕</button></div>
-      <div class="db" id="dBody"></div>
-    </section>
+    <article class="callout panel" id="callout" aria-label="รายละเอียดงาน">
+      <div class="ch">
+        <div><div class="id" id="cId">-</div><div class="badges" id="cBadges"></div></div>
+        <span style="display:flex;gap:6px">
+          <button class="iconbtn" id="cFold" aria-label="ย่อรายละเอียด" aria-expanded="true"><svg class="ico" aria-hidden="true"><use href="#i-chev-up"/></svg></button>
+          <button class="iconbtn" id="cClose" aria-label="ปิดรายละเอียด"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
+        </span>
+      </div>
+      <div class="cb" id="cBody"></div>
+    </article>
   </main>
 </div>
 
 <div class="modal" id="pwModal">
-  <div class="box">
-    <h3>🔒 เปิดโครงข่าย KMZ</h3>
+  <div class="box panel" role="dialog" aria-labelledby="pwTitle">
+    <h3 id="pwTitle"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>เปิดแบบโครงข่าย</h3>
     <p>แบบโครงข่ายเป็นข้อมูลภายใน กรอกรหัสก่อนเปิด (จำไว้จนปิดแท็บนี้)</p>
+    <label class="sr" for="pwInput">รหัส</label>
     <input type="password" id="pwInput" inputmode="numeric" autocomplete="off" placeholder="รหัส">
     <div class="err" id="pwErr"></div>
-    <div class="row"><button class="btn light" id="pwCancel">ยกเลิก</button><button class="btn green" id="pwOk">ยืนยัน</button></div>
+    <div class="row2"><button class="btn" id="pwCancel">ยกเลิก</button><button class="btn primary" id="pwOk" style="flex:none">ยืนยัน</button></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status"></div>
 
 <script>
 const LOCKED = {{ map_locked|tojson }};
-const AREAS = {
-  "A1": {name: "SCT", color: "#2563eb"}, "A2": {name: "ONT", color: "#db2777"},
-  "A3": {name: "TLC", color: "#7c3aed"}, "A4": {name: "CWT", color: "#ea580c"},
-};
-const PCOL = {critical: "#e5484d", major: "#f59e0b", minor: "#d4b106"};
+const AREAS = {A1: {name: "SCT", color: "#2563EB"}, A2: {name: "ONT", color: "#DB2777"},
+               A3: {name: "TLC", color: "#7C3AED"}, A4: {name: "CWT", color: "#EA580C"}};
+const PCOL = {critical: "#E11D48", major: "#EA580C", minor: "#CA8A04"};
 const PRANK = {critical: 3, major: 2, minor: 1};
+const SEVCOL = ["#15803D", "#CA8A04", "#EA580C", "#E11D48", "#BE123C"];
+const SHAPES = {critical: "M8 1 15 14H1Z", major: "M8 1 15 8 8 15 1 8Z", minor: "M8 2a6 6 0 1 0 0.01 0Z"};
+const BASEMAPS = {
+  streets: {label: "ถนน", url: "https://tiles.openfreemap.org/styles/liberty", sw: "linear-gradient(135deg,#f2efe9 0 40%,#fcd34d 40% 46%,#f2efe9 46% 70%,#fff 70% 76%,#c7e3c1 76%)"},
+  bright: {label: "ถนน (สีสด)", url: "https://tiles.openfreemap.org/styles/bright", sw: "linear-gradient(135deg,#f8f4f0 0 35%,#f6b26b 35% 41%,#f8f4f0 41% 65%,#a5c8f0 65%)"},
+  light: {label: "สว่าง", url: "https://tiles.openfreemap.org/styles/positron", sw: "linear-gradient(135deg,#fafaf8 0 45%,#e6e6e3 45% 50%,#fafaf8 50% 75%,#d4dde6 75%)"},
+  dark: {label: "มืด", url: "https://tiles.openfreemap.org/styles/dark", sw: "linear-gradient(135deg,#1f2933 0 45%,#3e4c59 45% 50%,#1f2933 50% 75%,#0f1720 75%)"},
+};
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store = {get: (k) => { try { return localStorage.getItem("jm." + k); } catch (e) { return null; } },
+               set: (k, v) => { try { localStorage.setItem("jm." + k, v); } catch (e) {} }};
 
 let jobs = [], view = {area: "", filter: "all", q: ""}, selected = null, lastUpdated = null;
-let districtFC = null, zoneFC = null, zoneMarkers = {};
-let kmz = null, kmzHidden = new Set();
+let districtFC = null, zoneFC = null, zoneMarkers = {}, kmz = null, kmzHidden = new Set();
+let basemap = BASEMAPS[store.get("basemap")] ? store.get("basemap") : "streets";
+const show = {zones: store.get("zones") !== "0", labels: store.get("labels") !== "0", faults: store.get("faults") !== "0"};
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const icon = (id, extra = "") => `<svg class="ico" ${extra} aria-hidden="true"><use href="#${id}"/></svg>`;
 const pkey = (j) => (j.priority || "").toLowerCase();
 const isOut = (j) => (j.due || "").toLowerCase() === "outdue";
 const isExact = (j) => j.precision === "job" || j.precision === "kmz";
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 2600); }
 function ageText(h) {
   if (h == null) return "-";
-  if (h < 1) return Math.max(1, Math.round(h * 60)) + " นาที";
-  if (h < 48) return Math.floor(h) + " ชม. " + Math.round((h % 1) * 60) + " น.";
-  return Math.floor(h / 24) + " วัน " + Math.round(h % 24) + " ชม.";
+  if (h < 48) return String(Math.floor(h)).padStart(2, "0") + ":" + String(Math.round((h % 1) * 60) % 60).padStart(2, "0");
+  return Math.floor(h / 24) + "ว " + Math.round(h % 24) + "ชม";
 }
-// severity of a set of jobs: 0 none · 1 minor · 2 major · 3 critical · 4 any Out Due
 function severity(list) {
   if (!list.length) return 0;
   if (list.some(isOut)) return 4;
   return Math.max(...list.map(j => PRANK[pkey(j)] || 1));
 }
-const SEVCOL = ["#22a052", "#d4b106", "#f59e0b", "#e5484d", "#b91c1c"];
+const glyph = (p, size = 14) => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" role="img" aria-label="${esc(p || "-")}"><path d="${SHAPES[p] || SHAPES.minor}" fill="${PCOL[p] || "#94A3B8"}"/></svg>`;
 
 // ---------------------------------------------------------------- map
-const map = new maplibregl.Map({
-  container: "map",
-  style: "https://tiles.openfreemap.org/styles/positron",
-  center: [100.62, 13.82], zoom: 9.6, attributionControl: {compact: true},
-});
-map.addControl(new maplibregl.NavigationControl({showCompass: false}), "top-right");
-map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-right");
-
-map.on("load", async () => {
+const HOME = {center: [100.62, 13.82], zoom: 9.6};
+let map;
+(async function boot() {
   [districtFC, zoneFC] = await Promise.all([
     fetch("/static/map/districts.geojson").then(r => r.json()),
     fetch("/static/map/zones.geojson").then(r => r.json()),
   ]);
+  map = new maplibregl.Map({container: "map", style: BASEMAPS[basemap].url, ...HOME, attributionControl: {compact: true}});
+  map.addControl(new maplibregl.ScaleControl({unit: "metric"}), "bottom-left");
+  map.on("style.load", setupLayers);   // first load and every basemap switch
+  bindMapEvents();
+  addZoneLabels();
+  map.once("load", async () => { await refresh(true); animate(); setInterval(() => refresh(false), 60000); });
+  map.on("move", placeCallout);
+})();
+
+// Pin icons: shape = priority (triangle / diamond / circle), filled = exact position, hollow = approximate.
+function addIcons() {
+  for (const [p, color] of Object.entries(PCOL)) {
+    for (const fill of ["exact", "approx"]) {
+      const name = `${p}-${fill}`;
+      if (map.hasImage(name)) continue;
+      const s = 44, c = document.createElement("canvas"); c.width = c.height = s;
+      const g = c.getContext("2d");
+      const path = new Path2D(SHAPES[p]);
+      g.translate(4, 4); g.scale(2.25, 2.25);
+      g.lineJoin = "round";
+      if (fill === "exact") { g.fillStyle = color; g.fill(path); g.lineWidth = 1.3; g.strokeStyle = "#fff"; g.stroke(path); }
+      else { g.fillStyle = "#fff"; g.fill(path); g.lineWidth = 1.8; g.strokeStyle = color; g.stroke(path); }
+      map.addImage(name, g.getImageData(0, 0, s, s), {pixelRatio: 2});
+    }
+  }
+}
+
+function setupLayers() {
+  addIcons();
+  const empty = {type: "FeatureCollection", features: []};
   map.addSource("districts", {type: "geojson", data: districtFC});
   map.addSource("zones", {type: "geojson", data: zoneFC});
-  map.addSource("jobs", {type: "geojson", data: {type: "FeatureCollection", features: []}});
-  map.addSource("kmz", {type: "geojson", data: {type: "FeatureCollection", features: []}});
-  map.addSource("faults", {type: "geojson", data: {type: "FeatureCollection", features: []}});
-
-  map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", ["coalesce", ["get", "sev"], 0], 0],
-    paint: {"fill-color": "#22a052", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0.13, 14.5, 0.02]}});
-  map.addLayer({id: "district-alert", type: "fill", source: "districts", filter: [">", ["coalesce", ["get", "sev"], 0], 0],
-    paint: {"fill-color": ["match", ["coalesce", ["get", "sev"], 0], 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.3}});
+  map.addSource("jobs", {type: "geojson", data: empty});
+  map.addSource("faults", {type: "geojson", data: empty});
+  map.addSource("kmz", {type: "geojson", data: kmz ? {type: "FeatureCollection", features: kmz.features} : empty});
+  const dark = basemap === "dark";
+  const sev = ["coalesce", ["get", "sev"], 0];
+  map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", sev, 0],
+    paint: {"fill-color": "#16A34A", "fill-opacity": 0.12}});
+  map.addLayer({id: "district-alert", type: "fill", source: "districts", filter: [">", sev, 0],
+    paint: {"fill-color": ["match", sev, 1, SEVCOL[1], 2, SEVCOL[2], 3, SEVCOL[3], SEVCOL[4]], "fill-opacity": 0.2}});
   map.addLayer({id: "district-line", type: "line", source: "districts",
-    paint: {"line-color": "#ffffff", "line-width": 1, "line-opacity": 0.9}});
+    paint: {"line-color": dark ? "#334155" : "#FFFFFF", "line-width": 1, "line-opacity": 0.8}});
   map.addLayer({id: "zone-line", type: "line", source: "zones",
     paint: {"line-color": ["match", ["get", "area"], "A1", AREAS.A1.color, "A2", AREAS.A2.color, "A3", AREAS.A3.color, AREAS.A4.color],
-            "line-width": 2.6, "line-opacity": 0.85}});
+            "line-width": 2.4, "line-opacity": 0.85}});
 
-  // KMZ network (under the job pins)
-  const visible = ["!", ["in", ["get", "folder"], ["literal", []]]];
-  map.addLayer({id: "kmz-fill", type: "fill", source: "kmz", filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
-    paint: {"fill-color": ["coalesce", ["get", "fill"], "#22d3ee"], "fill-opacity": ["min", 0.35, ["coalesce", ["get", "fill_opacity"], 0.18]]}});
-  map.addLayer({id: "kmz-outline", type: "line", source: "kmz", filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
-    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0891b2"], "line-width": 1.2}});
-  map.addLayer({id: "kmz-line", type: "line", source: "kmz", filter: ["all", ["==", ["get", "kind"], "line"], visible],
-    layout: {"line-cap": "round", "line-join": "round"},
-    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0284c7"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 17, 4]}});
-  map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: ["all", ["==", ["get", "kind"], "point"], visible],
-    paint: {"circle-color": ["coalesce", ["get", "icon"], "#ec4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
+  const vis = ["!", ["in", ["get", "folder"], ["literal", [...kmzHidden]]]];
+  const kind = (k) => ["all", ["==", ["get", "kind"], k], vis];
+  map.addLayer({id: "kmz-fill", type: "fill", source: "kmz", filter: kind("polygon"),
+    paint: {"fill-color": ["coalesce", ["get", "fill"], "#22D3EE"], "fill-opacity": ["min", 0.35, ["coalesce", ["get", "fill_opacity"], 0.18]]}});
+  map.addLayer({id: "kmz-outline", type: "line", source: "kmz", filter: kind("polygon"),
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0891B2"], "line-width": 1.2}});
+  map.addLayer({id: "kmz-line", type: "line", source: "kmz", filter: kind("line"), layout: {"line-cap": "round", "line-join": "round"},
+    paint: {"line-color": ["coalesce", ["get", "stroke"], "#0284C7"], "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 17, 4]}});
+  map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: kind("point"),
+    paint: {"circle-color": ["coalesce", ["get", "icon"], "#EC4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
             "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
-  // names on the drawing: cables along their line, splitters / villages as text
-  const halo = {"text-color": "#0f172a", "text-halo-color": "#ffffff", "text-halo-width": 1.6};
-  map.addLayer({id: "kmz-line-label", type: "symbol", source: "kmz", minzoom: 14,
-    filter: ["all", ["==", ["get", "kind"], "line"], visible],
-    layout: {"symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
-             "text-size": 11, "text-max-angle": 30, "symbol-spacing": 280},
+  const halo = {"text-color": "#0F172A", "text-halo-color": "#FFFFFF", "text-halo-width": 1.6};
+  map.addLayer({id: "kmz-line-label", type: "symbol", source: "kmz", minzoom: 14, filter: kind("line"),
+    layout: {"symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-max-angle": 30, "symbol-spacing": 280},
     paint: {...halo, "text-color": "#075985"}});
-  map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 15.5,
-    filter: ["all", ["==", ["get", "kind"], "point"], visible],
-    layout: {"text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 10,
-             "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true},
+  map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 15.5, filter: kind("point"),
+    layout: {"text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 10, "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true},
     paint: halo});
-  map.addLayer({id: "kmz-poly-label", type: "symbol", source: "kmz", minzoom: 15,
-    filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
+  map.addLayer({id: "kmz-poly-label", type: "symbol", source: "kmz", minzoom: 15, filter: kind("polygon"),
     layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-optional": true},
-    paint: {...halo, "text-color": "#7c2d12"}});
-  // splitters named in an open job's title (SP fault), found in this drawing
+    paint: {...halo, "text-color": "#7C2D12"}});
   map.addLayer({id: "kmz-fault-halo", type: "circle", source: "kmz", filter: ["has", "fault"],
-    paint: {"circle-color": "transparent", "circle-stroke-color": "#dc2626", "circle-stroke-width": 3, "circle-radius": 12, "circle-stroke-opacity": 0.8}});
+    paint: {"circle-color": "transparent", "circle-stroke-color": "#BE123C", "circle-stroke-width": 3, "circle-radius": 12, "circle-stroke-opacity": 0.8}});
 
-  // job pins: pulsing ring for Out Due, solid dot = exact position, hollow = approximate
   map.addLayer({id: "job-halo", type: "circle", source: "jobs", filter: ["==", ["get", "out"], 1],
-    paint: {"circle-color": "transparent", "circle-stroke-color": ["get", "color"], "circle-stroke-width": 2.5,
-            "circle-radius": 10, "circle-stroke-opacity": 0.6}});
-  map.addLayer({id: "job-dot", type: "circle", source: "jobs",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 14, 8],
-      "circle-color": ["case", ["==", ["get", "exact"], 1], ["get", "color"], "#ffffff"],
-      "circle-stroke-color": ["case", ["==", ["get", "exact"], 1], "#ffffff", ["get", "color"]],
-      "circle-stroke-width": ["case", ["==", ["get", "exact"], 1], 2, 2.6],
-    }});
-  // SP fault points named in the job titles
+    paint: {"circle-color": "transparent", "circle-stroke-color": "#BE123C", "circle-stroke-width": 2.2, "circle-radius": 10, "circle-stroke-opacity": 0.6}});
   map.addLayer({id: "fault-halo", type: "circle", source: "faults", filter: ["==", ["get", "sel"], 1],
-    paint: {"circle-color": "transparent", "circle-stroke-color": "#dc2626", "circle-stroke-width": 2.5, "circle-radius": 10, "circle-stroke-opacity": 0.7}});
+    paint: {"circle-color": "transparent", "circle-stroke-color": "#BE123C", "circle-stroke-width": 2.5, "circle-radius": 10, "circle-stroke-opacity": 0.7}});
   map.addLayer({id: "fault-dot", type: "circle", source: "faults", minzoom: 11,
-    paint: {"circle-radius": ["case", ["==", ["get", "sel"], 1], 6, 4], "circle-color": "#111827",
-            "circle-stroke-color": "#dc2626", "circle-stroke-width": ["case", ["==", ["get", "sel"], 1], 3, 2]}});
+    paint: {"circle-radius": ["case", ["==", ["get", "sel"], 1], 5.5, 4], "circle-color": "#0F172A",
+            "circle-stroke-color": "#BE123C", "circle-stroke-width": ["case", ["==", ["get", "sel"], 1], 3, 2]}});
   map.addLayer({id: "fault-label", type: "symbol", source: "faults", minzoom: 13,
-    layout: {"text-field": ["concat", "SP ", ["get", "key"]], "text-font": ["Noto Sans Bold"], "text-size": 10.5,
-             "text-offset": [0, -1.1], "text-anchor": "bottom", "text-optional": true},
-    paint: {"text-color": "#b91c1c", "text-halo-color": "#fff", "text-halo-width": 1.6}});
-  // site code under every pin; the site name joins it when zoomed in
+    layout: {"text-field": ["get", "key"], "text-font": ["Noto Sans Bold"], "text-size": 10.5, "text-offset": [0, -1.1], "text-anchor": "bottom", "text-optional": true},
+    paint: {"text-color": "#BE123C", "text-halo-color": "#fff", "text-halo-width": 1.6}});
+  map.addLayer({id: "job-sel", type: "circle", source: "jobs", filter: ["==", ["get", "id"], selected || ""],
+    paint: {"circle-radius": 16, "circle-color": "rgba(3,105,161,.10)", "circle-stroke-color": "#0369A1", "circle-stroke-width": 2.5}});
+  map.addLayer({id: "job-icon", type: "symbol", source: "jobs",
+    layout: {"icon-image": ["concat", ["get", "p"], "-", ["get", "fill"]], "icon-allow-overlap": true, "icon-ignore-placement": true,
+             "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.75, 14, 1.05], "symbol-sort-key": ["get", "rank"]}});
   map.addLayer({id: "job-label", type: "symbol", source: "jobs", minzoom: 10.5,
-    layout: {
-      "text-field": ["step", ["zoom"], ["get", "site"], 14,
-        ["format", ["get", "site"], {}, "\n", {}, ["get", "site_name"], {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]}]],
-      "text-font": ["Noto Sans Bold"], "text-size": 11, "text-offset": [0, 0.95], "text-anchor": "top",
-      "text-max-width": 14, "text-optional": true},
-    paint: {"text-color": "#1f2937", "text-halo-color": "#ffffff", "text-halo-width": 1.8}});
-  map.addLayer({id: "job-sel", type: "circle", source: "jobs", filter: ["==", ["get", "id"], ""],
-    paint: {"circle-radius": 15, "circle-color": "transparent", "circle-stroke-color": "#111827", "circle-stroke-width": 2.5}});
+    layout: {"text-field": ["step", ["zoom"], ["get", "site"], 14,
+               ["format", ["get", "site"], {}, "\n", {}, ["get", "site_name"], {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]}]],
+             "text-font": ["Noto Sans Bold"], "text-size": 11, "text-offset": [0, 1.05], "text-anchor": "top", "text-max-width": 14, "text-optional": true},
+    paint: {"text-color": dark ? "#E2E8F0" : "#0F172A", "text-halo-color": dark ? "#0F172A" : "#FFFFFF", "text-halo-width": 1.8}});
+  applyToggles();
+  if (jobs.length) render();
+}
 
-  map.on("click", "job-dot", (e) => select(e.features[0].properties.id, false));
-  map.on("mouseenter", "job-dot", () => map.getCanvas().style.cursor = "pointer");
-  map.on("mouseleave", "job-dot", () => map.getCanvas().style.cursor = "");
+function bindMapEvents() {
+  map.on("click", "job-icon", (e) => select(e.features[0].properties.id, false));
+  map.on("click", "fault-dot", (e) => select(e.features[0].properties.job, false));
+  for (const id of ["job-icon", "fault-dot"]) {
+    map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
+    map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
+  }
   const hover = new maplibregl.Popup({closeButton: false, closeOnClick: false, offset: 10, className: "kmz-hover"});
   for (const id of ["kmz-point", "kmz-line", "kmz-fill"]) {
     map.on("click", id, (e) => {
-      if (map.queryRenderedFeatures(e.point, {layers: ["job-dot", "fault-dot"]}).length) return;
+      if (map.queryRenderedFeatures(e.point, {layers: ["job-icon", "fault-dot"]}).length) return;
       hover.remove();
       new maplibregl.Popup({offset: 8, maxWidth: "300px"}).setLngLat(e.lngLat).setHTML(kmzInfo(e.features[0], true)).addTo(map);
     });
-    map.on("mousemove", id, (e) => {
-      map.getCanvas().style.cursor = "pointer";
-      hover.setLngLat(e.lngLat).setHTML(kmzInfo(e.features[0], false)).addTo(map);
-    });
+    map.on("mousemove", id, (e) => { map.getCanvas().style.cursor = "pointer"; hover.setLngLat(e.lngLat).setHTML(kmzInfo(e.features[0], false)).addTo(map); });
     map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; hover.remove(); });
   }
-  map.on("click", "fault-dot", (e) => select(e.features[0].properties.job, false));
+}
 
-  addZoneLabels();
-  await refresh(true);
-  animate();
-  setInterval(() => refresh(false), 60000);
-});
+function applyToggles() {
+  if (!map.getLayer("district-ok")) return;
+  const v = (on) => on ? "visible" : "none";
+  for (const id of ["district-ok", "district-alert"]) map.setLayoutProperty(id, "visibility", v(show.zones));
+  map.setLayoutProperty("job-label", "visibility", v(show.labels));
+  for (const id of ["fault-dot", "fault-halo", "fault-label"]) map.setLayoutProperty(id, "visibility", v(show.faults));
+}
 
-// Length of a line in metres (haversine), for cable popups.
+function addZoneLabels() {
+  for (const f of zoneFC.features) {
+    const p = f.properties, el = document.createElement("button");
+    el.className = "zl ok";
+    el.style.color = AREAS[p.area].color;
+    el.setAttribute("aria-label", `โซน ${p.area} ${p.name}`);
+    el.innerHTML = `<span>${p.area} ${p.name}</span><em><i>0</i></em>`;
+    el.onclick = (ev) => { ev.stopPropagation(); setArea(view.area === p.area ? "" : p.area, true); };
+    zoneMarkers[p.area] = new maplibregl.Marker({element: el}).setLngLat([p.cx, p.cy]).addTo(map);
+  }
+}
+
 function lineLength(coords) {
   let m = 0;
   for (let i = 1; i < coords.length; i++) {
@@ -359,45 +513,34 @@ function kmzInfo(f, full) {
   try { ext = typeof p.ext === "string" ? JSON.parse(p.ext) : (p.ext || {}); } catch (e) {}
   const kind = {line: "เส้น / เคเบิล", point: "จุด", polygon: "พื้นที่"}[p.kind] || "";
   let html = `<b>${esc(p.name || "(ไม่มีชื่อ)")}</b>`;
-  if (p.fault) html += `<div style="color:#b91c1c;font-weight:800">⚠️ SP fault ในใบงาน ${esc(p.fault_job || "")}</div>`;
-  html += `<div style="color:#64748b">${esc(kind)} · ${esc(p.path || p.folder || "")}</div>`;
+  if (p.fault) html += `<div style="color:#BE123C;font-weight:600">Splitter ที่แจ้งในใบงาน ${esc(p.fault_job || "")}</div>`;
+  html += `<div style="color:#64748B">${esc(kind)} · ${esc(p.path || p.folder || "")}</div>`;
   if (p.kind === "line" && f.geometry && f.geometry.type === "LineString") {
-    const km = lineLength(f.geometry.coordinates);
-    html += `<div>ยาว ≈ <b>${km >= 1000 ? (km / 1000).toFixed(2) + " กม." : Math.round(km) + " ม."}</b></div>`;
+    const m = lineLength(f.geometry.coordinates);
+    html += `<div>ยาวประมาณ <b>${m >= 1000 ? (m / 1000).toFixed(2) + " กม." : Math.round(m) + " ม."}</b></div>`;
   }
   if (full) {
-    for (const [k, v] of Object.entries(ext)) html += `<div><span style="color:#64748b">${esc(k)}:</span> ${esc(v)}</div>`;
+    for (const [k, v] of Object.entries(ext)) html += `<div><span style="color:#64748B">${esc(k)}:</span> ${esc(v)}</div>`;
     if (p.desc) html += `<div style="margin-top:4px;white-space:pre-wrap">${esc(p.desc)}</div>`;
   }
   return html;
 }
 
-function addZoneLabels() {
-  for (const f of zoneFC.features) {
-    const p = f.properties, el = document.createElement("div");
-    el.className = "zonelabel ok";
-    el.style.color = AREAS[p.area].color;
-    el.innerHTML = `<span>${p.area} · ${p.name}</span><span class="cnt"><em>0</em></span>`;
-    el.onclick = () => setArea(view.area === p.area ? "" : p.area, true);
-    zoneMarkers[p.area] = new maplibregl.Marker({element: el}).setLngLat([p.cx, p.cy]).addTo(map);
-  }
-}
-
-// ---------------------------------------------------------------- animation (blink + pulse)
+// ---------------------------------------------------------------- animation
 function animate() {
   if (REDUCED) return;
   let last = 0;
   const frame = (t) => {
-    if (t - last > 33 && map.getLayer("district-alert")) {   // ~30 fps is plenty
+    if (t - last > 33 && map.getLayer("district-alert")) {
       last = t;
       const blink = 0.5 + 0.5 * Math.sin(t / 1600 * 2 * Math.PI);
-      // zoomed in to a street / an opened KMZ the area colour fades out so it doesn't hide them
-      const fade = Math.min(1, Math.max(0.12, (14.5 - map.getZoom()) / 3));
-      map.setPaintProperty("district-alert", "fill-opacity", (0.16 + 0.34 * blink) * fade);
-      map.setPaintProperty("district-ok", "fill-opacity", 0.13 * fade);
+      const fade = Math.min(1, Math.max(0.1, (14.5 - map.getZoom()) / 3));
+      const base = basemap === "streets" || basemap === "bright" ? 0.7 : 1;   // let the streets show through
+      map.setPaintProperty("district-alert", "fill-opacity", (0.12 + 0.26 * blink) * fade * base);
+      map.setPaintProperty("district-ok", "fill-opacity", 0.12 * fade * base);
       const ph = (t % 1800) / 1800;
       map.setPaintProperty("job-halo", "circle-radius", 8 + ph * 18);
-      map.setPaintProperty("job-halo", "circle-stroke-opacity", 0.75 * (1 - ph));
+      map.setPaintProperty("job-halo", "circle-stroke-opacity", 0.7 * (1 - ph));
       map.setPaintProperty("fault-halo", "circle-radius", 7 + ph * 16);
       map.setPaintProperty("fault-halo", "circle-stroke-opacity", 0.8 * (1 - ph));
       map.setPaintProperty("kmz-fault-halo", "circle-radius", 9 + ph * 20);
@@ -419,17 +562,17 @@ async function refresh(first) {
     jobs = d.jobs.map(j => ({...j, _out: isOut(j), _p: pkey(j)}));
     spreadOverlaps(jobs);
     render();
+    if (!first && selected) select(selected, null);
     if (first) {
       const qs = new URLSearchParams(location.search);
       if (qs.get("job")) select(qs.get("job"), true);
       else if (qs.get("site")) openKmz(qs.get("site"));
     }
   } catch (e) {
-    if (first) $("list").innerHTML = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message)}</div>`;
+    if (first) $("rows").innerHTML = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${esc(e.message)}</div>`;
   }
 }
 
-// Jobs placed on the same spot (same site / district centre) fan out in a small ring.
 function spreadOverlaps(list) {
   const groups = {};
   for (const j of list) {
@@ -459,50 +602,57 @@ function matches(j) {
   return true;
 }
 
+function setKpi(key, n, total, sub) {
+  $("k" + key).textContent = n;
+  $("k" + key + "Sub").textContent = sub;
+  $("k" + key + "Bar").style.width = (total ? Math.round(n / total * 100) : 0) + "%";
+}
+
 function render() {
   const shown = jobs.filter(matches).sort((a, b) =>
     (b._out - a._out) || ((PRANK[b._p] || 0) - (PRANK[a._p] || 0)) || ((b.age_h || 0) - (a.age_h || 0)));
-
-  // stats (whole area filter, not the search)
   const scope = jobs.filter(j => !view.area || j.area === view.area);
-  $("sTotal").textContent = scope.length;
-  $("sDue").textContent = scope.filter(j => j._out).length;
-  $("sCrit").textContent = scope.filter(j => j._p === "critical").length;
-  $("sApprox").textContent = scope.filter(j => !isExact(j)).length;
+  const late = scope.filter(j => j._out).length, crit = scope.filter(j => j._p === "critical").length, exact = scope.filter(isExact).length;
+  setKpi("Total", scope.length, scope.length, view.area ? `โซน ${view.area} ${AREAS[view.area].name}` : "ทุกโซน");
+  setKpi("Late", late, scope.length, scope.length ? Math.round(late / scope.length * 100) + "% ของงานค้าง" : "");
+  setKpi("Crit", crit, scope.length, `เกินเวลาแล้ว ${scope.filter(j => j._p === "critical" && j._out).length}`);
+  setKpi("Exact", exact, scope.length, "ที่เหลือใช้ตำแหน่งไซต์ / เขต");
 
-  // area chips
-  const chips = [["", "ทุกโซน", "#334155"], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
-  $("zoneChips").innerHTML = chips.map(([a, label, c]) => {
+  const segs = [["", "ทุกโซน", null], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
+  $("zoneSeg").innerHTML = segs.map(([a, label, c]) => {
     const n = jobs.filter(j => !a || j.area === a).length;
-    return `<button class="chip ${view.area === a ? "on" : ""}" data-area="${a}"><i style="background:${c}"></i>${label}<span class="n">${n}</span></button>`;
+    return `<button class="${view.area === a ? "on" : ""}" data-area="${a}" aria-pressed="${view.area === a}">${c ? `<span class="sw" style="background:${c}"></span>` : ""}${label}<span class="n">${n}</span></button>`;
   }).join("");
-  const filters = [["all", "ทั้งหมด"], ["out", "Out Due"], ["critical", "Critical"], ["kmz", "มี KMZ"], ["approx", "ตำแหน่งประมาณ"]];
-  $("filterChips").innerHTML = filters.map(([k, l]) => `<button class="chip ${view.filter === k ? "on" : ""}" data-filter="${k}">${l}</button>`).join("");
+  const filters = [["all", "ทั้งหมด"], ["out", `เกินเวลา ${late}`], ["critical", `Critical ${crit}`], ["kmz", "มีแบบโครงข่าย"], ["approx", "ตำแหน่งประมาณ"]];
+  $("chips").innerHTML = filters.map(([k, l]) => `<button class="chip ${view.filter === k ? "on" : ""}" data-filter="${k}" aria-pressed="${view.filter === k}">${l}</button>`).join("");
 
-  // list
-  $("listCount").textContent = `${shown.length} งาน`;
-  $("list").innerHTML = shown.length ? shown.map(j => `
-    <div class="job p-${j._p} ${selected === j.id ? "sel" : ""}" data-id="${esc(j.id)}">
-      <div class="r1">${esc(j.id)} <span class="badge b-${j._p}">${esc(j.priority)}</span>
-        ${j._out ? '<span class="badge b-out">Out Due</span>' : (j.due ? '<span class="badge b-in">In Due</span>' : "")}
-        ${!isExact(j) ? '<span class="badge b-approx">≈</span>' : ""}${(j.faults || []).length ? `<span class="badge" style="background:#fee2e2;color:#b91c1c">SP ${j.faults.length}</span>` : ""}${j.kmz ? '<span class="badge b-kmz">KMZ</span>' : ""}</div>
-      <div class="r2">${esc(j.site || "-")} · ${esc(j.site_name || j.sub)}</div>
-      <div class="r3"><span>⏱ ${ageText(j.age_h)}</span><span>📍 ${esc(j.district || "-")}</span><span>👷 ${esc(j.assign || "-")}</span></div>
-    </div>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้ 🎉</div>';
+  $("qCount").textContent = shown.length;
+  $("rows").innerHTML = shown.length ? shown.map(j => `
+    <button class="row ${selected === j.id ? "sel" : ""}" data-id="${esc(j.id)}">
+      <span style="margin-top:2px">${glyph(j._p)}</span>
+      <span style="min-width:0;display:flex;flex-direction:column;gap:1px">
+        <span class="id">${esc(j.id)}</span>
+        <span class="site"><b>${esc(j.site || "-")}</b> ${esc(j.site_name || j.sub)}</span>
+        <span class="meta">${esc(j.district || "-")} · ${esc(j.assign || "-")}</span>
+      </span>
+      <span class="rt">
+        <span class="age ${j._out ? "late" : ""}">${ageText(j.age_h)}</span>
+        ${(j.faults || []).length ? `<span class="tag sp">SP ${j.faults.length}</span>` : ""}
+        ${j.kmz ? `<span class="tag net">แบบ</span>` : ""}
+        ${isExact(j) ? "" : `<span class="tag">ประมาณ</span>`}
+      </span>
+    </button>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้</div>';
 
-  // map: pins
-  if (!map.getSource("jobs")) return;
+  if (!map || !map.getSource("jobs")) return;
   map.getSource("jobs").setData({type: "FeatureCollection", features: shown.filter(j => j._lat != null).map(j => ({
     type: "Feature", geometry: {type: "Point", coordinates: [j._lon, j._lat]},
-    properties: {id: j.id, color: PCOL[j._p] || "#64748b", out: j._out ? 1 : 0, exact: isExact(j) ? 1 : 0,
-                 site: j.site || "", site_name: j.site_name || ""},
+    properties: {id: j.id, p: PCOL[j._p] ? j._p : "minor", fill: isExact(j) ? "exact" : "approx", out: j._out ? 1 : 0,
+                 rank: (j._out ? 10 : 0) + (PRANK[j._p] || 0), site: j.site || "", site_name: j.site_name || ""},
   }))});
   map.getSource("faults").setData({type: "FeatureCollection", features: shown.flatMap(j => (j.faults || [])
     .filter(f => f.lat != null)
-    .map(f => ({type: "Feature", geometry: {type: "Point", coordinates: [f.lon, f.lat]},
-                properties: {job: j.id, key: f.key, sel: j.id === selected ? 1 : 0}})))});
+    .map(f => ({type: "Feature", geometry: {type: "Point", coordinates: [f.lon, f.lat]}, properties: {job: j.id, key: f.key, sel: j.id === selected ? 1 : 0}})))});
 
-  // map: districts green / blinking by the jobs inside them (all jobs, so the map shows the whole picture)
   const byDistrict = {};
   for (const j of jobs) {
     if (view.area && j.area !== view.area) continue;
@@ -512,17 +662,13 @@ function render() {
   for (const f of districtFC.features) {
     const list = byDistrict[f.properties.district.replace(/\s+/g, "")] || [];
     f.properties.sev = severity(list);
-    f.properties.n = list.length;
   }
   map.getSource("districts").setData(districtFC);
-
-  // zone labels: job count, green when the zone has nothing open
   for (const [a, m] of Object.entries(zoneMarkers)) {
-    const list = jobs.filter(j => j.area === a);
-    const el = m.getElement();
-    el.classList.toggle("ok", !list.length);
-    el.querySelector("em").textContent = list.length;
-    el.style.color = list.length ? AREAS[a].color : "#22a052";
+    const n = jobs.filter(j => j.area === a).length, el = m.getElement();
+    el.classList.toggle("ok", !n);
+    el.querySelector("i").textContent = n;
+    el.style.color = n ? AREAS[a].color : "#15803D";
     el.style.opacity = view.area && view.area !== a ? 0.45 : 1;
   }
   map.setFilter("job-sel", ["==", ["get", "id"], selected || ""]);
@@ -531,13 +677,11 @@ function render() {
 function setArea(a, fly) {
   view.area = a;
   render();
-  if (fly) {
-    const f = zoneFC.features.find(z => z.properties.area === a);
-    if (f) map.fitBounds(bbox(f.geometry), {padding: 40, duration: 900});
-    else map.flyTo({center: [100.62, 13.82], zoom: 9.6, duration: 900});
-  }
+  if (!fly) return;
+  const f = zoneFC.features.find(z => z.properties.area === a);
+  if (f) map.fitBounds(bbox(f.geometry), {padding: {top: 40, bottom: 40, left: window.innerWidth > 860 ? 420 : 20, right: 60}, duration: 900});
+  else map.flyTo({...HOME, duration: 900});
 }
-
 function bbox(geom) {
   let x0 = 180, y0 = 90, x1 = -180, y1 = -90;
   const walk = (c) => typeof c[0] === "number" ? (x0 = Math.min(x0, c[0]), y0 = Math.min(y0, c[1]), x1 = Math.max(x1, c[0]), y1 = Math.max(y1, c[1])) : c.forEach(walk);
@@ -545,56 +689,95 @@ function bbox(geom) {
   return [[x0, y0], [x1, y1]];
 }
 
-// ---------------------------------------------------------------- selection / detail
+// ---------------------------------------------------------------- detail callout
 function select(id, fly) {
   const j = jobs.find(x => x.id === id);
   if (!j) return;
   selected = id;
   render();
-  if (j._lat != null) map.flyTo({center: [j._lon, j._lat], zoom: Math.max(map.getZoom(), j.precision === "district" ? 12 : 14.5), duration: fly === false ? 600 : 900});
-  const card = document.querySelector(`.job[data-id="${CSS.escape(id)}"]`);
+  if (fly !== null && j._lat != null) {
+    map.flyTo({center: [j._lon, j._lat], zoom: Math.max(map.getZoom(), j.precision === "district" ? 12 : 14.5),
+               offset: [window.innerWidth > 860 ? 110 : 0, 0], duration: fly === false ? 600 : 900});
+  }
+  const card = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
   if (card) card.scrollIntoView({block: "nearest"});
 
-  $("dId").textContent = j.id;
-  $("dBadges").innerHTML = `<span class="badge b-${j._p}">${esc(j.priority)}</span>` +
-    (j._out ? '<span class="badge b-out">Out Due</span>' : (j.due ? '<span class="badge b-in">In Due</span>' : "")) +
-    `<span class="badge" style="background:#eef2f7;color:#334155">${esc(j.status)}</span>`;
+  $("cId").textContent = j.id;
+  const pb = {critical: "b-crit", major: "b-major", minor: "b-minor"}[j._p] || "b-status";
+  $("cBadges").innerHTML = (j._out ? `<span class="badge b-late">เกินเวลา</span>` : "") +
+    `<span class="badge ${pb}">${esc(j.priority)}</span><span class="badge b-status">${esc(j.status)}</span>`;
   const pos = {
-    job: ["job", "📍 พิกัดจากใบงาน (ตรงจุด)"],
-    kmz: ["job", "📍 ตำแหน่ง Splitter ในแบบ KMZ (ตามชื่อในใบงาน)"],
-    site: ["site", "📡 ตำแหน่งไซต์ " + esc(j.site) + " — งานจริงอาจอยู่ห่างจากไซต์"],
-    district: ["district", "🗺️ ไม่มีพิกัด — วางไว้กลางเขต " + esc(j.district) + " (ประมาณ)"],
-  }[j.precision] || ["district", "ไม่พบตำแหน่ง"];
-  const nav = j.precision === "job" || j.precision === "kmz" || j.precision === "site";
-  const src = {title: ["พิกัดในใบงาน", "#166534", "#dcfce7"], kmz: ["พบใน KMZ", "#075985", "#e0f2fe"]};
-  const faults = (j.faults || []).map((f, k) => {
-    const s = src[f.src] || ["ไม่พบพิกัด", "#6b7280", "#f3f4f6"];
-    return `<div class="fault" ${f.lat != null ? `data-lat="${f.lat}" data-lon="${f.lon}"` : ""}>
-      <b>⚠️ SP ${esc(f.key)}</b><span class="badge" style="background:${s[2]};color:${s[1]}">${s[0]}</span></div>`;
+    job: ["exact", "pin", "ตำแหน่งตรงจุดจากพิกัดในใบงาน"],
+    kmz: ["exact", "pin", "ตำแหน่ง Splitter ในแบบโครงข่าย (ตามชื่อในใบงาน)"],
+    site: ["site", "target", `ตำแหน่งไซต์ ${esc(j.site)} — จุดเสียจริงอาจอยู่ห่างจากไซต์`],
+    district: ["area", "map", `ไม่มีพิกัด — วางไว้กลางเขต ${esc(j.district)}`],
+  }[j.precision] || ["area", "map", "ไม่พบตำแหน่ง"];
+  const src = {title: ["พิกัดในใบงาน", "#166534"], kmz: ["พบในแบบโครงข่าย", "#0369A1"]};
+  const faults = (j.faults || []).map(f => {
+    const s = src[f.src] || ["ไม่พบพิกัด", "#64748B"];
+    return `<button class="fault" ${f.lat != null ? `data-lat="${f.lat}" data-lon="${f.lon}"` : "disabled"}><span class="mono">${esc(f.key)}</span><span class="src" style="color:${s[1]}">${s[0]}</span></button>`;
   }).join("");
-  $("dBody").innerHTML = `
+  const nav = j.precision !== "district" && j.lat != null;
+  $("cBody").innerHTML = `
     <div class="title">${esc(j.title)}</div>
-    <div class="pos ${pos[0]}">${pos[1]}</div>
-    <div class="grid2">
-      <div class="cell"><span>ไซต์</span><b>${esc(j.site || "-")}</b><br><small>${esc(j.site_name)}</small></div>
-      <div class="cell"><span>ทีม</span><b>${esc(j.assign || "-")}</b><br><small>${esc(j.team_zone)}</small></div>
-      <div class="cell"><span>เขต / จังหวัด</span><b>${esc(j.district || "-")}</b><br><small>${esc(j.province)}</small></div>
-      <div class="cell"><span>โซน</span><b>${esc(j.area ? j.area + " · " + j.area_name : "-")}</b><br><small>${esc(j.sub)}</small></div>
-      <div class="cell"><span>สร้างเมื่อ</span><b>${esc(j.create || "-")}</b></div>
-      <div class="cell"><span>อายุงาน</span><b>${ageText(j.age_h)}</b></div>
+    <div class="facts">
+      <div><span>ไซต์</span><b><span class="mono">${esc(j.site || "-")}</span> ${esc(j.site_name)}</b></div>
+      <div><span>ทีม</span><b>${esc(j.assign || "-")}</b></div>
+      <div><span>เขต · โซน</span><b>${esc(j.district || "-")} · ${esc(j.area ? j.area + " " + j.area_name : "-")}</b></div>
+      <div><span>อายุงาน</span><b class="mono" style="color:${j._out ? "var(--late)" : "inherit"}">${ageText(j.age_h)} ชม.</b></div>
+      <div><span>สร้างเมื่อ</span><b>${esc(j.create || "-")}</b></div>
+      <div><span>Sub System</span><b>${esc(j.sub || "-")}</b></div>
     </div>
-    ${faults ? `<div class="faults"><div class="fh">จุด SP fault ในใบงาน (${j.faults.length}) — กดเพื่อไปที่จุด</div>${faults}</div>` : ""}
-    <div class="actions">
-      ${j.kmz ? `<button class="btn green" onclick="openKmz('${esc(j.site)}')">🗺️ เปิด KMZ ไซต์ ${esc(j.site)}</button>` : `<span style="font-size:12px;color:var(--muted)">ไซต์นี้ไม่มีไฟล์ KMZ</span>`}
-      ${nav ? `<a class="btn light" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lon}">🧭 นำทาง</a>` : ""}
-      <button class="btn light" onclick="navigator.clipboard.writeText('${esc(j.id)}').then(()=>toast('คัดลอก ${esc(j.id)} แล้ว'))">📋 คัดลอก JB</button>
+    <div class="pos ${pos[0]}">${icon("i-" + pos[1])}${pos[2]}</div>
+    ${faults ? `<div class="faults"><div class="fh">${icon("i-alert", 'style="width:14px;height:14px"')}Splitter ที่แจ้งในใบงาน (${j.faults.length}) — กดเพื่อไปที่จุด</div>${faults}</div>` : ""}
+    <div class="acts">
+      ${j.kmz ? `<button class="btn primary" id="cKmz">${icon("i-net")}เปิดแบบโครงข่าย</button>` : `<span class="note" style="flex:1 1 170px;align-self:center">ไซต์นี้ไม่มีแบบโครงข่าย</span>`}
+      ${nav ? `<a class="btn sq" target="_blank" rel="noopener" aria-label="นำทางด้วย Google Maps" href="https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lon}">${icon("i-nav")}</a>` : ""}
+      <button class="btn sq" id="cCopy" aria-label="คัดลอกเลขงาน">${icon("i-copy")}</button>
     </div>`;
-  $("dBody").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
+  $("cBody").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
     map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: Math.max(map.getZoom(), 16.5), duration: 800}));
-  $("detail").classList.add("open");
+  if ($("cKmz")) $("cKmz").onclick = () => openKmz(j.site);
+  $("cCopy").onclick = () => navigator.clipboard.writeText(j.id).then(() => toast(`คัดลอก ${j.id} แล้ว`));
+  $("callout").classList.add("open");
+  // a refresh, or picking another job while a drawing is open, keeps the card as it was; otherwise show it in full
+  const keep = fly === null || $("kmzCard").classList.contains("open");
+  foldCallout(keep ? $("callout").classList.contains("compact") : false);
   history.replaceState(null, "", "/map?job=" + encodeURIComponent(id));
 }
-$("dClose").onclick = () => { $("detail").classList.remove("open"); selected = null; render(); history.replaceState(null, "", "/map"); };
+
+// The callout sits beside its pin and follows it while the map moves.
+function placeCallout() {
+  const el = $("callout");
+  if (!el.classList.contains("open") || window.innerWidth <= 860) return;
+  const j = jobs.find(x => x.id === selected);
+  const stage = el.parentElement.getBoundingClientRect();
+  const kmzOpen = $("kmzCard").classList.contains("open");
+  const w = el.offsetWidth, h = el.offsetHeight, minX = 412, maxX = stage.width - w - (kmzOpen ? 400 : 70);
+  let x = (stage.width - w) / 2, y = 20;
+  if (j && j._lat != null) {
+    const p = map.project([j._lon, j._lat]);
+    x = p.x + 28 <= maxX ? p.x + 28 : p.x - w - 28;
+    y = p.y - 60;
+  }
+  el.style.left = Math.max(minX, Math.min(x, maxX)) + "px";
+  el.style.top = Math.max(14, Math.min(y, stage.height - h - 14)) + "px";
+}
+function foldCallout(compact) {
+  $("callout").classList.toggle("compact", compact);
+  $("cFold").setAttribute("aria-expanded", String(!compact));
+  $("cFold").setAttribute("aria-label", compact ? "ขยายรายละเอียด" : "ย่อรายละเอียด");
+  $("cFold").innerHTML = icon(compact ? "i-chev-down" : "i-chev-up");
+  placeCallout();
+}
+$("cFold").onclick = () => foldCallout(!$("callout").classList.contains("compact"));
+$("qToggle").onclick = () => {
+  const min = $("rows").closest(".queue").classList.toggle("min");
+  $("qToggle").setAttribute("aria-expanded", String(!min));
+  $("qToggle").setAttribute("aria-label", min ? "ขยายคิวงาน" : "ย่อคิวงาน");
+  $("qToggle").innerHTML = icon(min ? "i-chev-down" : "i-chev-up");
+};
+$("cClose").onclick = () => { $("callout").classList.remove("open"); selected = null; render(); history.replaceState(null, "", "/map"); };
 
 // ---------------------------------------------------------------- KMZ
 function mapKey() { try { return sessionStorage.getItem("mapKey") || ""; } catch (e) { return ""; } }
@@ -611,7 +794,7 @@ function askPassword() {
       else { const j = await r.json().catch(() => ({})); $("pwErr").textContent = j.message || "รหัสไม่ถูกต้อง"; }
     };
     $("pwOk").onclick = ok;
-    $("pwInput").onkeydown = (e) => { if (e.key === "Enter") ok(); };
+    $("pwInput").onkeydown = (e) => { if (e.key === "Enter") ok(); if (e.key === "Escape") done(null); };
   });
 }
 async function kmzFetch(url) {
@@ -620,7 +803,7 @@ async function kmzFetch(url) {
     const r = await fetch(url, {headers: {"X-Map-Key": mapKey()}});
     if (r.status === 401) { try { sessionStorage.removeItem("mapKey"); } catch (e) {} continue; }
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) { toast(j.message || "เปิด KMZ ไม่สำเร็จ"); return null; }
+    if (!r.ok) { toast(j.message || "เปิดแบบโครงข่ายไม่สำเร็จ"); return null; }
     return j;
   }
   return null;
@@ -630,49 +813,48 @@ async function openKmz(site) {
   if (!site) return;
   const v = await kmzFetch("/api/map/kmz/" + encodeURIComponent(site));
   if (!v) return;
-  if (!v.versions.length) { toast(`ไม่พบไฟล์ KMZ ของไซต์ ${site}`); return; }
+  if (!v.versions.length) { toast(`ไม่พบแบบโครงข่ายของไซต์ ${site}`); return; }
   $("kmzVersion").innerHTML = v.versions.map(x => `<option value="${x.i}">${esc(x.date)} · ${esc(x.title)}</option>`).join("");
   $("kmzVersion").onchange = () => loadKmz(site, +$("kmzVersion").value);
-  $("kmzTitle").textContent = `🗺️ KMZ · ${site} (${v.versions.length} เวอร์ชัน)`;
+  $("kmzTitle").textContent = `${site} · ${v.versions.length} เวอร์ชัน`;
   $("kmzCard").classList.add("open");
   $("legend").style.display = "none";
+  closeBasemap();
+  if ($("callout").classList.contains("open")) foldCallout(true);
   await loadKmz(site, 0);
 }
 async function loadKmz(site, i) {
   $("kmzLayers").innerHTML = '<div class="empty">กำลังเปิดไฟล์…</div>';
+  $("kmzFaults").innerHTML = "";
   const g = await kmzFetch(`/api/map/kmz/${encodeURIComponent(site)}/${i}`);
   if (!g) { $("kmzLayers").innerHTML = ""; return; }
   kmz = g; kmzHidden = new Set();
-  // faults named by open jobs of this site
   const wanted = jobs.filter(j => j.site === site).flatMap(j => (j.faults || []).map(f => [f.key, j.id]));
   const found = {};
   for (const f of g.features) {
     const p = f.properties, name = (p.name || "").replace(/\s+/g, "").toUpperCase();
-    // long splitter names ("OB_PADUM_ZZ_01HW_IJSX9_BKK0928-034_18") read better without the site prefix
     p.label = (p.name || "").replace(/^OB_[A-Z0-9()]+_ZZ_[A-Z0-9]+_/, "");
     if (f.geometry.type !== "Point") continue;
-    for (const [key, job] of wanted) {
-      if (name.includes(key)) { p.fault = key; p.fault_job = job; found[key] = f.geometry.coordinates; }
-    }
+    for (const [key, job] of wanted) if (name.includes(key)) { p.fault = key; p.fault_job = job; found[key] = f.geometry.coordinates; }
   }
   map.getSource("kmz").setData({type: "FeatureCollection", features: g.features});
   applyKmzFilter();
   const colorOf = (name) => {
     const f = g.features.find(x => x.properties.folder === name);
-    return f ? (f.properties.stroke || f.properties.fill || f.properties.icon || "#0284c7") : "#0284c7";
+    return f ? (f.properties.stroke || f.properties.fill || f.properties.icon || "#0284C7") : "#0284C7";
   };
+  const keys = [...new Set(wanted.map(w => w[0]))];
+  if (keys.length) {
+    $("kmzFaults").innerHTML = `<div class="faults"><div class="fh">${icon("i-alert", 'style="width:14px;height:14px"')}Splitter ที่แจ้งในใบงานของไซต์นี้</div>` +
+      keys.map(k => found[k]
+        ? `<button class="fault" data-lon="${found[k][0]}" data-lat="${found[k][1]}"><span class="mono">${esc(k)}</span><span class="src" style="color:#0369A1">พบในแบบ</span></button>`
+        : `<button class="fault" disabled><span class="mono">${esc(k)}</span><span class="src" style="color:#64748B">ไม่พบในเวอร์ชันนี้</span></button>`).join("") + `</div>`;
+    $("kmzFaults").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
+      map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: 17.5, duration: 800}));
+  }
   $("kmzLayers").innerHTML = `<label class="layer"><input type="checkbox" checked id="kmzAll"><b>ทุกชั้น</b><span class="c">${g.features.length}</span></label>` +
     g.groups.map((x, k) => `<label class="layer"><input type="checkbox" checked data-g="${k}"><span class="sw" style="background:${colorOf(x.name)}"></span>${esc(x.name)}<span class="c">${x.count}</span></label>`).join("");
   $("kmzNote").textContent = `${g.date} · ${g.title}` + (g.truncated ? " · ไฟล์ใหญ่ แสดงบางส่วน" : "");
-  const keys = [...new Set(wanted.map(w => w[0]))];
-  if (keys.length) {
-    $("kmzLayers").insertAdjacentHTML("afterbegin", `<div class="faults"><div class="fh">⚠️ SP fault ในใบงานของไซต์นี้</div>` +
-      keys.map(k => found[k]
-        ? `<div class="fault" data-lon="${found[k][0]}" data-lat="${found[k][1]}"><b>SP ${esc(k)}</b><span class="badge b-kmz">พบในแบบ</span></div>`
-        : `<div class="fault"><b>SP ${esc(k)}</b><span class="badge" style="background:#f3f4f6;color:#6b7280">ไม่พบในเวอร์ชันนี้</span></div>`).join("") + `</div>`);
-    $("kmzLayers").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
-      map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: 17.5, duration: 800}));
-  }
   $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.onchange = () => {
     const name = g.groups[+cb.dataset.g].name;
     cb.checked ? kmzHidden.delete(name) : kmzHidden.add(name);
@@ -684,36 +866,64 @@ async function loadKmz(site, i) {
     $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.checked = e.target.checked);
     applyKmzFilter();
   };
-  const all = {type: "Polygon", coordinates: [g.features.flatMap(f => {
-    const c = f.geometry.coordinates;
-    return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0];
-  })]};
-  if (all.coordinates[0].length) map.fitBounds(bbox(all), {padding: 60, maxZoom: 16, duration: 900});
+  const pts = g.features.flatMap(f => { const c = f.geometry.coordinates; return f.geometry.type === "Point" ? [c] : f.geometry.type === "LineString" ? c : c[0]; });
+  if (pts.length) map.fitBounds(bbox({coordinates: pts}), {padding: {top: 60, bottom: 60, left: window.innerWidth > 860 ? 420 : 20, right: window.innerWidth > 860 ? 400 : 20}, maxZoom: 16.5, duration: 900});
 }
 function applyKmzFilter() {
-  const hidden = ["literal", [...kmzHidden]];
-  const vis = ["!", ["in", ["get", "folder"], hidden]];
-  map.setFilter("kmz-fill", ["all", ["==", ["get", "kind"], "polygon"], vis]);
-  map.setFilter("kmz-outline", ["all", ["==", ["get", "kind"], "polygon"], vis]);
-  map.setFilter("kmz-line", ["all", ["==", ["get", "kind"], "line"], vis]);
-  map.setFilter("kmz-point", ["all", ["==", ["get", "kind"], "point"], vis]);
-  map.setFilter("kmz-line-label", ["all", ["==", ["get", "kind"], "line"], vis]);
-  map.setFilter("kmz-point-label", ["all", ["==", ["get", "kind"], "point"], vis]);
-  map.setFilter("kmz-poly-label", ["all", ["==", ["get", "kind"], "polygon"], vis]);
+  const vis = ["!", ["in", ["get", "folder"], ["literal", [...kmzHidden]]]];
+  const kind = (k) => ["all", ["==", ["get", "kind"], k], vis];
+  for (const [id, k] of [["kmz-fill", "polygon"], ["kmz-outline", "polygon"], ["kmz-line", "line"], ["kmz-point", "point"],
+                         ["kmz-line-label", "line"], ["kmz-point-label", "point"], ["kmz-poly-label", "polygon"]]) map.setFilter(id, kind(k));
 }
 $("kmzClose").onclick = () => {
   map.getSource("kmz").setData({type: "FeatureCollection", features: []});
   $("kmzCard").classList.remove("open"); kmz = null;
   $("legend").style.display = "";
+  placeCallout();
 };
-$("siteOpen").onclick = () => openKmz($("siteInput").value);
-$("siteInput").onkeydown = (e) => { if (e.key === "Enter") openKmz($("siteInput").value); };
+
+// ---------------------------------------------------------------- basemap + toggles
+function renderBasemaps() {
+  $("bmList").innerHTML = Object.entries(BASEMAPS).map(([k, b]) =>
+    `<button class="${basemap === k ? "on" : ""}" data-bm="${k}" aria-pressed="${basemap === k}"><i style="background:${b.sw}"></i>${b.label}</button>`).join("");
+}
+function closeBasemap() { $("bmPanel").classList.remove("open"); $("bmBtn").setAttribute("aria-expanded", "false"); }
+$("bmBtn").onclick = () => {
+  const open = !$("bmPanel").classList.contains("open");
+  $("bmPanel").classList.toggle("open", open); $("bmBtn").setAttribute("aria-expanded", String(open));
+  renderBasemaps();
+};
+$("bmList").onclick = (e) => {
+  const b = e.target.closest("[data-bm]");
+  if (!b || b.dataset.bm === basemap) return;
+  basemap = b.dataset.bm; store.set("basemap", basemap);
+  renderBasemaps();
+  // diff:false = a full reload, so style.load fires and setupLayers puts our layers back
+  // (a diffed switch silently drops every layer that isn't in the new style)
+  map.setStyle(BASEMAPS[basemap].url, {diff: false});
+};
+for (const [id, key] of [["tZones", "zones"], ["tLabels", "labels"], ["tFaults", "faults"]]) {
+  $(id).checked = show[key];
+  $(id).onchange = (e) => { show[key] = e.target.checked; store.set(key, show[key] ? "1" : "0"); applyToggles(); };
+}
+$("zIn").onclick = () => map.zoomIn();
+$("zOut").onclick = () => map.zoomOut();
+$("zHome").onclick = () => setArea("", true);
 
 // ---------------------------------------------------------------- sidebar events
-$("list").onclick = (e) => { const c = e.target.closest(".job"); if (c) select(c.dataset.id, true); };
-$("zoneChips").onclick = (e) => { const c = e.target.closest("[data-area]"); if (c) setArea(c.dataset.area, true); };
-$("filterChips").onclick = (e) => { const c = e.target.closest("[data-filter]"); if (c) { view.filter = c.dataset.filter; render(); } };
+$("rows").onclick = (e) => { const c = e.target.closest(".row"); if (c) select(c.dataset.id, true); };
+$("zoneSeg").onclick = (e) => { const c = e.target.closest("[data-area]"); if (c) setArea(c.dataset.area, true); };
+$("chips").onclick = (e) => { const c = e.target.closest("[data-filter]"); if (c) { view.filter = c.dataset.filter; render(); } };
 $("q").oninput = (e) => { view.q = e.target.value.trim().toLowerCase(); render(); };
+$("q").onkeydown = (e) => {
+  // Enter on a SITE_CODE that no open job uses: open that site's drawing straight away
+  if (e.key !== "Enter") return;
+  const v = e.target.value.trim().toUpperCase();
+  if (/^[A-Z][A-Z0-9]{3,5}$/.test(v) && !jobs.some(j => j.site === v)) openKmz(v);
+};
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && $("bmPanel").classList.contains("open")) closeBasemap();
+});
 </script>
 </body>
 </html>
