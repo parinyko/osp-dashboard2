@@ -969,7 +969,7 @@ def map_password_error():
 def rebuild_site_table():
     try:
         sites, from_kmz, hist = nm.build_site_table()
-        app.logger.info("Site table rebuilt: %s sites (%s from KMZ OLT, %s from job history)", sites, from_kmz, hist)
+        app.logger.info("Site table rebuilt: %s sites (%s from KMZ OLT, %s from job history, rest SITE_MASTER)", sites, from_kmz, hist)
     except Exception:
         app.logger.exception("Site table rebuild failed")
 
@@ -1157,6 +1157,8 @@ if __name__ == "__main__":
         except Exception: app.logger.exception("Initial resource snapshot failed")
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or os.environ.get("FLASK_DEBUG") != "1":
         threading.Thread(target=background_scheduler,name="dashboard-scheduler",daemon=True).start()
-        if nm.KMZ_DIR.is_dir() and not nm.SITE_TABLE_FILE.exists():
+        # first start, or a newer site list / drawing set dropped in: rebuild the table now
+        if nm.KMZ_DIR.is_dir() and (not nm.SITE_TABLE_FILE.exists() or
+                (nm.SITE_MASTER_FILE.exists() and nm.SITE_MASTER_FILE.stat().st_mtime > nm.SITE_TABLE_FILE.stat().st_mtime)):
             threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)),debug=os.environ.get("FLASK_DEBUG")=="1")

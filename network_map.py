@@ -3,8 +3,9 @@
 
 Job position, best first:
   1. "job"      coordinates written in the Job Title, e.g. "(13.717414, 100.559227)"
-  2. "site"     the job's SITE_CODE -> site position (learned from other jobs' titles, or
-                the site table the server keeps next to the KMZ files)
+  2. "site"     the job's SITE_CODE -> site position: the OLT in the site's KMZ drawing, else the
+                official SITE_MASTER list, else where the site's past jobs were (site table next to
+                the KMZ files), else positions learned from other jobs' titles
   3. "district" centre of the job's District Name — always available, so no job is left off
 The KMZ files and the site table are AIS internal data: they live on the server only
 (NETWORK_DIR), never in this repository.
@@ -29,6 +30,8 @@ LEARNED_FILE = BASE_DIR / "site_coords_learned.json"
 NETWORK_DIR = Path(os.environ.get("NETWORK_DIR", "/network"))
 KMZ_DIR = NETWORK_DIR / "kmz"
 SITE_TABLE_FILE = NETWORK_DIR / "site_coords.json"
+# Official site positions (SITE_MASTER sheet "พิกัด SITE AIS", ~4,200 sites): {"sites": {CODE: {"lat","lon","name"}}}
+SITE_MASTER_FILE = NETWORK_DIR / "site_master.json"
 
 COORD_RE = re.compile(r"(1[0-9]\.\d{3,})\s*,\s*(1[0-9]{2}\.\d{3,})")
 # Bangkok and the provinces around it — anything else in a title is a typo
@@ -140,12 +143,28 @@ def learn_sites(pairs):
             os.replace(tmp, LEARNED_FILE)
 
 
+def _code_variants(site):
+    """SITE_MASTER sometimes drops the code's last letter ("SLL5M" is listed as "SLL5") and job
+    titles sometimes do ("BUKW" for "BUKWM"): exact first, then the 4-letter base and its usual suffixes."""
+    site = str(site or "").strip().upper()
+    if not site:
+        return []
+    out = [site]
+    base = site[:4] if len(site) == 5 else site if len(site) == 4 else None
+    if base:
+        out += [base] + [base + x for x in "MPAB"]
+    return list(dict.fromkeys(out))
+
+
 def site_coords(site):
     with _site_lock:
         _load_site_tables()
-        # the site table (OLT position from the drawing) is the real site; a learned position
+        # the site table (drawing OLT / SITE_MASTER / past jobs) is the real site; a learned position
         # is where one of its faults was — use it only when the table has nothing
-        return _site_table.get(site) or _learned.get(site)
+        for key in _code_variants(site):
+            if key in _site_table:
+                return _site_table[key]
+        return _learned.get(str(site or "").upper())
 
 
 def locate(title, site, district):
@@ -542,12 +561,30 @@ def _history_sites():
             for k, v in pts.items()}
 
 
+def _master_sites():
+    try:
+        sites = json.loads(SITE_MASTER_FILE.read_text(encoding="utf-8")).get("sites", {})
+    except (OSError, ValueError, AttributeError):
+        return {}
+    out = {}
+    for code, v in sites.items():
+        try:
+            lat, lon = float(v["lat"]), float(v["lon"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if LAT_RANGE[0] <= lat <= LAT_RANGE[1] and LON_RANGE[0] <= lon <= LON_RANGE[1]:
+            out[str(code).upper()] = (round(lat, 6), round(lon, 6))
+    return out
+
+
 def build_site_table():
-    """KMZ OLT position when the site has a drawing, else the median of its past jobs.
-    Written to NETWORK_DIR/site_coords.json; returns (sites, from_kmz, from_history)."""
+    """Site position, best first: the OLT in the site's KMZ drawing, the official SITE_MASTER list,
+    the median of the site's past jobs. Written to NETWORK_DIR/site_coords.json;
+    returns (sites, from_kmz, from_history)."""
     global _site_table
     table = dict(_history_sites())
     hist = len(table)
+    table.update(_master_sites())
     from_kmz = 0
     for site, versions in kmz_index(max_age=0).items():
         if not re.fullmatch(r"[A-Z][A-Z0-9]{3,5}", site):
