@@ -19,6 +19,14 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
 
+# Monthly Report is a separate app; unset = its menu entries stay hidden.
+MONTHLY_REPORT_URL = os.environ.get("MONTHLY_REPORT_URL", "")
+
+
+@app.context_processor
+def inject_links():
+    return {"monthly_report_url": MONTHLY_REPORT_URL}
+
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
