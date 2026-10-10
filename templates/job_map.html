@@ -29,10 +29,17 @@ button{font:inherit}
 .app{display:grid;grid-template-rows:auto auto minmax(0,1fr);height:100vh}
 
 /* header */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--line)}
+/* header: same look as the dashboard's other pages (green header + page nav) */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;padding:10px 18px;background:linear-gradient(135deg,#FFFFFF 0%,#F4FAEF 55%,#DFF1C9 100%);border-bottom:1px solid #D6E6CE}
 .brand{display:flex;align-items:center;gap:10px}
-.brand b{display:block;font-size:16px;letter-spacing:.01em}
-.brand small{display:block;font-size:12px;color:var(--muted)}
+.brand .ico{color:#4F8F18}
+.brand b{display:block;font-size:20px;font-weight:800;color:#4F8F18;letter-spacing:.01em;line-height:1.15}
+.brand small{display:block;font-size:12px;color:#637361}
+.top .seg{background:#F7FBF5;border-color:#CFE0C5}
+.top .seg button{color:#4E6B47}
+.top .seg button.on{color:#264D1E}
+.top .search{background:#FFFFFF;border-color:#CFE0C5}
+.top .iconbtn{border-color:#CFE0C5;color:#315A28}
 .seg{display:flex;gap:3px;padding:3px;background:var(--ground);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
 .seg button{height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .seg button .n{font-family:var(--mono);font-size:12px;opacity:.75}
@@ -42,9 +49,11 @@ button{font:inherit}
 .search{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--ground);border:1px solid var(--line);border-radius:10px;min-width:260px;color:var(--muted)}
 .search input{flex:1;border:0;outline:none;background:transparent;font:inherit;font-size:14px;color:var(--ink);min-width:0}
 .search:focus-within{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
-.links{display:flex;gap:2px}
-.links a{display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;border-radius:9px;color:var(--ink2);text-decoration:none;font-size:13px}
-.links a:hover{background:var(--ground)}
+.links{display:flex;gap:6px;flex-wrap:wrap}
+.links a{display:flex;align-items:center;gap:6px;height:36px;padding:0 11px;border:1px solid #CFE0C5;border-radius:8px;background:#F7FBF5;color:#315A28;text-decoration:none;font-size:12.5px;font-weight:700}
+.links a:hover{background:#EDF7E8}
+.links a.active{background:#DFF0D6;border-color:#9FC58A}
+.links a .ico{width:16px;height:16px}
 
 /* KPI strip */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
@@ -196,6 +205,17 @@ button{font:inherit}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
 .maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;box-shadow:0 6px 20px rgba(15,23,42,.15)}
 .kmz-hover .maplibregl-popup-content{padding:6px 9px}
+html[data-theme="dark"] .top{background:linear-gradient(135deg,#111823 0%,#122016 100%);border-bottom-color:#1F2A37}
+html[data-theme="dark"] .brand b,html[data-theme="dark"] .brand .ico{color:#86CF4A}
+html[data-theme="dark"] .brand small{color:var(--muted)}
+html[data-theme="dark"] .top .seg{background:#0E151E;border-color:#243446}
+html[data-theme="dark"] .top .seg button{color:var(--muted)}
+html[data-theme="dark"] .top .seg button.on{background:#1A2533;color:var(--ink)}
+html[data-theme="dark"] .top .search{background:#0E151E;border-color:#243446}
+html[data-theme="dark"] .top .iconbtn{border-color:#243446;color:var(--ink2);background:#111823}
+html[data-theme="dark"] .links a{background:#111823;border-color:#243446;color:#B7D99A}
+html[data-theme="dark"] .links a:hover{background:#16212C}
+html[data-theme="dark"] .links a.active{background:#1B2C1A;border-color:#3F6B2A}
 html[data-theme="dark"] .panel{background:rgba(17,24,35,.97);box-shadow:0 10px 30px rgba(0,0,0,.45)}
 html[data-theme="dark"] .row{border-bottom-color:#18212D}
 html[data-theme="dark"] .row:hover{background:#151E2A}
@@ -268,14 +288,15 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
   <symbol id="i-move" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></g></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></g></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M6 16l4-5 4 3 5-7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
 <div class="app">
   <header class="top">
     <div class="brand">
-      <svg class="ico" style="width:28px;height:28px;color:var(--accent)" aria-hidden="true"><use href="#i-map"/></svg>
-      <div><b>OSP Job Map</b><small>ข้อมูล <span id="upd" class="mono">{{ last_update or '-' }}</span> · อัปเดตเองทุก 1 นาที</small></div>
+      <svg class="ico" style="width:30px;height:30px" aria-hidden="true"><use href="#i-map"/></svg>
+      <div><b>Job Map</b><small>Dashboard OSP BKK · ข้อมูล <span id="upd" class="mono">{{ last_update or '-' }}</span></small></div>
     </div>
     <nav class="seg" id="zoneSeg" aria-label="เลือกโซน"></nav>
     <div class="grow"></div>
@@ -286,10 +307,12 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
     </label>
     <button class="iconbtn" id="themeBtn" style="width:40px;height:40px" aria-label="สลับโหมดมืด" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg></button>
     <nav class="links" aria-label="หน้าอื่น">
-      <a href="/"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>หน้าแรก</span></a>
+      <a href="/"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>Status Team</span></a>
       <a href="/job_monitor"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg><span>Job Monitor</span></a>
-      <a href="/resource_monitor"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg><span>Resource</span></a>
       <a href="/daily_osp_remain"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg><span>Daily OSP</span></a>
+      <a href="/resource_monitor"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg><span>Resource Monitor</span></a>
+      <a href="/map" class="active" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg><span>Job Map</span></a>
+      {% if monthly_report_url %}<a href="{{ monthly_report_url }}"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg><span>Monthly Report</span></a>{% endif %}
     </nav>
   </header>
 
