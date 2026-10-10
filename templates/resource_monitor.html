@@ -321,6 +321,22 @@ td[data-others] {
   color: #5d6d5a;
 }
 
+.snap-btn {
+  border: 1px solid #79bd2d;
+  background: linear-gradient(135deg, #79bd2d, #4f9517);
+  color: #fff;
+  border-radius: 8px;
+  height: 30px;
+  padding: 0 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.snap-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .zoom-box {
   display: inline-flex;
   align-items: center;
@@ -654,6 +670,8 @@ tr.row-hidden {
       {% for z in zones %}<option value="{{ z.zone }}" data-company="{{ z.company }}">{{ z.zone }}</option>{% endfor %}
     </select>
 
+    <button type="button" class="snap-btn" id="snapBtn" onclick="snapshotNow()" title="บันทึกสถานะตอนนี้ลงช่องเวลาปัจจุบัน (ปกติระบบบันทึกเองทุก :00 / :30)">📸 บันทึกตอนนี้</button>
+
     <span class="zoom-box" title="ซูม (Ctrl + ลูกกลิ้งเมาส์ บนตารางก็ได้)">
       <button type="button" onclick="zoomStep(-1)" aria-label="ซูมออก">−</button>
       <span id="zoomLabel">100%</span>
@@ -951,6 +969,21 @@ tr.row-hidden {
   window.addEventListener('resize', centerLatestTime);
   window.centerLatestTime = centerLatestTime;
 })();
+
+async function snapshotNow() {
+  const btn = document.getElementById('snapBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  try {
+    const r = await fetch('/resource_snapshot', { method: 'POST' });
+    const j = await r.json();
+    if (!r.ok || !j.success) throw new Error(j.message || ('HTTP ' + r.status));
+    const p = currentParams(); p.set('date', j.date);
+    location.href = '/resource_monitor?' + p.toString();
+  } catch (e) {
+    alert('บันทึกไม่สำเร็จ: ' + e.message);
+    btn.disabled = false; btn.textContent = '📸 บันทึกตอนนี้';
+  }
+}
 
 /* =========================================================
    JOBS POPUP — every job the team held at that time (click a cell with +N)

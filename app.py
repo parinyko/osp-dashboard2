@@ -367,7 +367,11 @@ def save_resource_snapshot():
                      "due_status":resource_due_status(main.get("priority",""),main.get("create_time",""),stamp),
                      "job_count":len(job_list),
                      "others":[{"job_id":j["job_id"],"status":j["status"],"site":j["site"]} for j in job_list if j is not main]})
-    rec={"date":stamp.strftime("%Y-%m-%d"),"time":stamp.strftime("%H:%M"),"timestamp":stamp.isoformat(),"rows":rows}
+    # The page shows 30-minute slots, so file the snapshot under its slot (23:17 -> 23:00).
+    # A manual "save now" replaces that slot's earlier snapshot instead of adding a hidden one.
+    slot=f"{stamp.hour:02d}:{0 if stamp.minute < 30 else 30:02d}"
+    rec={"date":stamp.strftime("%Y-%m-%d"),"time":slot,"timestamp":stamp.isoformat(),"rows":rows}
+    RESOURCE_HISTORY=[r for r in RESOURCE_HISTORY if not (r.get("date")==rec["date"] and r.get("time")==slot)]
     RESOURCE_HISTORY.append(rec)
     RESOURCE_HISTORY=RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
     save_history(RESOURCE_FILE,RESOURCE_HISTORY)
@@ -888,6 +892,16 @@ def resource_monitor():
     return render_template("resource_monitor.html",records=day_records,selected_date=selected,available_dates=dates,
         last_update=LAST_UPDATE,slots=slots,users=users,matrix=matrix,display_rows=display_rows,
         companies=companies,zones=zones)
+
+@app.route("/resource_snapshot",methods=["POST"])
+def resource_snapshot_now():
+    try:
+        if not RAW_DATA: load_latest_excel_into_memory()
+        if not RAW_DATA: raise ValueError("ยังไม่มีข้อมูล กรุณา Upload Excel ก่อน")
+        rec=save_resource_snapshot()
+        return jsonify(success=True,date=rec["date"],time=rec["time"],message="บันทึกช่อง "+rec["time"]+" แล้ว")
+    except Exception as exc:
+        return jsonify(success=False,message=str(exc)),400
 
 @app.route("/daily_osp_remain")
 def daily_osp_remain():
