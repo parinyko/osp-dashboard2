@@ -188,7 +188,8 @@ function drawChart(){
   })).filter(series=>series.values.some(v=>v!==null));
 
   const maxValue=Math.max(1,...totals,...lines.flatMap(x=>x.values.filter(v=>v!==null)));
-  const niceMax=Math.ceil(maxValue/10)*10 || 10;
+  // ~15% headroom so the tallest bar and its label don't touch the top edge
+  const niceMax=Math.ceil(maxValue*1.15/10)*10 || 10;
 
   // Grid + Y axis
   ctx.font='11px Segoe UI, Arial';
@@ -206,9 +207,12 @@ function drawChart(){
   // X labels
   ctx.textAlign='center';
   ctx.textBaseline='top';
-  const step=data.length>1 ? cw/(data.length-1) : 0;
+  // Each snapshot gets an equal slot and sits in its middle, so the first and last
+  // bars keep half a slot of space from the axis / right edge.
+  const step=cw/data.length;
+  const xAt=i=>left+step*(i+0.5);
   data.forEach((r,i)=>{
-    const x=data.length===1 ? left+cw/2 : left+step*i;
+    const x=xAt(i);
     ctx.fillStyle='#718078';
     const label=(r.timestamp||'').slice(0,16);
     ctx.fillText(label,x,h-38);
@@ -218,7 +222,7 @@ function drawChart(){
   const barWidth=Math.min(34, Math.max(10, cw/Math.max(data.length*1.8,8)));
   ctx.globalAlpha=.28;
   totals.forEach((v,i)=>{
-    const x=data.length===1 ? left+cw/2 : left+step*i;
+    const x=xAt(i);
     const bh=(v/niceMax)*ch;
     ctx.fillStyle=barColor;
     ctx.fillRect(x-barWidth/2,top+ch-bh,barWidth,bh);
@@ -230,7 +234,7 @@ function drawChart(){
     ctx.beginPath();
     let started=false;
     series.values.forEach((v,i)=>{
-      const x=data.length===1 ? left+cw/2 : left+step*i;
+      const x=xAt(i);
       if(v===null){ started=false; return; }
       const y=top+ch-(v/niceMax)*ch;
       if(!started){ ctx.moveTo(x,y); started=true; } else { ctx.lineTo(x,y); }
@@ -240,7 +244,7 @@ function drawChart(){
     ctx.stroke();
 
     series.values.forEach((v,i)=>{
-      const x=data.length===1 ? left+cw/2 : left+step*i;
+      const x=xAt(i);
       if(v===null){ return; }
       const y=top+ch-(v/niceMax)*ch;
       ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);
@@ -283,10 +287,9 @@ function drawChart(){
     const rect=canvas.getBoundingClientRect();
     const mx=(e.clientX-rect.left)*(w/rect.width);
     const my=(e.clientY-rect.top)*(h/rect.height);
-    const stepX=data.length>1 ? cw/(data.length-1) : 0;
-    let idx=data.length===1 ? 0 : Math.round((mx-left)/stepX);
+    let idx=Math.floor((mx-left)/step);
     if(idx<0 || idx>=data.length || mx<left-10 || mx>w-right+10){ tooltip.style.display='none'; return; }
-    const x=data.length===1 ? left+cw/2 : left+stepX*idx;
+    const x=xAt(idx);
     const totalY=top+ch-(totals[idx]/niceMax)*ch;
     let nearest=Math.abs(my-totalY);
     let nearestSeries=-1;
@@ -308,7 +311,7 @@ function drawChart(){
   ctx.textAlign='center';
   ctx.textBaseline='bottom';
   totals.forEach((v,i)=>{
-    const x=data.length===1 ? left+cw/2 : left+step*i;
+    const x=xAt(i);
     const y=top+ch-(v/niceMax)*ch;
     ctx.fillStyle='#397817';
     ctx.fillText(String(v),x,y-3);
