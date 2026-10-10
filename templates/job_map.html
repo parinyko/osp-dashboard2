@@ -559,15 +559,15 @@ function setupLayers() {
              "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.75, 14, 1.05], "symbol-sort-key": ["get", "rank"]}});
   // Site code at every zoom: labels try 8 spots around their pin before giving up, and
   // late / critical jobs get first pick when they compete for space.
-  // zoom 12+: the job's status under the code (same font, coloured by status) · 14+: plus the site name.
+  // zoom 10.5+: the job's status under the code (same font, coloured by status) · 13.5+: plus the site name.
   // One layer per zoom band: a per-section colour inside "format" is dropped when the format sits
   // inside a zoom "step", so each band gets its own plain format.
   const statusColor = ["match", ["get", "sk"], ...Object.entries(STATUS_TEXT).flatMap(([k, c]) => [k, c[dark ? 1 : 0]]), STATUS_TEXT.other[dark ? 1 : 0]];
   const siteName = ["get", "site_name"], nameStyle = {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]};
   const bands = [
-    ["job-label", 0, 12, ["get", "site"]],
-    ["job-label-status", 12, 14, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}]],
-    ["job-label-full", 14, 24, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}, "\n", {}, siteName, nameStyle]],
+    ["job-label", 0, 10.5, ["get", "site"]],
+    ["job-label-status", 10.5, 13.5, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}]],
+    ["job-label-full", 13.5, 24, ["format", ["get", "site"], {}, "\n", {}, ["get", "status"], {"text-color": statusColor}, "\n", {}, siteName, nameStyle]],
   ];
   for (const [id, minzoom, maxzoom, field] of bands) {
     map.addLayer({id, type: "symbol", source: "jobs", minzoom, maxzoom,
