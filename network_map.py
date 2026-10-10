@@ -95,6 +95,35 @@ def title_coords(title):
     return None
 
 
+# Splitters named in a job title — "BKK0928-034 (13.74, 100.51)", "OB_KJN5M_ZZ_G1NK_THECN_P04_SP01_18[13.86,100.67]".
+# The key is the part the KMZ placemark names share ("OB_PADUM_ZZ_01HW_IJSX9_BKK0928-034_18",
+# "OB_KJN5M_ZZ_01NK_THECN_P04_SP01_01_18").
+REF_PATTERNS = (
+    (re.compile(r"(?<![A-Z0-9])([A-Z]{3}\d{4}-\d{3})(?!\d)"), lambda m: m.group(1)),
+    (re.compile(r"(?<![A-Z0-9])([A-Z0-9]{5})_P(\d{2})_SP(\d{2})"), lambda m: f"{m.group(1)}_P{m.group(2)}_SP{m.group(3)}"),
+)
+REF_COORD_RE = re.compile(r"(?:_\d+)?(?:\(\d+\))?\s*[\(\[]\s*(1[0-9]\.\d{3,})\s*,\s*(1[0-9]{2}\.\d{3,})\s*[\)\]]")
+
+
+def fault_refs(title):
+    """[{"key", "lat", "lon"}] for every splitter the title names; lat/lon when written right after it."""
+    title = str(title or "")
+    out = {}
+    for rx, key_of in REF_PATTERNS:
+        for m in rx.finditer(title):
+            key = key_of(m)
+            c = REF_COORD_RE.match(title, m.end())
+            lat = lon = None
+            if c:
+                la, lo = float(c.group(1)), float(c.group(2))
+                if LAT_RANGE[0] <= la <= LAT_RANGE[1] and LON_RANGE[0] <= lo <= LON_RANGE[1]:
+                    lat, lon = la, lo
+            # a splitter is often named twice — keep the mention that carries coordinates
+            if key not in out or (out[key]["lat"] is None and lat is not None):
+                out[key] = {"key": key, "lat": lat, "lon": lon, "src": "title" if lat is not None else None}
+    return list(out.values())
+
+
 def learn_sites(pairs):
     """Remember site positions from job titles. pairs = [(site_code, (lat, lon)), ...]"""
     with _site_lock:
@@ -340,6 +369,16 @@ def kml_to_geojson(data, max_features=30000):
                     props["desc"] = re.sub(r"<[^>]+>", " ", desc.text).strip()[:300]
                 if inline is not None:
                     props["inline"] = _style_of(inline)
+                ext = {}
+                for d in el.iter():
+                    t = _local(d.tag)
+                    if t in ("Data", "SimpleData") and d.get("name"):
+                        v = _child(d, "value") if t == "Data" else d
+                        val = (v.text or "").strip() if v is not None else ""
+                        if val and len(ext) < 12:
+                            ext[d.get("name")[:40]] = val[:120]
+                if ext:
+                    props["ext"] = ext
                 for g in el.iter():
                     kind = _local(g.tag)
                     if kind == "Point":
@@ -380,9 +419,47 @@ def kml_to_geojson(data, max_features=30000):
             "truncated": len(feats) >= max_features}
 
 
+_points = {}   # (file, mtime) -> [(NAME WITHOUT SPACES, lat, lon)]
+
+
+def kmz_points(site):
+    """Named points of the site's newest drawing (cheap after the first call)."""
+    versions = kmz_versions(site)
+    if not versions:
+        return []
+    path = KMZ_DIR / versions[0]["file"]
+    try:
+        key = (str(path), path.stat().st_mtime)
+    except OSError:
+        return []
+    if key not in _points:
+        try:
+            gj = kmz_geojson(versions[0]["file"])
+        except Exception:
+            gj = {"features": []}
+        _points[key] = [(re.sub(r"\s+", "", f["properties"].get("name", "")).upper(),
+                         f["geometry"]["coordinates"][1], f["geometry"]["coordinates"][0])
+                        for f in gj["features"] if f["geometry"]["type"] == "Point"]
+    return _points[key]
+
+
+def locate_faults(site, faults):
+    """Fill in splitters without title coordinates from the site's drawing (src "kmz")."""
+    missing = [f for f in faults if f["lat"] is None]
+    if not missing or not site:
+        return faults
+    pts = kmz_points(site)
+    for f in missing:
+        for name, lat, lon in pts:
+            if f["key"] in name:
+                f["lat"], f["lon"], f["src"] = round(lat, 6), round(lon, 6), "kmz"
+                break
+    return faults
+
+
 _cache = OrderedDict()
 _cache_lock = threading.Lock()
-CACHE_ITEMS = 12
+CACHE_ITEMS = 40
 
 
 def kmz_geojson(file_name):

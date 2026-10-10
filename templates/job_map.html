@@ -107,6 +107,12 @@ html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sa
 .modal .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#22352a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
 .maplibregl-popup-content{font-family:inherit;font-size:12px;border-radius:10px;padding:8px 10px;max-width:260px}
+.faults{margin:8px 0;border:1px solid #fecaca;background:#fff7f7;border-radius:10px;padding:6px 8px}
+.faults .fh{font-size:11px;font-weight:800;color:#b91c1c;margin-bottom:4px}
+.fault{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;padding:3px 2px;border-top:1px dashed #fde2e2}
+.fault:first-of-type{border-top:0}
+.fault[data-lat]{cursor:pointer}.fault[data-lat]:hover{background:#fee2e2;border-radius:6px}
+.kmz-hover .maplibregl-popup-content{padding:6px 9px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .empty{color:var(--muted);font-size:12px;text-align:center;padding:24px 8px}
 @media (prefers-reduced-motion: reduce){.distcount b{animation:none!important}.detail.open,.kmzcard.open{animation:none}}
 @media(max-width:900px){
@@ -161,6 +167,7 @@ html,body{margin:0;height:100%;font-family:"Noto Sans Thai","Segoe UI",Tahoma,sa
       <div><span class="dot" style="background:var(--crit)"></span>Critical <span class="dot" style="background:var(--major);margin-left:6px"></span>Major <span class="dot" style="background:var(--minor);margin-left:6px"></span>Minor</div>
       <div><span class="dot" style="background:#9ca3af"></span>วงกระเพื่อม = Out Due</div>
       <div><span class="dot hollow"></span>ตำแหน่งประมาณ (ไซต์ / กลางเขต)</div>
+      <div><span class="dot" style="background:#111827;border-color:#dc2626"></span>จุด SP fault ตามชื่อในใบงาน</div>
     </div>
 
     <section class="kmzcard" id="kmzCard">
@@ -208,6 +215,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pkey = (j) => (j.priority || "").toLowerCase();
 const isOut = (j) => (j.due || "").toLowerCase() === "outdue";
+const isExact = (j) => j.precision === "job" || j.precision === "kmz";
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 2600); }
 function ageText(h) {
   if (h == null) return "-";
@@ -241,6 +249,7 @@ map.on("load", async () => {
   map.addSource("zones", {type: "geojson", data: zoneFC});
   map.addSource("jobs", {type: "geojson", data: {type: "FeatureCollection", features: []}});
   map.addSource("kmz", {type: "geojson", data: {type: "FeatureCollection", features: []}});
+  map.addSource("faults", {type: "geojson", data: {type: "FeatureCollection", features: []}});
 
   map.addLayer({id: "district-ok", type: "fill", source: "districts", filter: ["==", ["get", "sev"], 0],
     paint: {"fill-color": "#22a052", "fill-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0.13, 14.5, 0.02]}});
@@ -264,6 +273,25 @@ map.on("load", async () => {
   map.addLayer({id: "kmz-point", type: "circle", source: "kmz", filter: ["all", ["==", ["get", "kind"], "point"], visible],
     paint: {"circle-color": ["coalesce", ["get", "icon"], "#ec4899"], "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 17, 6],
             "circle-stroke-color": "#fff", "circle-stroke-width": 1}});
+  // names on the drawing: cables along their line, splitters / villages as text
+  const halo = {"text-color": "#0f172a", "text-halo-color": "#ffffff", "text-halo-width": 1.6};
+  map.addLayer({id: "kmz-line-label", type: "symbol", source: "kmz", minzoom: 14,
+    filter: ["all", ["==", ["get", "kind"], "line"], visible],
+    layout: {"symbol-placement": "line", "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"],
+             "text-size": 11, "text-max-angle": 30, "symbol-spacing": 280},
+    paint: {...halo, "text-color": "#075985"}});
+  map.addLayer({id: "kmz-point-label", type: "symbol", source: "kmz", minzoom: 15.5,
+    filter: ["all", ["==", ["get", "kind"], "point"], visible],
+    layout: {"text-field": ["get", "label"], "text-font": ["Noto Sans Regular"], "text-size": 10,
+             "text-offset": [0, 0.9], "text-anchor": "top", "text-optional": true},
+    paint: halo});
+  map.addLayer({id: "kmz-poly-label", type: "symbol", source: "kmz", minzoom: 15,
+    filter: ["all", ["==", ["get", "kind"], "polygon"], visible],
+    layout: {"text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-optional": true},
+    paint: {...halo, "text-color": "#7c2d12"}});
+  // splitters named in an open job's title (SP fault), found in this drawing
+  map.addLayer({id: "kmz-fault-halo", type: "circle", source: "kmz", filter: ["has", "fault"],
+    paint: {"circle-color": "transparent", "circle-stroke-color": "#dc2626", "circle-stroke-width": 3, "circle-radius": 12, "circle-stroke-opacity": 0.8}});
 
   // job pins: pulsing ring for Out Due, solid dot = exact position, hollow = approximate
   map.addLayer({id: "job-halo", type: "circle", source: "jobs", filter: ["==", ["get", "out"], 1],
@@ -276,29 +304,79 @@ map.on("load", async () => {
       "circle-stroke-color": ["case", ["==", ["get", "exact"], 1], "#ffffff", ["get", "color"]],
       "circle-stroke-width": ["case", ["==", ["get", "exact"], 1], 2, 2.6],
     }});
+  // SP fault points named in the job titles
+  map.addLayer({id: "fault-halo", type: "circle", source: "faults", filter: ["==", ["get", "sel"], 1],
+    paint: {"circle-color": "transparent", "circle-stroke-color": "#dc2626", "circle-stroke-width": 2.5, "circle-radius": 10, "circle-stroke-opacity": 0.7}});
+  map.addLayer({id: "fault-dot", type: "circle", source: "faults", minzoom: 11,
+    paint: {"circle-radius": ["case", ["==", ["get", "sel"], 1], 6, 4], "circle-color": "#111827",
+            "circle-stroke-color": "#dc2626", "circle-stroke-width": ["case", ["==", ["get", "sel"], 1], 3, 2]}});
+  map.addLayer({id: "fault-label", type: "symbol", source: "faults", minzoom: 13,
+    layout: {"text-field": ["concat", "SP ", ["get", "key"]], "text-font": ["Noto Sans Bold"], "text-size": 10.5,
+             "text-offset": [0, -1.1], "text-anchor": "bottom", "text-optional": true},
+    paint: {"text-color": "#b91c1c", "text-halo-color": "#fff", "text-halo-width": 1.6}});
+  // site code under every pin; the site name joins it when zoomed in
+  map.addLayer({id: "job-label", type: "symbol", source: "jobs", minzoom: 10.5,
+    layout: {
+      "text-field": ["step", ["zoom"], ["get", "site"], 14,
+        ["format", ["get", "site"], {}, "\n", {}, ["get", "site_name"], {"font-scale": 0.85, "text-font": ["literal", ["Noto Sans Regular"]]}]],
+      "text-font": ["Noto Sans Bold"], "text-size": 11, "text-offset": [0, 0.95], "text-anchor": "top",
+      "text-max-width": 14, "text-optional": true},
+    paint: {"text-color": "#1f2937", "text-halo-color": "#ffffff", "text-halo-width": 1.8}});
   map.addLayer({id: "job-sel", type: "circle", source: "jobs", filter: ["==", ["get", "id"], ""],
     paint: {"circle-radius": 15, "circle-color": "transparent", "circle-stroke-color": "#111827", "circle-stroke-width": 2.5}});
 
   map.on("click", "job-dot", (e) => select(e.features[0].properties.id, false));
   map.on("mouseenter", "job-dot", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "job-dot", () => map.getCanvas().style.cursor = "");
+  const hover = new maplibregl.Popup({closeButton: false, closeOnClick: false, offset: 10, className: "kmz-hover"});
   for (const id of ["kmz-point", "kmz-line", "kmz-fill"]) {
     map.on("click", id, (e) => {
-      if (map.queryRenderedFeatures(e.point, {layers: ["job-dot"]}).length) return;
-      const p = e.features[0].properties;
-      new maplibregl.Popup({offset: 8}).setLngLat(e.lngLat)
-        .setHTML(`<b>${esc(p.name || "(ไม่มีชื่อ)")}</b><br><span style="color:#64748b">${esc(p.path || p.folder || "")}</span>${p.desc ? "<br>" + esc(p.desc) : ""}`)
-        .addTo(map);
+      if (map.queryRenderedFeatures(e.point, {layers: ["job-dot", "fault-dot"]}).length) return;
+      hover.remove();
+      new maplibregl.Popup({offset: 8, maxWidth: "300px"}).setLngLat(e.lngLat).setHTML(kmzInfo(e.features[0], true)).addTo(map);
     });
-    map.on("mouseenter", id, () => map.getCanvas().style.cursor = "pointer");
-    map.on("mouseleave", id, () => map.getCanvas().style.cursor = "");
+    map.on("mousemove", id, (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      hover.setLngLat(e.lngLat).setHTML(kmzInfo(e.features[0], false)).addTo(map);
+    });
+    map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; hover.remove(); });
   }
+  map.on("click", "fault-dot", (e) => select(e.features[0].properties.job, false));
 
   addZoneLabels();
   await refresh(true);
   animate();
   setInterval(() => refresh(false), 60000);
 });
+
+// Length of a line in metres (haversine), for cable popups.
+function lineLength(coords) {
+  let m = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const [x1, y1] = coords[i - 1], [x2, y2] = coords[i], r = Math.PI / 180;
+    const a = Math.sin((y2 - y1) * r / 2) ** 2 + Math.cos(y1 * r) * Math.cos(y2 * r) * Math.sin((x2 - x1) * r / 2) ** 2;
+    m += 12742000 * Math.asin(Math.sqrt(a));
+  }
+  return m;
+}
+function kmzInfo(f, full) {
+  const p = f.properties;
+  let ext = {};
+  try { ext = typeof p.ext === "string" ? JSON.parse(p.ext) : (p.ext || {}); } catch (e) {}
+  const kind = {line: "เส้น / เคเบิล", point: "จุด", polygon: "พื้นที่"}[p.kind] || "";
+  let html = `<b>${esc(p.name || "(ไม่มีชื่อ)")}</b>`;
+  if (p.fault) html += `<div style="color:#b91c1c;font-weight:800">⚠️ SP fault ในใบงาน ${esc(p.fault_job || "")}</div>`;
+  html += `<div style="color:#64748b">${esc(kind)} · ${esc(p.path || p.folder || "")}</div>`;
+  if (p.kind === "line" && f.geometry && f.geometry.type === "LineString") {
+    const km = lineLength(f.geometry.coordinates);
+    html += `<div>ยาว ≈ <b>${km >= 1000 ? (km / 1000).toFixed(2) + " กม." : Math.round(km) + " ม."}</b></div>`;
+  }
+  if (full) {
+    for (const [k, v] of Object.entries(ext)) html += `<div><span style="color:#64748b">${esc(k)}:</span> ${esc(v)}</div>`;
+    if (p.desc) html += `<div style="margin-top:4px;white-space:pre-wrap">${esc(p.desc)}</div>`;
+  }
+  return html;
+}
 
 function addZoneLabels() {
   for (const f of zoneFC.features) {
@@ -326,6 +404,10 @@ function animate() {
       const ph = (t % 1800) / 1800;
       map.setPaintProperty("job-halo", "circle-radius", 8 + ph * 18);
       map.setPaintProperty("job-halo", "circle-stroke-opacity", 0.75 * (1 - ph));
+      map.setPaintProperty("fault-halo", "circle-radius", 7 + ph * 16);
+      map.setPaintProperty("fault-halo", "circle-stroke-opacity", 0.8 * (1 - ph));
+      map.setPaintProperty("kmz-fault-halo", "circle-radius", 9 + ph * 20);
+      map.setPaintProperty("kmz-fault-halo", "circle-stroke-opacity", 0.9 * (1 - ph));
     }
     requestAnimationFrame(frame);
   };
@@ -374,7 +456,7 @@ function matches(j) {
   if (view.area && j.area !== view.area) return false;
   if (view.filter === "out" && !j._out) return false;
   if (view.filter === "critical" && j._p !== "critical") return false;
-  if (view.filter === "approx" && j.precision === "job") return false;
+  if (view.filter === "approx" && isExact(j)) return false;
   if (view.filter === "kmz" && !j.kmz) return false;
   if (view.q) {
     const hay = [j.id, j.site, j.site_name, j.district, j.assign, j.team_zone, j.area_name].join(" ").toLowerCase();
@@ -392,7 +474,7 @@ function render() {
   $("sTotal").textContent = scope.length;
   $("sDue").textContent = scope.filter(j => j._out).length;
   $("sCrit").textContent = scope.filter(j => j._p === "critical").length;
-  $("sApprox").textContent = scope.filter(j => j.precision !== "job").length;
+  $("sApprox").textContent = scope.filter(j => !isExact(j)).length;
 
   // area chips
   const chips = [["", "ทุกโซน", "#334155"], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
@@ -409,7 +491,7 @@ function render() {
     <div class="job p-${j._p} ${selected === j.id ? "sel" : ""}" data-id="${esc(j.id)}">
       <div class="r1">${esc(j.id)} <span class="badge b-${j._p}">${esc(j.priority)}</span>
         ${j._out ? '<span class="badge b-out">Out Due</span>' : (j.due ? '<span class="badge b-in">In Due</span>' : "")}
-        ${j.precision !== "job" ? '<span class="badge b-approx">≈</span>' : ""}${j.kmz ? '<span class="badge b-kmz">KMZ</span>' : ""}</div>
+        ${!isExact(j) ? '<span class="badge b-approx">≈</span>' : ""}${(j.faults || []).length ? `<span class="badge" style="background:#fee2e2;color:#b91c1c">SP ${j.faults.length}</span>` : ""}${j.kmz ? '<span class="badge b-kmz">KMZ</span>' : ""}</div>
       <div class="r2">${esc(j.site || "-")} · ${esc(j.site_name || j.sub)}</div>
       <div class="r3"><span>⏱ ${ageText(j.age_h)}</span><span>📍 ${esc(j.district || "-")}</span><span>👷 ${esc(j.assign || "-")}</span></div>
     </div>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้ 🎉</div>';
@@ -418,8 +500,13 @@ function render() {
   if (!map.getSource("jobs")) return;
   map.getSource("jobs").setData({type: "FeatureCollection", features: shown.filter(j => j._lat != null).map(j => ({
     type: "Feature", geometry: {type: "Point", coordinates: [j._lon, j._lat]},
-    properties: {id: j.id, color: PCOL[j._p] || "#64748b", out: j._out ? 1 : 0, exact: j.precision === "job" ? 1 : 0},
+    properties: {id: j.id, color: PCOL[j._p] || "#64748b", out: j._out ? 1 : 0, exact: isExact(j) ? 1 : 0,
+                 site: j.site || "", site_name: j.site_name || ""},
   }))});
+  map.getSource("faults").setData({type: "FeatureCollection", features: shown.flatMap(j => (j.faults || [])
+    .filter(f => f.lat != null)
+    .map(f => ({type: "Feature", geometry: {type: "Point", coordinates: [f.lon, f.lat]},
+                properties: {job: j.id, key: f.key, sel: j.id === selected ? 1 : 0}})))});
 
   // map: districts green / blinking by the jobs inside them (all jobs, so the map shows the whole picture)
   const byDistrict = {};
@@ -488,10 +575,17 @@ function select(id, fly) {
     `<span class="badge" style="background:#eef2f7;color:#334155">${esc(j.status)}</span>`;
   const pos = {
     job: ["job", "📍 พิกัดจากใบงาน (ตรงจุด)"],
+    kmz: ["job", "📍 ตำแหน่ง Splitter ในแบบ KMZ (ตามชื่อในใบงาน)"],
     site: ["site", "📡 ตำแหน่งไซต์ " + esc(j.site) + " — งานจริงอาจอยู่ห่างจากไซต์"],
     district: ["district", "🗺️ ไม่มีพิกัด — วางไว้กลางเขต " + esc(j.district) + " (ประมาณ)"],
   }[j.precision] || ["district", "ไม่พบตำแหน่ง"];
-  const nav = j.precision === "job" || j.precision === "site";
+  const nav = j.precision === "job" || j.precision === "kmz" || j.precision === "site";
+  const src = {title: ["พิกัดในใบงาน", "#166534", "#dcfce7"], kmz: ["พบใน KMZ", "#075985", "#e0f2fe"]};
+  const faults = (j.faults || []).map((f, k) => {
+    const s = src[f.src] || ["ไม่พบพิกัด", "#6b7280", "#f3f4f6"];
+    return `<div class="fault" ${f.lat != null ? `data-lat="${f.lat}" data-lon="${f.lon}"` : ""}>
+      <b>⚠️ SP ${esc(f.key)}</b><span class="badge" style="background:${s[2]};color:${s[1]}">${s[0]}</span></div>`;
+  }).join("");
   $("dBody").innerHTML = `
     <div class="title">${esc(j.title)}</div>
     <div class="pos ${pos[0]}">${pos[1]}</div>
@@ -503,11 +597,14 @@ function select(id, fly) {
       <div class="cell"><span>สร้างเมื่อ</span><b>${esc(j.create || "-")}</b></div>
       <div class="cell"><span>อายุงาน</span><b>${ageText(j.age_h)}</b></div>
     </div>
+    ${faults ? `<div class="faults"><div class="fh">จุด SP fault ในใบงาน (${j.faults.length}) — กดเพื่อไปที่จุด</div>${faults}</div>` : ""}
     <div class="actions">
       ${j.kmz ? `<button class="btn green" onclick="openKmz('${esc(j.site)}')">🗺️ เปิด KMZ ไซต์ ${esc(j.site)}</button>` : `<span style="font-size:12px;color:var(--muted)">ไซต์นี้ไม่มีไฟล์ KMZ</span>`}
       ${nav ? `<a class="btn light" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lon}">🧭 นำทาง</a>` : ""}
       <button class="btn light" onclick="navigator.clipboard.writeText('${esc(j.id)}').then(()=>toast('คัดลอก ${esc(j.id)} แล้ว'))">📋 คัดลอก JB</button>
     </div>`;
+  $("dBody").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
+    map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: Math.max(map.getZoom(), 16.5), duration: 800}));
   $("detail").classList.add("open");
   history.replaceState(null, "", "/map?job=" + encodeURIComponent(id));
 }
@@ -560,6 +657,18 @@ async function loadKmz(site, i) {
   const g = await kmzFetch(`/api/map/kmz/${encodeURIComponent(site)}/${i}`);
   if (!g) { $("kmzLayers").innerHTML = ""; return; }
   kmz = g; kmzHidden = new Set();
+  // faults named by open jobs of this site
+  const wanted = jobs.filter(j => j.site === site).flatMap(j => (j.faults || []).map(f => [f.key, j.id]));
+  const found = {};
+  for (const f of g.features) {
+    const p = f.properties, name = (p.name || "").replace(/\s+/g, "").toUpperCase();
+    // long splitter names ("OB_PADUM_ZZ_01HW_IJSX9_BKK0928-034_18") read better without the site prefix
+    p.label = (p.name || "").replace(/^OB_[A-Z0-9()]+_ZZ_[A-Z0-9]+_/, "");
+    if (f.geometry.type !== "Point") continue;
+    for (const [key, job] of wanted) {
+      if (name.includes(key)) { p.fault = key; p.fault_job = job; found[key] = f.geometry.coordinates; }
+    }
+  }
   map.getSource("kmz").setData({type: "FeatureCollection", features: g.features});
   applyKmzFilter();
   const colorOf = (name) => {
@@ -569,6 +678,15 @@ async function loadKmz(site, i) {
   $("kmzLayers").innerHTML = `<label class="layer"><input type="checkbox" checked id="kmzAll"><b>ทุกชั้น</b><span class="c">${g.features.length}</span></label>` +
     g.groups.map((x, k) => `<label class="layer"><input type="checkbox" checked data-g="${k}"><span class="sw" style="background:${colorOf(x.name)}"></span>${esc(x.name)}<span class="c">${x.count}</span></label>`).join("");
   $("kmzNote").textContent = `${g.date} · ${g.title}` + (g.truncated ? " · ไฟล์ใหญ่ แสดงบางส่วน" : "");
+  const keys = [...new Set(wanted.map(w => w[0]))];
+  if (keys.length) {
+    $("kmzLayers").insertAdjacentHTML("afterbegin", `<div class="faults"><div class="fh">⚠️ SP fault ในใบงานของไซต์นี้</div>` +
+      keys.map(k => found[k]
+        ? `<div class="fault" data-lon="${found[k][0]}" data-lat="${found[k][1]}"><b>SP ${esc(k)}</b><span class="badge b-kmz">พบในแบบ</span></div>`
+        : `<div class="fault"><b>SP ${esc(k)}</b><span class="badge" style="background:#f3f4f6;color:#6b7280">ไม่พบในเวอร์ชันนี้</span></div>`).join("") + `</div>`);
+    $("kmzLayers").querySelectorAll(".fault[data-lat]").forEach(el => el.onclick = () =>
+      map.flyTo({center: [+el.dataset.lon, +el.dataset.lat], zoom: 17.5, duration: 800}));
+  }
   $("kmzLayers").querySelectorAll("input[data-g]").forEach(cb => cb.onchange = () => {
     const name = g.groups[+cb.dataset.g].name;
     cb.checked ? kmzHidden.delete(name) : kmzHidden.add(name);
@@ -593,6 +711,9 @@ function applyKmzFilter() {
   map.setFilter("kmz-outline", ["all", ["==", ["get", "kind"], "polygon"], vis]);
   map.setFilter("kmz-line", ["all", ["==", ["get", "kind"], "line"], vis]);
   map.setFilter("kmz-point", ["all", ["==", ["get", "kind"], "point"], vis]);
+  map.setFilter("kmz-line-label", ["all", ["==", ["get", "kind"], "line"], vis]);
+  map.setFilter("kmz-point-label", ["all", ["==", ["get", "kind"], "point"], vis]);
+  map.setFilter("kmz-poly-label", ["all", ["==", ["get", "kind"], "polygon"], vis]);
 }
 $("kmzClose").onclick = () => {
   map.getSource("kmz").setData({type: "FeatureCollection", features: []});

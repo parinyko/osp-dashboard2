@@ -985,6 +985,13 @@ def map_jobs():
         title = clean_text(r.get("Job Title", ""))
         site = site_code_from_title(title)
         lat, lon, precision = nm.locate(title, site, r.get("District Name", ""))
+        faults = nm.fault_refs(title)
+        if site in kmz:
+            nm.locate_faults(site, faults)
+        if precision != "job":   # a splitter found in the drawing beats the site / district centre
+            hit = next((f for f in faults if f["lat"] is not None), None)
+            if hit:
+                lat, lon, precision = hit["lat"], hit["lon"], "kmz"
         priority = clean_text(r.get("Priority", ""))
         create = clean_text(r.get("Create Time", ""))
         age = None
@@ -1005,7 +1012,7 @@ def map_jobs():
             "area": f"A{area.group(1)}" if area else "", "area_name": AREA_NAMES.get(area.group(1), "") if area else "",
             "district": clean_text(r.get("District Name", "")), "province": clean_text(r.get("Province Name", "")),
             "site": site, "site_name": clean_text(r.get("Site Name", "")), "title": title[:400],
-            "lat": lat, "lon": lon, "precision": precision, "kmz": bool(site and site in kmz),
+            "lat": lat, "lon": lon, "precision": precision, "kmz": bool(site and site in kmz), "faults": faults,
         })
     return out
 
