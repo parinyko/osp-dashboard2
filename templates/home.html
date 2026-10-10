@@ -189,6 +189,12 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 .osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:190px;width:190px}
 .osp-age-table-v3 .age-sub{display:block;margin-top:2px;font-size:8.5px;font-weight:700;opacity:.72}
 .osp-age-table-v3 .aging-group-row td{padding:5px 8px;text-align:left;background:#edf6e8!important;border-top:2px solid #c9dcc2;border-bottom:1px solid #d7e6d1;color:#315a2c}
+.osp-age-table-v3 .aging-group-row td.num{text-align:center;font-weight:900;font-size:12px}
+.osp-age-table-v3 .aging-group-eds td{background:#f6d3d0!important;color:#7a2a24}
+.osp-age-table-v3 .aging-group-fbb td{background:#fbd7b8!important;color:#7a3f0c}
+.osp-age-table-v3 .aging-group-mbb td{background:#fff27a!important;color:#5b5000}
+.osp-age-table-v3 .aging-group-row td.grand-total{background:#cfe2ef!important;color:#245775}
+.osp-age-table-v3 .aging-group-row .aging-group-badge{background:rgba(255,255,255,.55);color:inherit}
 .aging-group-badge{display:inline-block;min-width:68px;padding:3px 10px;border-radius:999px;background:#d5e9cc;color:#245323;font-weight:900;letter-spacing:.2px}
 .osp-age-table-v3 .subsystem-label{font-weight:900}
 .osp-age-table-v3 .transmission-subsystem{display:block;font-size:11px;font-weight:900;color:#315d29}
@@ -318,8 +324,10 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
       {% set ns = namespace(last_group='', transmission_shown=false) %}
       {% for r in osp_aging_summary %}
         {% if r.group != ns.last_group %}
-          <tr class="aging-group-row">
-            <td colspan="20"><span class="aging-group-badge">{{ r.group }}</span></td>
+          {% set grows = osp_aging_summary|selectattr('group','equalto',r.group)|list %}
+          <tr class="aging-group-row aging-group-{{ r.group|lower }}">
+            <td class="subsystem-cell"><span class="aging-group-badge">{{ r.group }}</span></td>
+            <td class="num">{{ (grows|sum(attribute='critical_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_over15')) or '' }}</td><td class="num priority-total-critical">{{ (grows|sum(attribute='critical_total')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_over15')) or '' }}</td><td class="num priority-total-major">{{ (grows|sum(attribute='major_total')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_over15')) or '' }}</td><td class="num priority-total-minor">{{ (grows|sum(attribute='minor_total')) or '' }}</td><td class="num grand-total">{{ (grows|sum(attribute='total')) or '' }}</td>
           </tr>
           {% set ns.last_group = r.group %}
         {% endif %}
