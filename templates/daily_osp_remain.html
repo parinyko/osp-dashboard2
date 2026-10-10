@@ -27,6 +27,13 @@ body{display:flex;flex-direction:column;overflow:hidden}
 canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap:wrap;gap:6px 12px;padding:7px 10px 2px;font-size:11px;color:#56665d}.legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.legend-line{width:18px;height:3px;border-radius:3px;display:inline-block}.legend-bar{width:14px;height:10px;border-radius:2px;display:inline-block}
 .history-wrap{overflow:auto;max-height:280px}.history-table{min-width:720px}.slot{font-weight:800}.slot.auto{color:#397817}.slot.manual{color:#66727a}
 .empty{padding:28px;text-align:center;color:#7a867e}.note{font-size:11px;color:#718078;margin-top:6px}
+.modal-bg{position:fixed;inset:0;background:rgba(20,35,25,.45);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px}.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:16px 18px;width:min(440px,100%);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.modal-x{border:0;background:none;font-size:18px;color:#7a867e;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 12px;min-height:34px}.chip{display:inline-flex;align-items:center;gap:6px;background:#eef7e6;border:1px solid #cfe3bf;color:#397817;border-radius:999px;padding:5px 6px 5px 12px;font-weight:800;font-size:15px}
+.chip button{border:0;background:#fff;color:#c62828;border-radius:50%;width:22px;height:22px;cursor:pointer;font-weight:900;line-height:1}.chips .none{color:#a0522d;font-size:13px;align-self:center}
+.add-row{display:flex;gap:8px;align-items:center}.add-row input{flex:1;padding:7px 10px;border:1px solid #cfe0c5;border-radius:9px;font-size:15px}
+.err{color:#c62828;font-size:12px;min-height:16px;margin-top:6px}.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 @media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.header-row{align-items:flex-start}.title{font-size:22px}}
 </style>
 </head>
@@ -36,10 +43,11 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
     <div class="left">
       <div>
         <div class="title">Daily Job OSP Remain</div>
-        <div class="subtitle">สรุปงาน OSP คงเหลือตามช่วงเวลา 06:00 และ 18:00</div>
+        <div class="subtitle">สรุปงาน OSP คงเหลือตามรอบ {% if schedule_times %}{{ schedule_times|join(' · ') }}{% else %}ปิดการสรุปอัตโนมัติ{% endif %}</div>
       </div>
     </div>
     <div class="actions">
+      <button type="button" class="btn btn-green" onclick="openSchedule()">⏰ ตั้งรอบสรุป</button>
       <a class="btn btn-light" href="/">🏠 Dashboard</a>
       <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
     </div>
@@ -92,7 +100,7 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
         {% for row in records %}
           <tr>
             <td>{{ row.timestamp }}</td>
-            <td class="slot {{ 'auto' if row.slot in ['06:00','18:00'] else 'manual' }}">{{ row.slot }}</td>
+            <td class="slot {{ 'manual' if row.slot == 'Manual' else 'auto' }}">{{ row.slot }}</td>
             <td class="num">{{ row.totals.critical }}</td><td class="num">{{ row.totals.major }}</td><td class="num">{{ row.totals.minor }}</td><td class="num">{{ row.totals.grand_total }}</td><td>{{ row.last_update }}</td>
           </tr>
         {% endfor %}
@@ -102,7 +110,24 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
     {% else %}<div class="empty">ยังไม่มีประวัติ Snapshot</div>{% endif %}
   </div>
 
-  <div class="note">ระบบจะบันทึกอัตโนมัติทุกวันเวลา 06:00 และ 18:00 ตามเวลา Asia/Bangkok เมื่อ Flask ทำงานอยู่</div>
+  <div class="note">{% if schedule_times %}ระบบจะบันทึกอัตโนมัติทุกวันเวลา {{ schedule_times|join(' · ') }} ตามเวลา Asia/Bangkok — เปลี่ยนได้ที่ปุ่ม ⏰ ตั้งรอบสรุป{% else %}ปิดการบันทึกอัตโนมัติอยู่ — เปิดได้ที่ปุ่ม ⏰ ตั้งรอบสรุป{% endif %}</div>
+</div>
+
+<div id="scheduleModal" class="modal-bg" onclick="if(event.target===this)closeSchedule()">
+  <div class="modal">
+    <div class="modal-head"><span class="panel-title">⏰ ตั้งรอบสรุป Daily OSP Remain</span><button type="button" class="modal-x" onclick="closeSchedule()">✕</button></div>
+    <div class="muted">ระบบบันทึก Snapshot อัตโนมัติทุกวันตามเวลาด้านล่าง (Asia/Bangkok) · ไม่มีรอบเลย = ปิดการบันทึกอัตโนมัติ</div>
+    <div id="scheduleChips" class="chips"></div>
+    <div class="add-row">
+      <input type="time" id="scheduleInput" step="60">
+      <button type="button" class="btn btn-light" onclick="addScheduleTime()">+ เพิ่มรอบ</button>
+    </div>
+    <div id="scheduleError" class="err"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-light" onclick="closeSchedule()">ยกเลิก</button>
+      <button type="button" class="btn btn-green" id="scheduleSave" onclick="saveSchedule()">บันทึก</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -293,6 +318,52 @@ function drawChart(){
   }
 }
 window.addEventListener('resize',drawChart);drawChart();
+
+// ---- ตั้งรอบสรุป ----
+let scheduleTimes = {{ schedule_times|tojson }};
+let draftTimes = [];
+function renderChips(){
+  const box=document.getElementById('scheduleChips');
+  box.innerHTML = draftTimes.length
+    ? draftTimes.map((t,i)=>'<span class="chip">'+t+'<button type="button" title="ลบรอบนี้" onclick="removeScheduleTime('+i+')">×</button></span>').join('')
+    : '<span class="none">ไม่มีรอบ — จะไม่บันทึกอัตโนมัติ</span>';
+}
+function openSchedule(){
+  draftTimes=[...scheduleTimes];
+  document.getElementById('scheduleError').textContent='';
+  document.getElementById('scheduleInput').value='';
+  renderChips();
+  document.getElementById('scheduleModal').classList.add('open');
+}
+function closeSchedule(){ document.getElementById('scheduleModal').classList.remove('open'); }
+function addScheduleTime(){
+  const input=document.getElementById('scheduleInput');
+  const err=document.getElementById('scheduleError');
+  const t=(input.value||'').slice(0,5);
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)){ err.textContent='เลือกเวลาก่อนกดเพิ่ม'; return; }
+  if(draftTimes.includes(t)){ err.textContent='มีรอบ '+t+' อยู่แล้ว'; return; }
+  err.textContent='';
+  draftTimes.push(t); draftTimes.sort(); input.value=''; renderChips();
+}
+function removeScheduleTime(i){ draftTimes.splice(i,1); renderChips(); }
+document.getElementById('scheduleInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addScheduleTime(); });
+async function saveSchedule(){
+  const btn=document.getElementById('scheduleSave');
+  const err=document.getElementById('scheduleError');
+  // เวลาที่เลือกค้างไว้แต่ยังไม่กดเพิ่ม ให้นับรวมด้วย
+  const pending=(document.getElementById('scheduleInput').value||'').slice(0,5);
+  if(pending && !draftTimes.includes(pending)){ draftTimes.push(pending); draftTimes.sort(); }
+  btn.disabled=true; btn.textContent='กำลังบันทึก…'; err.textContent='';
+  try{
+    const r=await fetch('/daily_osp_schedule',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({times:draftTimes})});
+    const j=await r.json();
+    if(!r.ok||!j.success) throw new Error(j.message||('HTTP '+r.status));
+    location.reload();
+  }catch(e){
+    err.textContent='บันทึกไม่สำเร็จ: '+e.message;
+    btn.disabled=false; btn.textContent='บันทึก';
+  }
+}
 </script>
 </body>
 </html>

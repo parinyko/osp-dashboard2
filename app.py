@@ -36,6 +36,8 @@ REMARK_FILE = BASE_DIR / "remarks.json"
 CONTACT_FILE = BASE_DIR / "contacts.json"
 DAILY_OSP_FILE = BASE_DIR / "daily_osp_remain.json"
 RESOURCE_FILE = BASE_DIR / "resource_monitor_history.json"
+DAILY_OSP_SCHEDULE_FILE = BASE_DIR / "daily_osp_schedule.json"
+DAILY_OSP_DEFAULT_TIMES = ["06:00", "18:00"]
 DAILY_OSP_MAX_RECORDS = 730
 RESOURCE_MONITOR_MAX_RECORDS = 20000
 
@@ -152,6 +154,20 @@ def save_history(path, records):
     atomic_save_json(path, {"version": 1, "updated_at": now_local().isoformat(), "records": records})
 
 DAILY_OSP_HISTORY = load_history(DAILY_OSP_FILE)
+
+# Daily OSP Remain auto-snapshot times ("HH:MM", Asia/Bangkok), set from the page.
+TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+def normalize_times(values):
+    return sorted({str(v).strip() for v in values if TIME_RE.match(str(v).strip())})
+
+def load_daily_osp_times():
+    data = load_json_file(DAILY_OSP_SCHEDULE_FILE, {})
+    if isinstance(data, dict) and isinstance(data.get("times"), list):
+        return normalize_times(data["times"])   # may be empty = auto snapshot off
+    return list(DAILY_OSP_DEFAULT_TIMES)
+
+DAILY_OSP_TIMES = load_daily_osp_times()
 RESOURCE_HISTORY = load_history(RESOURCE_FILE)
 DATA, RAW_DATA, ORIGINAL_DATA = [], [], []
 LAST_UPDATE = "-"
@@ -343,8 +359,9 @@ def background_scheduler():
             try:
                 if now.minute in (0,30):
                     save_resource_snapshot()
-                if now.minute==0 and now.hour in (6,18):   # matches the page text: 06:00 and 18:00
-                    save_daily_osp_snapshot(f"{now.hour:02d}:00")
+                hhmm = now.strftime("%H:%M")
+                if hhmm in DAILY_OSP_TIMES:
+                    save_daily_osp_snapshot(hhmm)
             except Exception:
                 app.logger.exception("Scheduled snapshot failed")
         time.sleep(15)
@@ -825,7 +842,25 @@ def daily_osp_remain():
     if not RAW_DATA: load_latest_excel_into_memory()
     return render_template("daily_osp_remain.html",records=list(reversed(DAILY_OSP_HISTORY)),
         latest=DAILY_OSP_HISTORY[-1] if DAILY_OSP_HISTORY else None,subsystem_names=VALID_SUBSYSTEMS,
-        current_jobs=TOTAL_JOBS,last_update=LAST_UPDATE)
+        current_jobs=TOTAL_JOBS,last_update=LAST_UPDATE,schedule_times=DAILY_OSP_TIMES)
+
+@app.route("/daily_osp_schedule",methods=["GET","POST"])
+def daily_osp_schedule():
+    global DAILY_OSP_TIMES
+    if request.method == "GET":
+        return jsonify(success=True,times=DAILY_OSP_TIMES)
+    raw = (request.get_json(silent=True) or {}).get("times")
+    if not isinstance(raw, list):
+        return jsonify(success=False,message="รูปแบบข้อมูลไม่ถูกต้อง"),400
+    bad = [str(t) for t in raw if not TIME_RE.match(str(t).strip())]
+    if bad:
+        return jsonify(success=False,message="เวลาไม่ถูกต้อง: "+", ".join(bad)+" (ใช้รูปแบบ HH:MM)"),400
+    times = normalize_times(raw)
+    if len(times) > 24:
+        return jsonify(success=False,message="ตั้งได้สูงสุด 24 รอบต่อวัน"),400
+    atomic_save_json(DAILY_OSP_SCHEDULE_FILE, {"times": times, "updated_at": now_local().isoformat()})
+    DAILY_OSP_TIMES = times
+    return jsonify(success=True,times=times,message="บันทึกรอบสรุปแล้ว")
 
 @app.route("/daily_osp_snapshot",methods=["POST"])
 def daily_osp_snapshot():
