@@ -244,6 +244,56 @@ thead th {
   vertical-align: middle;
 }
 
+.user-zone {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  color: #7a8a76;
+}
+
+.more-jobs {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 9px;
+}
+
+.zoom-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.zoom-box button {
+  border: 1px solid #b9d3ab;
+  background: #fff;
+  color: #315a28;
+  border-radius: 7px;
+  min-width: 28px;
+  height: 28px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.zoom-box .zoom-text {
+  font-size: 11px;
+  padding: 0 7px;
+}
+
+#zoomLabel {
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: #315a28;
+}
+
+tr.row-hidden {
+  display: none;
+}
+
 .status-empty {
   background: #fff;
   color: transparent;
@@ -495,7 +545,7 @@ thead th {
 
     <select
       id="dateSelect"
-      onchange="location.href='/resource_monitor?date=' + this.value"
+      onchange="goDate(this.value)"
     >
 
       {% for d in available_dates %}
@@ -520,13 +570,33 @@ thead th {
     </select>
 
 
+    <label for="companySelect">บริษัท</label>
+    <select id="companySelect" onchange="onCompanyChange()">
+      <option value="">ทั้งหมด</option>
+      {% for c in companies %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+
+    <label for="zoneSelect">โซน</label>
+    <select id="zoneSelect" onchange="applyFilter()">
+      <option value="">ทั้งหมด</option>
+      {% for z in zones %}<option value="{{ z.zone }}" data-company="{{ z.company }}">{{ z.zone }}</option>{% endfor %}
+    </select>
+
+    <span class="zoom-box" title="ซูม (Ctrl + ลูกกลิ้งเมาส์ บนตารางก็ได้)">
+      <button type="button" onclick="zoomStep(-1)" aria-label="ซูมออก">−</button>
+      <span id="zoomLabel">100%</span>
+      <button type="button" onclick="zoomStep(1)" aria-label="ซูมเข้า">+</button>
+      <button type="button" class="zoom-text" onclick="zoomFit()">พอดีจอ</button>
+      <button type="button" class="zoom-text" onclick="setZoom(1)">100%</button>
+    </span>
+
     <span class="note">
 
       สี = Current Status |
 
       รูปแบบ = Job ID (Status) — Indue / Outdue |
 
-      Job ID เดิมติดกันจะรวมช่อง
+      Job ID + สถานะเดิมติดกันจะรวมช่อง | +N = มีงานอื่นค้างอีก N งาน
 
     </span>
 
@@ -583,12 +653,13 @@ thead th {
 
         {% for row in display_rows %}
 
-          <tr>
+          <tr data-company="{{ row.company }}" data-zone="{{ row.zone }}">
 
             <!-- USER -->
 
             <td class="user-cell">
               {{ row.user }}
+              <span class="user-zone">{{ row.zone }}</span>
             </td>
 
 
@@ -638,6 +709,7 @@ thead th {
                 {% endif %}"
 
                 colspan="{{ cell.span }}"
+                {% if jid %}title="{{ cell.time }} · {{ jid }} ({{ st or '-' }}){% if cell.priority %} · {{ cell.priority }}{% endif %}{% if cell.others %} · มีงานอื่นอีก {{ cell.others }} งาน{% endif %}"{% endif %}
 
               >
 
@@ -653,7 +725,7 @@ thead th {
                   <!-- STATUS -->
 
                   <span class="job-status">
-                    ({{ st or '-' }})
+                    ({{ st or '-' }}){% if cell.others %} <span class="more-jobs">+{{ cell.others }}</span>{% endif %}
                   </span>
 
 
@@ -803,6 +875,123 @@ thead th {
   });
 
   window.addEventListener('resize', centerLatestTime);
+  window.centerLatestTime = centerLatestTime;
+})();
+
+/* =========================================================
+   FILTER (บริษัท / โซน) + ZOOM — remembered in the URL and this browser
+========================================================= */
+const ZOOMS = [0.3, 0.4, 0.5, 0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5];
+let zoom = 1;
+const store = {
+  get(k) { try { return localStorage.getItem('rm.' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('rm.' + k, v); } catch (e) {} },
+};
+
+function table() { return document.querySelector('.table-wrap table'); }
+
+function setZoom(z, keepCenter = true) {
+  const wrap = document.querySelector('.table-wrap');
+  const t = table();
+  if (!wrap || !t) return;
+  z = Math.min(1.5, Math.max(0.2, Math.round(z * 100) / 100));
+  // keep the same time in the middle of the view while zooming
+  const mid = (wrap.scrollLeft + wrap.clientWidth / 2) / zoom;
+  zoom = z;
+  t.style.zoom = z;
+  document.getElementById('zoomLabel').textContent = Math.round(z * 100) + '%';
+  if (keepCenter) wrap.scrollLeft = Math.max(0, mid * z - wrap.clientWidth / 2);
+  store.set('zoom', String(z));
+  syncUrl();
+}
+
+function zoomStep(dir) {
+  const next = dir > 0 ? ZOOMS.find(z => z > zoom + 0.001) : [...ZOOMS].reverse().find(z => z < zoom - 0.001);
+  if (next) setZoom(next);
+}
+
+// Fit the whole day (all 48 slots) into the visible width.
+function zoomFit() {
+  const wrap = document.querySelector('.table-wrap');
+  const t = table();
+  if (!wrap || !t) return;
+  const natural = t.scrollWidth / (zoom || 1) || t.scrollWidth;
+  setZoom(Math.min(1, (wrap.clientWidth - 4) / natural), false);
+  wrap.scrollLeft = 0;
+}
+
+function onCompanyChange() {
+  const company = document.getElementById('companySelect').value;
+  const zoneSel = document.getElementById('zoneSelect');
+  Array.from(zoneSel.options).forEach(o => {
+    if (!o.value) return;
+    o.hidden = !!company && o.dataset.company !== company;
+  });
+  if (zoneSel.selectedOptions[0] && zoneSel.selectedOptions[0].hidden) zoneSel.value = '';
+  applyFilter();
+}
+
+function applyFilter() {
+  const company = document.getElementById('companySelect').value;
+  const zone = document.getElementById('zoneSelect').value;
+  document.querySelectorAll('tbody tr[data-company]').forEach(tr => {
+    const show = (!company || tr.dataset.company === company) && (!zone || tr.dataset.zone === zone);
+    tr.classList.toggle('row-hidden', !show);
+  });
+  store.set('company', company);
+  store.set('zone', zone);
+  syncUrl();
+}
+
+function currentParams() {
+  const p = new URLSearchParams();
+  const company = document.getElementById('companySelect').value;
+  const zone = document.getElementById('zoneSelect').value;
+  if (company) p.set('company', company);
+  if (zone) p.set('zone', zone);
+  if (zoom !== 1) p.set('zoom', String(zoom));
+  return p;
+}
+
+function syncUrl() {
+  const p = currentParams();
+  p.set('date', '{{ selected_date }}');
+  history.replaceState(null, '', '/resource_monitor?' + p.toString());
+}
+
+function goDate(d) {
+  const p = currentParams();
+  p.set('date', d);
+  location.href = '/resource_monitor?' + p.toString();
+}
+
+(function initFilters() {
+  const q = new URLSearchParams(location.search);
+  const pick = (k) => q.get(k) ?? store.get(k) ?? '';
+  const companySel = document.getElementById('companySelect');
+  const zoneSel = document.getElementById('zoneSelect');
+  if (!companySel || !zoneSel) return;
+  const c = pick('company');
+  if (Array.from(companySel.options).some(o => o.value === c)) companySel.value = c;
+  onCompanyChange();
+  const z = pick('zone');
+  const zOpt = Array.from(zoneSel.options).find(o => o.value === z && !o.hidden);
+  if (zOpt) zoneSel.value = z;
+  applyFilter();
+  const savedZoom = parseFloat(pick('zoom'));
+  if (savedZoom && savedZoom !== 1) {
+    window.addEventListener('load', () => requestAnimationFrame(() => requestAnimationFrame(() => {
+      setZoom(savedZoom, false);
+      window.centerLatestTime && window.centerLatestTime();
+    })));
+  }
+  // Ctrl / ⌘ + wheel on the table zooms the table instead of the whole page.
+  const wrap = document.querySelector('.table-wrap');
+  if (wrap) wrap.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    zoomStep(e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
 })();
 </script>
 

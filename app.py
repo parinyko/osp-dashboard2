@@ -321,6 +321,20 @@ def load_resource_history():
     RESOURCE_HISTORY = load_history(RESOURCE_FILE)
     return RESOURCE_HISTORY
 
+# A team can hold several jobs at once. The one it is working on is the most advanced:
+# On-Site > Departed > Accepted > Assigned > Held.
+STATUS_RANK = (("on-site", 5), ("onsite", 5), ("departed", 4), ("accepted", 3), ("assigned", 2), ("held", 1))
+
+def status_rank(status):
+    low = clean_text(status).lower()
+    return max((r for k, r in STATUS_RANK if k in low), default=0)
+
+# Resource Monitor company filter: zone -> company.
+ZONE_COMPANY = {"DMP": "DMP", "Origin": "Origin"}
+
+def zone_company(zone):
+    return ZONE_COMPANY.get(zone, "Ex-Press")
+
 def save_resource_snapshot():
     global RESOURCE_HISTORY
     stamp = now_local()
@@ -329,11 +343,16 @@ def save_resource_snapshot():
     for t in dashboard_teams():
         user=t["user"]
         jobs = df[df["Assign to"].fillna("").astype(str).str.strip().str.casefold()==user.casefold()] if "Assign to" in df else df.iloc[0:0]
-        status = ", ".join(dict.fromkeys(clean_text(x) for x in jobs.get("Status",[]) if clean_text(x)))
-        first = jobs.iloc[0].to_dict() if not jobs.empty else {}
-        rows.append({"zone":t["zone"],"user":user,"status":status,"job_id":clean_text(first.get("Job ID",first.get("JobID",""))),
-                     "priority":clean_text(first.get("Priority","")),"create_time":clean_text(first.get("Create Time","")),
-                     "due_status":resource_due_status(first.get("Priority",""),first.get("Create Time",""),stamp)})
+        job_list = [{"job_id":clean_text(j.get("Job ID",j.get("JobID",""))),"status":clean_text(j.get("Status","")),
+                     "priority":clean_text(j.get("Priority","")),"create_time":clean_text(j.get("Create Time",""))}
+                    for j in jobs.to_dict("records")]
+        # Each cell used to show the first job with every job's status joined ("Accepted, On-Site"),
+        # so the status often belonged to another job. Show the team's current job with its own status.
+        main = max(job_list, key=lambda j: status_rank(j["status"])) if job_list else {}
+        rows.append({"zone":t["zone"],"user":user,"status":main.get("status",""),"job_id":main.get("job_id",""),
+                     "priority":main.get("priority",""),"create_time":main.get("create_time",""),
+                     "due_status":resource_due_status(main.get("priority",""),main.get("create_time",""),stamp),
+                     "job_count":len(job_list)})
     rec={"date":stamp.strftime("%Y-%m-%d"),"time":stamp.strftime("%H:%M"),"timestamp":stamp.isoformat(),"rows":rows}
     RESOURCE_HISTORY.append(rec)
     RESOURCE_HISTORY=RESOURCE_HISTORY[-RESOURCE_MONITOR_MAX_RECORDS:]
@@ -824,26 +843,35 @@ def resource_monitor():
     for rec in day_records:
         for row in rec.get("rows",[]):
             if row.get("user") in matrix:
-                matrix[row["user"]][rec.get("time","")]={k:clean_text(row.get(k,"")) for k in ("job_id","status","priority","create_time","due_status")}
+                cell={k:clean_text(row.get(k,"")) for k in ("job_id","status","priority","create_time","due_status")}
+                cell["others"]=max(int(row.get("job_count") or 0)-1,0)
+                matrix[row["user"]][rec.get("time","")]=cell
+    def cell_at(user, slot):
+        c=matrix[user].get(slot,{})
+        return {"job_id":"","status":c} if isinstance(c,str) else c
     display_rows=[]
     for u in users:
         cells=[]; pos=0
         while pos<len(slots):
-            cur=matrix[u["user"]].get(slots[pos],{})
-            if isinstance(cur,str): cur={"job_id":"","status":cur}
-            jid=clean_text(cur.get("job_id","")); span=1
+            cur=cell_at(u["user"],slots[pos])
+            jid=clean_text(cur.get("job_id","")); st=clean_text(cur.get("status","")); span=1
             if jid:
+                # Same job AND same status merge; a status change (Departed -> On-Site) starts a new cell.
                 while pos+span<len(slots):
-                    nxt=matrix[u["user"]].get(slots[pos+span],{})
-                    if isinstance(nxt,str): nxt={"job_id":"","status":nxt}
-                    if clean_text(nxt.get("job_id",""))!=jid: break
+                    nxt=cell_at(u["user"],slots[pos+span])
+                    if clean_text(nxt.get("job_id",""))!=jid or clean_text(nxt.get("status",""))!=st: break
                     span+=1
-            cells.append({"job_id":jid,"status":clean_text(cur.get("status","")),"priority":clean_text(cur.get("priority","")),
-                "create_time":clean_text(cur.get("create_time","")),"due_status":clean_text(cur.get("due_status","")),"span":span})
+            last=cell_at(u["user"],slots[pos+span-1])   # latest snapshot of the span: Indue may have become Outdue
+            cells.append({"job_id":jid,"status":st,"priority":clean_text(cur.get("priority","")),
+                "create_time":clean_text(cur.get("create_time","")),"due_status":clean_text(last.get("due_status","")),
+                "others":last.get("others",0) if jid else 0,"span":span,"time":slots[pos]})
             pos+=span
-        display_rows.append({"zone":u["zone"],"user":u["user"],"cells":cells})
+        display_rows.append({"zone":u["zone"],"user":u["user"],"company":zone_company(u["zone"]),"cells":cells})
+    companies=list(dict.fromkeys(r["company"] for r in display_rows))
+    zones=[{"zone":z,"company":zone_company(z)} for z in dict.fromkeys(r["zone"] for r in display_rows)]
     return render_template("resource_monitor.html",records=day_records,selected_date=selected,available_dates=dates,
-        last_update=LAST_UPDATE,slots=slots,users=users,matrix=matrix,display_rows=display_rows)
+        last_update=LAST_UPDATE,slots=slots,users=users,matrix=matrix,display_rows=display_rows,
+        companies=companies,zones=zones)
 
 @app.route("/daily_osp_remain")
 def daily_osp_remain():
