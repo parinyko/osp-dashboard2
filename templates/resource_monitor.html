@@ -564,9 +564,12 @@ tr.row-hidden {
 
       </div>
 
+      <div class="osp-hdr-right">
       <div class="update">
         Last Update:
         <b>{{ last_update or '-' }}</b>
+      </div>
+      {% include "_user_bar.html" %}
       </div>
 
     </div>
@@ -1164,6 +1167,5 @@ function goDate(d) {
 })();
 </script>
 
-{% include "_user_bar.html" %}
 </body>
 </html>

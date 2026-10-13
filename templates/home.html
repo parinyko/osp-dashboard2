@@ -216,7 +216,7 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 </head>
 <body>
 <div class="shell">
-<header class="header"><div class="header-row"><div><h1>Dashboard OSP BKK</h1><div class="subtitle">หน้าสรุปภาพรวมการปฏิบัติงาน OSP กรุงเทพมหานคร</div></div><div class="update">Last Update: <b>{{ last_update or '-' }}</b></div></div></header>
+<header class="header"><div class="header-row"><div><h1>Dashboard OSP BKK</h1><div class="subtitle">หน้าสรุปภาพรวมการปฏิบัติงาน OSP กรุงเทพมหานคร</div></div><div class="osp-hdr-right"><div class="update">Last Update: <b>{{ last_update or '-' }}</b></div>{% include "_user_bar.html" %}</div></div></header>
 
 <section class="cards">
 <div class="card total"><div class="label">Total Jobs</div><div class="value">{{ total_jobs }}</div></div>
@@ -486,7 +486,6 @@ document.addEventListener('DOMContentLoaded', function(){
   render('all');
 });
 </script>
-{% include "_user_bar.html" %}
 </body>
 </html>
 

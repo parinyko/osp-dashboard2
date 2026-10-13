@@ -51,6 +51,7 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
       <button type="button" class="btn btn-green" onclick="openSchedule()">⏰ ตั้งรอบสรุป</button>
       <a class="btn btn-light" href="/">🏠 Dashboard</a>
       <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
+      {% include "_user_bar.html" %}
     </div>
   </div>
 </div>
@@ -376,6 +377,5 @@ async function saveSchedule(){
   }
 }
 </script>
-{% include "_user_bar.html" %}
 </body>
 </html>
