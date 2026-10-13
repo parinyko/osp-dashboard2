@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
 <style>
 *{
@@ -26,138 +28,68 @@ body{
   overflow:hidden
 }
 
-.header{
-  padding:10px 14px;
-  background:linear-gradient(180deg,#ffffff 0%,#f5faf3 100%);
-  border-bottom:1px solid #cfe3bf;
-  box-shadow:0 3px 14px rgba(73,128,37,.10)
-}
+/* =========================
+   HEADER (same look as Job Map: green app bar + page menu, KPI tiles, tool row)
+========================= */
+.jh{font-family:"IBM Plex Sans Thai",Tahoma,sans-serif;color:#1F3322;box-shadow:0 3px 14px rgba(73,128,37,.10);position:relative;z-index:30}
+.jh .i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.jh-top{display:flex;align-items:center;gap:12px 14px;padding:9px 18px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#FFFFFF 0%,#F4FAEF 55%,#DFF1C9 100%);border-bottom:1px solid #D6E6CE}
+.jh-brand{display:flex;align-items:center;gap:10px;text-decoration:none;min-width:0}
+.jh-brand .i{width:28px;height:28px;color:#4F8F18;stroke-width:1.6}
+.jh-brand b{display:block;font-size:20px;font-weight:700;color:#4F8F18;line-height:1.15}
+.jh-brand small{display:block;font-size:12px;color:#637361;white-space:nowrap}
+.jh-brand small em{font-style:normal;font-family:"IBM Plex Mono",ui-monospace,monospace;color:#315A28}
+.jh-nav{display:flex;gap:6px;flex-wrap:wrap}
+.jh-nav a{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid #CFE0C5;border-radius:9px;
+  background:#F7FBF5;color:#315A28;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+.jh-nav a:hover{background:#EDF7E8}
+.jh-nav a.on{background:#E3F1D6;border-color:#A9CF8A;color:#264D1E}
+.jh-grow{flex:1}
 
-.header-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  flex-wrap:wrap
-}
+.jh-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.6fr);gap:1px;background:#D6E6CE;border-bottom:1px solid #D6E6CE}
+.jh-kpi{all:unset;box-sizing:border-box;background:#fff;padding:9px 16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0}
+.jh-kpi:hover{background:#FAFDF8}
+.jh-kpi.active{box-shadow:inset 0 -3px 0 var(--c);background:#FAFDF8}
+.jh-kpi:focus-visible{outline:2px solid #4F8F18;outline-offset:-2px}
+.jh-kpi .t{font-size:12px;color:#637361;display:flex;align-items:center;gap:6px}
+.jh-kpi .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:26px;font-weight:600;color:var(--c);line-height:1}
+.jh-kpi .v small{font-family:"IBM Plex Sans Thai",sans-serif;font-size:12px;color:#637361;font-weight:500;margin-left:6px}
+.jh-meter{height:4px;border-radius:2px;background:#EEF2EC;overflow:hidden}
+.jh-meter i{display:block;height:100%;width:0;background:var(--c);transition:width .25s}
+.jh-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #DC2626}
+.jh-dia{width:8px;height:8px;background:#EA580C;transform:rotate(45deg)}
+.jh-cir{width:9px;height:9px;border-radius:50%;background:#CA8A04}
+.jh-zones{background:#fff;padding:9px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-content:center}
+.jh-zone{all:unset;box-sizing:border-box;border:1px solid #D6E6CE;border-radius:9px;padding:5px 10px;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.jh-zone:hover{background:#FAFDF8}
+.jh-zone.active{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);background:#FAFDF8}
+.jh-zone:focus-visible{outline:2px solid #4F8F18;outline-offset:1px}
+.jh-zone .t{font-size:11.5px;color:#637361;display:flex;align-items:center;gap:5px}
+.jh-zone .t i{width:8px;height:8px;border-radius:2px;background:var(--c)}
+.jh-zone .v{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:17px;font-weight:600;color:#1F3322}
 
-.left{
-  display:flex;
-  align-items:center;
-  gap:12px
-}
-
-.title{
-  margin:0;
-  color:#4f8f18;
-  font-size:22px;
-  font-weight:800;
-  letter-spacing:.2px
-}
-
-.actions{
-  display:flex;
-  gap:7px;
-  align-items:center;
-  flex-wrap:wrap
-}
-
-.btn{
-  border:0;
-  border-radius:9px;
-  padding:8px 13px;
-  font-weight:700;
-  cursor:pointer;
-  text-decoration:none
-}
-
-.blue{
-  background:linear-gradient(135deg,#6fae24,#5b9819);
-  color:#fff
-}
-
-.green{
-  background:linear-gradient(135deg,#8fca32,#6aa91f);
-  color:#fff
-}
-
-.dark{
-  background:#343a40;
-  color:#fff
-}
-
-.paused{
-  background:#6c757d!important
-}
-
-.box{
-  padding:7px 11px;
-  border-radius:6px;
-  color:#fff;
-  font-weight:700;
-  font-size:12px
-}
-
-.refresh{
-  background:#fff;
-  border:1px solid #ddd;
-  color:#222
-}
-
-.search{
-  margin-top:7px;
-  width:340px;
-  padding:9px 12px;
-  border:2px solid #9dca61;
-  border-radius:10px;
-  outline:none;
-  background:#fff;
-  box-shadow:0 2px 8px rgba(73,128,37,.08)
-}
-
-.summary{
-  display:flex;
-  gap:7px;
-  flex-wrap:wrap;
-  margin-top:7px
-}
-
-.zone-filter,
-.priority-filter,
-.subsystem-filter{
-  cursor:pointer;
-  transition:.15s;
-  user-select:none
-}
-
-.zone-filter:hover,
-.priority-filter:hover,
-.subsystem-filter:hover{
-  transform:translateY(-1px);
-  filter:brightness(1.04);
-  box-shadow:0 4px 10px rgba(73,128,37,.16)
-}
-
-.priority-filter.active,
-.subsystem-filter.active,
-.zone-filter.active{
-  outline:3px solid #4d8f18;
-  outline-offset:2px;
-  box-shadow:0 0 0 2px #fff inset,0 4px 10px rgba(73,128,37,.18)
-}
-
-.subsystem-filter{
-  min-width:112px;
-  text-align:center;
-  border:1px solid rgba(77,143,24,.18);
-  color:#24451f!important
-}
-
-.subsystem-filter .filter-count{
-  opacity:.72;
-  font-size:11px;
-  margin-left:4px
-}
+.jh-tools{display:flex;align-items:center;gap:10px;padding:8px 18px;background:#fff;border-bottom:1px solid #D6E6CE;flex-wrap:wrap}
+.jh-search{display:flex;align-items:center;gap:8px;height:36px;padding:0 11px;border:1px solid #CFE0C5;border-radius:9px;background:#fff;color:#637361;flex:0 1 320px;min-width:220px}
+.jh-search:focus-within{border-color:#79BD2D;box-shadow:0 0 0 3px rgba(121,189,45,.18)}
+.jh-search input{flex:1;border:0;outline:none;background:transparent;font:inherit;font-size:13px;color:#1F3322;min-width:0}
+.jh-seg{display:flex;gap:2px;padding:3px;background:#F7FBF5;border:1px solid #CFE0C5;border-radius:10px;align-items:center}
+.jh-seg .lbl{font-size:11px;letter-spacing:.06em;color:#637361;padding:0 6px 0 5px}
+.jh-seg button{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border:0;border-radius:7px;background:transparent;
+  color:#315A28;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.jh-seg button:hover{background:#EDF7E8}
+.jh-seg button.active{background:#fff;color:#1F3322;box-shadow:0 1px 2px rgba(30,60,20,.18),inset 0 0 0 1px #A9CF8A}
+.jh-seg .n{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;color:#637361}
+.jh-active{font-size:12px;color:#637361;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
+.jh-tool{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border:1px solid #CFE0C5;border-radius:9px;background:#fff;
+  color:#315A28;font:inherit;font-size:12.5px;font-weight:600;white-space:nowrap;text-decoration:none;cursor:pointer}
+.jh-tool:hover{background:#F7FBF5}
+.jh-tool.primary{background:#4F8F18;border-color:#4F8F18;color:#fff}
+.jh-tool.primary:hover{background:#467F15}
+.jh-refresh{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 4px 0 10px;border:1px solid #CFE0C5;border-radius:9px;background:#fff;font-size:12px;color:#637361;white-space:nowrap}
+.jh-refresh b{font-family:"IBM Plex Mono",ui-monospace,monospace;color:#1F3322;font-size:12.5px;min-width:38px}
+.jh-refresh button{width:26px;height:26px;border:0;border-radius:6px;background:#F7FBF5;color:#315A28;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.jh-refresh button.paused{background:#4F8F18;color:#fff}
 
 .table-container{
   flex:1;
@@ -466,160 +398,17 @@ tbody tr:hover{
   display:block
 }
 
-.muted{
-  font-size:11px;
-  color:#666
-}
-
-
-/* =========================
-   BRAND / FILTER UX
-========================= */
-.brand-logo{
-  width:78px;
-  height:40px;
-  object-fit:contain;
-  object-position:left center;
-  border-radius:8px;
-  background:#fff;
-  padding:2px 4px;
-  border:1px solid #dcebd4;
-}
-.filter-help{
-  font-size:11px;
-  color:#6a8064;
-  margin-left:2px;
-}
-.subsystem-filter{
-  position:relative;
-  min-height:38px;
-  padding:6px 13px;
-  border-radius:10px;
-  border:1px solid #cfe4bd;
-  box-shadow:0 1px 4px rgba(73,128,37,.08);
-}
-.subsystem-filter .filter-name{
-  font-size:13px;
-  font-weight:900;
-}
-.subsystem-filter .filter-desc{
-  display:block;
-  font-size:10px;
-  font-weight:600;
-  opacity:.72;
-  margin-top:1px;
-}
-.subsystem-filter.active{
-  background:#5f9f20!important;
-  color:#fff!important;
-  border-color:#4d8f18;
-}
-.active-filter{
-  display:inline-flex;
-  align-items:center;
-  min-height:28px;
-  padding:5px 9px;
-  border-radius:8px;
-  background:#eef8e7;
-  color:#4d7d31;
-  font-size:11px;
-  font-weight:800;
-  border:1px solid #d7e8ca;
-}
-
-/* =========================
-   HEADER CONTROLS
-========================= */
-
-.header-controls{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  flex-wrap:wrap;
-  margin-top:7px
-}
-
-.header-controls .search{
-  margin-top:0;
-  flex:0 1 340px
-}
-
-.header-controls .summary{
-  margin-top:0;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  flex-wrap:wrap
-}
-
-.header-controls .summary .muted{
-  display:none
-}
-
-.filter-label{
-  display:inline-flex!important;
-  align-items:center;
-  font-weight:700;
-  color:#55724d
-}
-
-.filter-divider{
-  width:1px;
-  height:28px;
-  background:#d5e4cf;
-  margin:0 2px
-}
-
-.subsystem-summary{
-  padding:4px 6px;
-  border:1px solid #d7e8ca;
-  border-radius:11px;
-  background:#f8fcf5
-}
-
-.priority-filter{
-  min-width:82px;
-  text-align:center
-}
-
-.export-btn{
-  min-width:82px;
-  text-align:center
-}
-
-
-/* =========================
-   FLOOD CHECK BUTTON
-========================= */
-
-.flood-btn{
-  background:#0dcaf0;
-  color:#000;
-  min-width:95px;
-  text-align:center
-}
-
-.flood-btn:hover{
-  filter:brightness(1.05)
-}
 /* =========================
    SMARTPHONE VIEW
    Keep the original job table; keep header/menu controls out of the way.
 ========================= */
 @media(max-width:700px){
   body{overflow:hidden;}
-  .header{padding:5px 7px!important;}
-  .header-row{min-height:34px!important;gap:0!important;flex-wrap:nowrap!important;}
-  .left{min-width:0!important;gap:6px!important;}
-  .left > .btn{display:none!important;}
-  .title{font-size:18px!important;line-height:22px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .filter-help{display:none!important;}
-
-  /* Hide counters/export/refresh menus on phones so the table gets the space. */
-  .actions{display:none!important;}
-  .header-controls{display:none!important;}
-
-  /* Original table layout is preserved; only the viewport becomes the mobile workspace. */
+  /* phones: keep the brand + page menu, hide counters and tools so the table gets the space */
+  .jh-top{padding:6px 10px;gap:8px}
+  .jh-brand small,.jh-kpis,.jh-tools{display:none}
+  .jh-brand b{font-size:17px}
+  .jh-nav{flex-wrap:nowrap;overflow-x:auto;max-width:calc(100vw - 150px)}
   .table-container{
     display:block!important;
     flex:1 1 auto!important;
@@ -645,203 +434,86 @@ tbody tr:hover{
 
 <body>
 
-<div class="header">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="m4 16 5-5 4 3 7-7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7Z"/><path d="M9 4v13M15 7v13"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M12 3s-4 4.5-4 7a4 4 0 0 0 8 0c0-2.5-4-7-4-7Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/></symbol>
+</svg>
 
-  <div class="header-row">
+<div class="jh">
+  <header class="jh-top">
+    <a class="jh-brand" href="/">
+      <svg class="i" aria-hidden="true"><use href="#i-list"/></svg>
+      <span><b>Job Monitor</b><small>Dashboard OSP BKK · ข้อมูล <em>{{ last_update or '-' }}</em></small></span>
+    </a>
+    <nav class="jh-nav" aria-label="หน้าอื่น">
+      <a href="/"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>หน้าแรก</a>
+      <a href="/dashboard"><svg class="i" aria-hidden="true"><use href="#i-team"/></svg>Status Team</a>
+      <a href="/job_monitor" class="on" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg>Job Monitor</a>
+      <a href="/daily_osp_remain"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Daily OSP</a>
+      <a href="/resource_monitor"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Resource Monitor</a>
+      <a href="/map"><svg class="i" aria-hidden="true"><use href="#i-map"/></svg>Job Map</a>
+      {% if monthly_report_url %}<a href="{{ monthly_report_url }}"><svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>Monthly Report</a>{% endif %}
+    </nav>
+    <span class="jh-grow"></span>
+    {% include "_user_bar.html" %}
+  </header>
 
-    <div class="left">
-
-      <a
-        class="btn green"
-        href="/"
-      >⌂ Dashboard OSP BKK</a>
-
-      <a
-        class="btn blue"
-        href="/dashboard"
-      >
-        🏠 Dashboard
-      </a>
-
-      <div>
-        <h2 class="title">📋 Job Monitor</h2>
-        <div class="filter-help">ติดตามงานและกรอง Sub System ได้จากปุ่มด้านล่าง</div>
-      </div>
-
+  <section class="jh-kpis" aria-label="สรุปงาน กดเพื่อกรอง">
+    <button type="button" class="jh-kpi priority-filter" data-priority="" style="--c:#334155">
+      <span class="t">งานทั้งหมด</span><span class="v"><span id="totalJobsCount">{{ total_jobs }}</span><small>งาน</small></span>
+      <span class="jh-meter"><i style="width:100%"></i></span>
+    </button>
+    <button type="button" class="jh-kpi priority-filter" data-priority="critical" style="--c:#DC2626">
+      <span class="t"><i class="jh-tri"></i>Critical</span><span class="v"><span id="criticalCount">{{ total_critical }}</span><small id="criticalPct"></small></span>
+      <span class="jh-meter"><i id="criticalBar"></i></span>
+    </button>
+    <button type="button" class="jh-kpi priority-filter" data-priority="major" style="--c:#EA580C">
+      <span class="t"><i class="jh-dia"></i>Major</span><span class="v"><span id="majorCount">{{ total_major }}</span><small id="majorPct"></small></span>
+      <span class="jh-meter"><i id="majorBar"></i></span>
+    </button>
+    <button type="button" class="jh-kpi priority-filter" data-priority="minor" style="--c:#CA8A04">
+      <span class="t"><i class="jh-cir"></i>Minor</span><span class="v"><span id="minorCount">{{ total_minor }}</span><small id="minorPct"></small></span>
+      <span class="jh-meter"><i id="minorBar"></i></span>
+    </button>
+    <div class="jh-zones" role="group" aria-label="โซน">
+      <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ST2" style="--c:#2563EB"><span class="t"><i></i>SCT</span><span class="v">{{ total_sct }}</span></button>
+      <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ONT" style="--c:#DB2777"><span class="t"><i></i>ONT</span><span class="v">{{ total_ont }}</span></button>
+      <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-TLC" style="--c:#7C3AED"><span class="t"><i></i>TLC</span><span class="v">{{ total_tlc }}</span></button>
+      <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-CWT" style="--c:#EA580C"><span class="t"><i></i>CWT</span><span class="v">{{ total_cwt }}</span></button>
     </div>
+  </section>
 
-
-    <div class="actions">
-
-      <span class="box green">
-        Last Update: {{ last_update }}
-      </span>
-      {% include "_user_bar.html" %}
-
-
-      <span
-        class="box priority-filter"
-        style="background:#dc3545"
-        id="criticalCount"
-        data-priority="critical"
-      >
-        Critical: {{ total_critical }}
-      </span>
-
-
-      <span
-        class="box priority-filter"
-        style="background:#fd7e14"
-        id="majorCount"
-        data-priority="major"
-      >
-        Major: {{ total_major }}
-      </span>
-
-
-      <span
-        class="box priority-filter"
-        style="background:#ffff00;color:#000"
-        id="minorCount"
-        data-priority="minor"
-      >
-        Minor: {{ total_minor }}
-      </span>
-
-
-      <span
-        class="box blue"
-        id="totalJobsCount"
-      >
-        Total Jobs: {{ total_jobs }}
-      </span>
-
-
-      <!-- =========================
-           FLOOD CHECK
-      ========================= -->
-
-      <a
-        class="btn flood-btn"
-        href="https://script.google.com/macros/s/AKfycbxrLAv4qHBnri9y48ClB08sXiYdQ81-zF63TMkozR2norOQcxR3xHpB0YgRfrlBJAym/exec"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        🌊 เช็กน้ำท่วม
-      </a>
-
-
-      <a
-        class="btn green export-btn"
-        href="/export_excel"
-      >
-        ⬇ Export Excel
-      </a>
-
-
-      <span class="box refresh">
-
-        Refresh:
-        <b id="refreshCountdown">
-          05:00
-        </b>
-
-        <button
-          id="refreshToggle"
-          class="btn dark"
-          type="button"
-        >
-          ⏸ หยุด
-        </button>
-
-      </span>
-
+  <div class="jh-tools">
+    <label class="jh-search">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="searchInput" type="search" name="job-monitor-search" autocomplete="off" placeholder="ค้นหา Job ID, ทีม, สถานะ, เขต, โซน" aria-label="ค้นหางาน">
+    </label>
+    <div class="jh-seg" role="group" aria-label="Sub System">
+      <span class="lbl">SUB SYSTEM</span>
+      <button type="button" class="subsystem-filter" data-subsystem-group="mbb" title="Transmission-OSP">MBB <span class="n" id="mbbCount">0</span></button>
+      <button type="button" class="subsystem-filter" data-subsystem-group="eds" title="EDS 4 Sub Systems">EDS <span class="n" id="edsCount">0</span></button>
+      <button type="button" class="subsystem-filter" data-subsystem-group="fbb" title="FBB 4 Sub Systems">FBB <span class="n" id="fbbCount">0</span></button>
     </div>
-
+    <span id="activeFilterText" class="jh-active">แสดงทั้งหมด</span>
+    <button type="button" class="jh-tool" id="showAllBtn"><svg class="i" aria-hidden="true"><use href="#i-reset"/></svg>ล้างตัวกรอง</button>
+    <span class="jh-grow"></span>
+    <span class="jh-refresh">รีเฟรชใน <b id="refreshCountdown">05:00</b>
+      <button id="refreshToggle" type="button" aria-label="หยุดรีเฟรชอัตโนมัติ"><svg class="i" aria-hidden="true"><use href="#i-pause"/></svg></button>
+    </span>
+    <a class="jh-tool" href="https://script.google.com/macros/s/AKfycbxrLAv4qHBnri9y48ClB08sXiYdQ81-zF63TMkozR2norOQcxR3xHpB0YgRfrlBJAym/exec" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true"><use href="#i-wave"/></svg>เช็กน้ำท่วม</a>
+    <a class="jh-tool primary" href="/export_excel"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Export Excel</a>
   </div>
-
-
-  <div class="header-controls">
-
-    <input
-      id="searchInput"
-      class="search"
-      type="text"
-      placeholder="🔍 ค้นหา Job ID, User, Status, District, Zone..."
-    >
-
-
-    <div class="summary subsystem-summary">
-
-      <span class="muted filter-label">Sub System:</span>
-
-      <button type="button" class="box subsystem-filter" data-subsystem-group="mbb">
-        <span class="filter-name">MBB <span class="filter-count" id="mbbCount">0</span></span>
-        <span class="filter-desc">Transmission-OSP</span>
-      </button>
-
-      <button type="button" class="box subsystem-filter" data-subsystem-group="eds">
-        <span class="filter-name">EDS <span class="filter-count" id="edsCount">0</span></span>
-        <span class="filter-desc">4 Sub Systems</span>
-      </button>
-
-      <button type="button" class="box subsystem-filter" data-subsystem-group="fbb">
-        <span class="filter-name">FBB <span class="filter-count" id="fbbCount">0</span></span>
-        <span class="filter-desc">4 Sub Systems</span>
-      </button>
-
-      <span class="filter-divider"></span>
-
-      <span
-        class="box zone-filter"
-        data-zone="Bangkok-ST2"
-        style="background:#ffc7ce;color:#000"
-      >
-        SCT: {{ total_sct }}
-      </span>
-
-
-      <span
-        class="box zone-filter"
-        data-zone="Bangkok-CWT"
-        style="background:#9fd5ff;color:#000"
-      >
-        CWT: {{ total_cwt }}
-      </span>
-
-
-      <span
-        class="box zone-filter"
-        data-zone="Bangkok-ONT"
-        style="background:#fff2cc;color:#000"
-      >
-        ONT: {{ total_ont }}
-      </span>
-
-
-      <span
-        class="box zone-filter"
-        data-zone="Bangkok-TLC"
-        style="background:#d9ead3;color:#000"
-      >
-        TLC: {{ total_tlc }}
-      </span>
-
-
-      <span id="activeFilterText" class="active-filter">แสดงทั้งหมด</span>
-
-      <button
-        class="box blue"
-        id="showAllBtn"
-        type="button"
-      >
-        ↺ ล้างตัวกรอง
-      </button>
-
-    </div>
-
-  </div>
-
 </div>
 
 
@@ -1278,10 +950,9 @@ function renderRefresh(){
       : `${m}:${s}`;
 
 
-  toggle.textContent =
-    refreshPaused
-      ? '▶ เริ่ม'
-      : '⏸ หยุด';
+  toggle.innerHTML =
+    `<svg class="i" aria-hidden="true"><use href="#i-${refreshPaused ? 'play' : 'pause'}"/></svg>`;
+  toggle.setAttribute('aria-label', refreshPaused ? 'เริ่มรีเฟรชอัตโนมัติ' : 'หยุดรีเฟรชอัตโนมัติ');
 
 
   toggle.classList.toggle(
@@ -1794,28 +1465,16 @@ function updateSummary(){
     );
 
 
-  document.getElementById(
-    'criticalCount'
-  ).textContent =
-    `Critical: ${c}`;
-
-
-  document.getElementById(
-    'majorCount'
-  ).textContent =
-    `Major: ${m}`;
-
-
-  document.getElementById(
-    'minorCount'
-  ).textContent =
-    `Minor: ${n}`;
-
-
-  document.getElementById(
-    'totalJobsCount'
-  ).textContent =
-    `Total Jobs: ${t}`;
+  const set = (key, n) => {
+    document.getElementById(key + 'Count').textContent = n;
+    const pct = t ? Math.round(n / t * 100) : 0;
+    document.getElementById(key + 'Pct').textContent = pct + '%';
+    document.getElementById(key + 'Bar').style.width = pct + '%';
+  };
+  set('critical', c);
+  set('major', m);
+  set('minor', n);
+  document.getElementById('totalJobsCount').textContent = t;
 
 }
 

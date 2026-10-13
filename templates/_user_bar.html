@@ -1,19 +1,51 @@
 {% if current_user %}
-<span class="osp-userbar" role="navigation" aria-label="บัญชีผู้ใช้">
-  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></g></svg>
-  <span class="osp-ub-name" title="{{ current_user.name }}{% if current_user.company %} · {{ current_user.company }}{% endif %}">{{ current_user.name }}{% if current_user.company %} · {{ current_user.company }}{% endif %}</span>
-  {% if current_user.role == 'admin' %}<a href="/admin/users">จัดการผู้ใช้</a>{% endif %}
-  <a href="/logout">ออกจากระบบ</a>
-</span>
+<div class="osp-acct">
+  <button type="button" class="osp-acct-btn" id="ospAcctBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="ospAcctMenu"
+          aria-label="บัญชีผู้ใช้ {{ current_user.name }}" title="{{ current_user.name }}">
+    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></g></svg>
+  </button>
+  <div class="osp-acct-menu" id="ospAcctMenu" role="menu" hidden>
+    <div class="osp-acct-who">
+      <span class="osp-acct-av"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></g></svg></span>
+      <span><b>{{ current_user.name }}</b><small>{{ 'ผู้ดูแลระบบ' if current_user.role == 'admin' else 'ผู้ใช้' }}{% if current_user.company %} · {{ current_user.company }}{% endif %}</small></span>
+    </div>
+    {% if current_user.role == 'admin' %}
+    <a role="menuitem" href="/admin/users">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></g></svg>จัดการผู้ใช้</a>
+    {% endif %}
+    <a role="menuitem" href="/logout" class="osp-acct-out">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/></g></svg>ออกจากระบบ</a>
+  </div>
+</div>
 <style>
 .osp-hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.osp-userbar{display:inline-flex;align-items:center;gap:6px;padding:4px 5px 4px 10px;white-space:nowrap;
-  background:#fff;border:1px solid #D6E6CE;border-radius:999px;box-shadow:0 2px 8px rgba(30,60,20,.08);
-  font:600 12px "IBM Plex Sans Thai",Tahoma,sans-serif;color:#315A28;vertical-align:middle}
-.osp-userbar svg{flex:none}
-.osp-userbar a{color:#315A28;text-decoration:none;border:1px solid #CFE0C5;border-radius:999px;padding:3px 10px;background:#F7FBF5;font-weight:600}
-.osp-userbar a:hover{background:#EDF7E8}
-.osp-ub-name{max-width:200px;overflow:hidden;text-overflow:ellipsis}
-@media print{.osp-userbar{display:none}}
+.osp-acct{position:relative;display:inline-flex;vertical-align:middle;font-family:"IBM Plex Sans Thai",Tahoma,sans-serif}
+.osp-acct-btn{width:38px;height:38px;border-radius:50%;border:1px solid #CFE0C5;background:#fff;color:#315A28;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 8px rgba(30,60,20,.08);padding:0}
+.osp-acct-btn:hover,.osp-acct-btn[aria-expanded="true"]{background:#E3F1D6;border-color:#A9CF8A;color:#264D1E}
+.osp-acct-btn:focus-visible{outline:2px solid #4F8F18;outline-offset:2px}
+.osp-acct-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:1000;width:240px;background:#fff;border:1px solid #D6E6CE;border-radius:12px;
+  box-shadow:0 14px 36px rgba(30,60,20,.16);padding:6px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.osp-acct-menu[hidden]{display:none}
+.osp-acct-who{display:flex;align-items:center;gap:10px;padding:8px 8px 10px;border-bottom:1px solid #D6E6CE;margin-bottom:4px;min-width:0}
+.osp-acct-who > span:last-child{min-width:0}
+.osp-acct-av{width:34px;height:34px;border-radius:50%;background:#E3F1D6;color:#264D1E;display:flex;align-items:center;justify-content:center;flex:none}
+.osp-acct-who b{display:block;font-size:13.5px;color:#1F3322;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.osp-acct-who small{display:block;font-size:11.5px;color:#637361;font-weight:500}
+.osp-acct-menu a{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;color:#315A28;font-size:13px;font-weight:600;text-decoration:none}
+.osp-acct-menu a:hover,.osp-acct-menu a:focus-visible{background:#F7FBF5;outline:none}
+.osp-acct-menu a.osp-acct-out{color:#B42318}
+@media print{.osp-acct{display:none}}
 </style>
+<script>
+(function(){
+  var btn = document.getElementById('ospAcctBtn'), menu = document.getElementById('ospAcctMenu');
+  if (!btn || !menu) return;
+  function show(open){ menu.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); show(menu.hidden); if (!menu.hidden) { var f = menu.querySelector('a'); if (f && e.detail === 0) f.focus(); } });
+  menu.addEventListener('click', function(e){ e.stopPropagation(); });
+  document.addEventListener('click', function(){ show(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !menu.hidden) { show(false); btn.focus(); } });
+})();
+</script>
 {% endif %}
