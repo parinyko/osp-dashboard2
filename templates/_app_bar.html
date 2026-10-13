@@ -1,8 +1,8 @@
 {#- Shared page header: green app bar with the page menu and the account button.
     Set before including:
-      ab_page    menu key of this page: home / team / jobs / daily / resource / map
+      ab_page    menu key of this page: home / team / done / jobs / daily / resource / map
       ab_title   page name
-      ab_icon    icon id below (list / chart / clock / team / home / map)
+      ab_icon    icon id below (list / chart / clock / team / check / home / map)
       ab_sub     line under the title (optional; default "Dashboard OSP BKK")
       ab_updated data time shown after the sub line (optional)
       ab_actions extra buttons placed before the account button (optional, {% set ab_actions %}...{% endset %})
@@ -16,6 +16,7 @@
   <symbol id="ab-chart" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="m4 16 5-5 4 3 7-7"/></symbol>
   <symbol id="ab-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="ab-map" viewBox="0 0 24 24"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7Z"/><path d="M9 4v13M15 7v13"/></symbol>
+  <symbol id="ab-check" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
   <symbol id="ab-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
 </svg>
 <header class="ab">
@@ -27,6 +28,7 @@
     {%- for key, href, icon, label in [
       ('home', '/', 'home', 'หน้าแรก'),
       ('team', '/dashboard', 'team', 'Status Team'),
+      ('done', '/team_done', 'check', 'Team Done'),
       ('jobs', '/job_monitor', 'list', 'Job Monitor'),
       ('daily', '/daily_osp_remain', 'chart', 'Daily OSP'),
       ('resource', '/resource_monitor', 'clock', 'Resource Monitor'),

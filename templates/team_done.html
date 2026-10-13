@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Done</title>
+<style>
+:root{color-scheme:light;--page:#F4F7F1;--surface:#fff;--soft:#F7FBF5;--line:#D6E6CE;--line2:#CFE0C5;--ink:#1F3322;--ink2:#315A28;--muted:#637361;
+  --brand:#4F8F18;--crit:#D64545;--major:#E07A2E;--minor:#C99A1E;--done:#3B7A57;--doneSoft:#E6F0E2;--remain:#B8483E;--remainSoft:#F8E9E6;
+  --zebra:#F6F9F4;--band:#FBFCFA;--sep:#D9E4D3;
+  --mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:#F2F4F0;color:var(--ink);font-family:"IBM Plex Sans Thai",Tahoma,sans-serif;font-size:14px}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* filters */
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:10px 18px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.fgroup{display:flex;align-items:center;gap:6px}
+.flabel{font-size:11.5px;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.seg{display:flex;gap:2px;padding:3px;background:var(--soft);border:1px solid var(--line2);border-radius:10px}
+.seg button{height:28px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.seg button:hover{background:#EDF7E8}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(30,60,20,.18),inset 0 0 0 1px #A9CF8A}
+.seg .n{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.dates{display:flex;align-items:center;gap:6px;height:36px;padding:0 8px;border:1px solid var(--line2);border-radius:9px;background:#fff}
+.dates input{border:0;font:inherit;font-size:13px;color:var(--ink);background:transparent;font-family:var(--mono)}
+.dates span{color:var(--muted)}
+select,.search{height:36px;border:1px solid var(--line2);border-radius:9px;background:#fff;font:inherit;font-size:13px;color:var(--ink);padding:0 10px}
+.search{display:flex;align-items:center;gap:7px;color:var(--muted);min-width:200px}
+.search input{border:0;outline:none;font:inherit;font-size:13px;flex:1;min-width:0;background:transparent;color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1px solid var(--line2);border-radius:9px;background:#fff;color:var(--ink2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* body */
+main{padding:14px 18px 40px;display:flex;flex-direction:column;gap:14px;max-width:960px;margin:0 auto}
+.fresh{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.fresh b{color:var(--ink2);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kpi .v{font-size:24px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;display:flex;flex-direction:column;gap:5px}
+.kpi .t{font-size:12px;color:var(--muted)}
+.kpi .v{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1.05}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi .s b{font-family:var(--mono);color:var(--ink)}
+.meter{height:6px;border-radius:3px;background:var(--remainSoft);overflow:hidden}.meter i{display:block;height:100%;background:var(--done)}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.panel.tablep{overflow:visible}
+.panel.tablep .foot{border-radius:0 0 12px 12px}
+.panel.tablep .panel-h{border-radius:12px 12px 0 0}
+.panel-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--soft)}
+.panel-h b{font-size:15px;color:var(--ink2)}
+.panel-h span{font-size:12px;color:var(--muted)}
+.chart{padding:10px 14px 6px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:0 14px 10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tw{overflow:visible}
+@media (max-width:1000px){.tw{overflow-x:auto}}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:820px;font-size:13.5px;color:#2A3B2C;table-layout:fixed}
+col.c-team{width:230px}col.c-n{width:62px}col.c-pct{width:140px}
+th{font-weight:600;color:#4A5F46;background:#EEF3EA;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--sep);text-align:center;white-space:nowrap;position:sticky;top:var(--fh,0px);z-index:3}
+thead tr:nth-child(2) th{top:calc(var(--fh,0px) + var(--h1,33px))}
+thead tr:nth-child(2) th{box-shadow:0 2px 4px -2px rgba(40,70,30,.18)}
+thead tr:first-child th{font-size:13px;color:#2F4A29}
+thead tr:nth-child(2) th{font-size:11.5px;font-weight:600;letter-spacing:.03em;color:#6B7D67;background:#F3F7F0}
+th.sort{cursor:pointer;user-select:none}th.sort:hover{color:var(--ink)}
+th.sort[aria-sort]::after{content:"";display:inline-block;margin-left:5px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;vertical-align:2px}
+th.sort[aria-sort="ascending"]::after{border-top:0;border-bottom:5px solid currentColor}
+th.l,td.l{text-align:left}
+td{height:34px;padding:0 8px;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid #EDF1EA;text-align:center;white-space:nowrap}
+/* alternating rows; the team column stays put when scrolling sideways */
+tbody tr.team td{background:#fff}
+tbody tr.team.alt td{background:var(--zebra)}
+tbody tr.team:hover td{background:#EAF3E3}
+td:first-child{position:sticky;left:0;z-index:2}
+th:first-child{left:0;z-index:4}
+tr.co td{background:#E9F1E3;font-weight:700;color:#2F4A29;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);height:38px}
+tr.co td:first-child{box-shadow:inset 4px 0 0 #8DBF5F}
+tr.tot td{background:#E2ECDA;font-weight:700;color:var(--ink);border-top:2px solid #C6D7BC;height:40px}
+td.d{color:#2A3B2C;font-weight:500}
+td.r{color:var(--remain);font-weight:600}
+td.z{color:#C3CCBF}
+tr.co td.d,tr.tot td.d{font-weight:700}
+th.grp,td.grp{border-left:1px solid var(--sep)}
+.ratio{display:inline-block;width:64px;height:6px;border-radius:3px;background:#EFE3E0;overflow:hidden;vertical-align:middle;margin-right:8px}
+.ratio i{display:block;height:100%;background:#7FAF8E}
+.chip{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 6px;white-space:nowrap;margin-left:6px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.foot{font-size:12px;color:var(--muted);padding:8px 14px;border-top:1px solid var(--line);background:var(--soft)}
+.tri{display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid var(--crit)}
+.dia{display:inline-block;width:8px;height:8px;background:var(--major);transform:rotate(45deg)}
+.cir{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--minor)}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ab-nav a span{display:none}.filters{position:static}}
+.banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:13px;border:1px solid}
+.banner.wait{background:#F4F9EF;border-color:#CFE0C5;color:var(--ink2)}
+.banner.err{background:#FFF1F0;border-color:#F5C2BD;color:#8A2A20}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid #CFE0C5;border-top-color:var(--brand);animation:spin 1s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></symbol>
+  <symbol id="chart" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="m4 16 5-5 4 3 7-7"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="map" viewBox="0 0 24 24"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7Z"/><path d="M9 4v13M15 7v13"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+</svg>
+
+{% set ab_page = 'done' %}{% set ab_title = 'Team Done' %}{% set ab_icon = 'check' %}
+{% set ab_sub = 'ปิดงานเทียบงานค้าง รายทีม' %}{% set ab_updated = last_update or '-' %}
+{% include "_app_bar.html" %}
+
+<div class="filters" role="search" aria-label="ตัวกรอง">
+  <div class="fgroup"><span class="flabel">ช่วงปิดงาน</span>
+    <div class="seg" id="fPreset">
+      <button data-p="yday">เมื่อวาน</button><button data-p="7d">7 วัน</button><button data-p="month" class="on">เดือนนี้</button><button data-p="prev">เดือนก่อน</button>
+    </div>
+    <label class="dates"><svg class="i" style="color:var(--muted)"><use href="#cal"/></svg>
+      <input type="date" id="fFrom" aria-label="ตั้งแต่วันที่"><span>–</span><input type="date" id="fTo" aria-label="ถึงวันที่"></label>
+  </div>
+  <div class="fgroup"><span class="flabel">บริษัท</span><div class="seg" id="fCo"></div></div>
+  <div class="fgroup"><span class="flabel">กลุ่มงาน</span>
+    <div class="seg" id="fGrp"><button data-g="" class="on">ทั้งหมด</button><button data-g="MBB">MBB</button><button data-g="FBB">FBB</button><button data-g="EDS">EDS</button></div></div>
+  <select id="fZone" aria-label="โซนทีม"></select>
+  <label class="search"><svg class="i"><use href="#search"/></svg><input id="fQ" type="search" placeholder="ค้นหาทีม" autocomplete="off"></label>
+  <span class="grow"></span>
+  <button class="btn" id="fReset"><svg class="i"><use href="#reset"/></svg>ล้างตัวกรอง</button>
+  <button class="btn primary" type="button" id="fExport"><svg class="i"><use href="#down"/></svg>Export CSV</button>
+</div>
+
+<main>
+  <div id="banner"></div>
+  <div class="fresh"><span>ข้อมูลปิดงานถึง <b class="num" id="fLast"></b> (<span id="fFile">ไฟล์ Data Job done</span> · ไฟล์เดียวกับ Monthly Report)</span><span>งานค้าง ณ <b class="num" id="fUpd"></b> (ไฟล์ JobMonitor ล่าสุด)</span><span id="fOther"></span></div>
+
+  <section class="kpis" aria-label="สรุป">
+    <div class="kpi"><span class="t">ปิดงาน (Done)</span><span class="v num" id="kDone" style="color:var(--done)"></span><span class="s" id="kDoneS"></span></div>
+    <div class="kpi"><span class="t">งานค้างตอนนี้ (Remain)</span><span class="v num" id="kRem" style="color:var(--remain)"></span><span class="s" id="kRemS"></span></div>
+    <div class="kpi"><span class="t"><i class="tri"></i> Critical ปิด / ค้าง</span><span class="v num" id="kCrit"></span><span class="s" id="kCritS"></span></div>
+    <div class="kpi"><span class="t">ปิดแล้ว / ทั้งหมด</span><span class="v num" id="kPct"></span><span class="meter"><i id="kPctBar"></i></span></div>
+    <div class="kpi"><span class="t">เฉลี่ยต่อทีม ต่อวัน</span><span class="v num" id="kAvg"></span><span class="s" id="kAvgS"></span></div>
+  </section>
+
+  <section class="panel" aria-label="ปิดงานรายวัน">
+    <div class="panel-h"><b>ปิดงานรายวัน</b><span>ตามตัวกรองบริษัท / กลุ่มงาน / โซน / ทีม</span></div>
+    <div class="chart" id="chart"></div>
+    <div class="legend"><span><i style="background:var(--crit)"></i>Critical</span><span><i style="background:var(--major)"></i>Major</span><span><i style="background:var(--minor)"></i>Minor</span></div>
+  </section>
+
+  <section class="panel tablep" aria-label="ตารางรายทีม">
+    <div class="panel-h"><b>รายทีม</b>
+      <span><label><input type="checkbox" id="fGroupCo" checked> จัดกลุ่มตามบริษัท</label> · กดหัวคอลัมน์เพื่อเรียง</span></div>
+    <div class="tw" id="table"></div>
+    <div class="foot">Done = งานที่ปิดในช่วงวันที่เลือก (REPORT_DATE) · Remain = งานค้างตอนนี้ ไม่ขึ้นกับช่วงวันที่ · % = Done ÷ (Done + Remain)</div>
+  </section>
+</main>
+
+<script>
+const D = {{ payload|tojson }};
+const P = ["c", "m", "n"], PL = {c: "Critical", m: "Major", n: "Minor"}, PC = {c: "var(--crit)", m: "var(--major)", n: "var(--minor)"};
+const CO = ["Ex-Press", "Origin", "DMP"];
+let LAST = (D.last || D.range[1]).slice(0, 10);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const addDays = (s, n) => { const d = new Date(s + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const thDate = (s) => { const [y, m, d] = s.split("-"); return `${+d}/${+m}`; };
+const st = {from: D.range[0], to: D.range[1], preset: "month", co: "", grp: "", zone: "", q: "", byCo: true, sort: "done", dir: -1};
+
+function presetRange(p) {
+  if (p === "yday") return [LAST, LAST];
+  if (p === "7d") return [addDays(LAST, -6), LAST];
+  if (p === "month") return [LAST.slice(0, 8) + "01", LAST];
+  const first = LAST.slice(0, 8) + "01", prevEnd = addDays(first, -1);
+  return [prevEnd.slice(0, 8) + "01", prevEnd];
+}
+function teamOk(i) {
+  const [name, zone, co] = D.teams[i];
+  return (!st.co || co === st.co) && (!st.zone || zone === st.zone) && (!st.q || name.toLowerCase().includes(st.q));
+}
+function compute() {
+  const rows = D.teams.map(([name, zone, co], i) => ({i, name, zone, co, done: {c: 0, m: 0, n: 0}, rem: {c: 0, m: 0, n: 0}}));
+  const daily = {};
+  for (const [i, day, p, g, v] of D.done) {
+    if (day < st.from || day > st.to || (st.grp && g !== st.grp) || !teamOk(i)) continue;
+    rows[i].done[p] += v;
+    (daily[day] = daily[day] || {c: 0, m: 0, n: 0})[p] += v;
+  }
+  for (const [i, p, g, v] of D.remain) if ((!st.grp || g === st.grp) && teamOk(i)) rows[i].rem[p] += v;
+  let other = 0;
+  for (const [day, p, g, v] of D.other) if (day >= st.from && day <= st.to && (!st.grp || g === st.grp)) other += v;
+  return {rows: rows.filter(r => teamOk(r.i)), daily, other};
+}
+const tot = (o) => o.c + o.m + o.n;
+const sumRows = (rs, k) => ({c: rs.reduce((a, r) => a + r[k].c, 0), m: rs.reduce((a, r) => a + r[k].m, 0), n: rs.reduce((a, r) => a + r[k].n, 0)});
+function daysIn() { return Math.round((new Date(st.to) - new Date(st.from)) / 864e5) + 1; }
+
+function renderFilters() {
+  $("fCo").innerHTML = [["", "ทั้งหมด"], ...CO.map(c => [c, c])].map(([c, l]) =>
+    `<button data-c="${c}" class="${st.co === c ? "on" : ""}">${l}<span class="n">${D.teams.filter(t => !c || t[2] === c).length}</span></button>`).join("");
+  const zones = [...new Set(D.teams.filter(t => !st.co || t[2] === st.co).map(t => t[1]))];
+  if (st.zone && !zones.includes(st.zone)) st.zone = "";
+  $("fZone").innerHTML = `<option value="">ทุกโซนทีม</option>` + zones.map(z => `<option ${st.zone === z ? "selected" : ""}>${esc(z)}</option>`).join("");
+  document.querySelectorAll("#fPreset button").forEach(b => b.classList.toggle("on", b.dataset.p === st.preset));
+  document.querySelectorAll("#fGrp button").forEach(b => b.classList.toggle("on", b.dataset.g === st.grp));
+  $("fFrom").value = st.from; $("fTo").value = st.to;
+}
+function renderKpis(rs, other) {
+  const d = sumRows(rs, "done"), r = sumRows(rs, "rem"), D_ = tot(d), R = tot(r), pct = D_ + R ? Math.round(D_ / (D_ + R) * 100) : 0, days = daysIn();
+  $("kDone").textContent = D_.toLocaleString();
+  $("kDoneS").innerHTML = `${thDate(st.from)} – ${thDate(st.to)} · ${days} วัน`;
+  $("kRem").textContent = R;
+  $("kRemS").innerHTML = `Critical <b>${r.c}</b> · Major <b>${r.m}</b> · Minor <b>${r.n}</b>`;
+  $("kCrit").innerHTML = `<span style="color:var(--done)">${d.c}</span> <span style="color:var(--muted);font-size:18px">/</span> <span style="color:var(--remain)">${r.c}</span>`;
+  $("kCritS").innerHTML = `Major <b>${d.m}</b> / ${r.m} · Minor <b>${d.n}</b> / ${r.n}`;
+  $("kPct").textContent = pct + "%"; $("kPctBar").style.width = pct + "%";
+  const active = rs.filter(x => tot(x.done)).length || 1;
+  $("kAvg").textContent = (D_ / active / days).toFixed(1);
+  $("kAvgS").innerHTML = `${active} ทีมที่มีงานปิด`;
+  $("fOther").innerHTML = other ? `ไม่นับ <b class="num">${other}</b> งานที่ปิดโดยชื่อนอกรายชื่อทีม` : "";
+}
+function renderChart(daily) {
+  const days = []; for (let d = st.from; d <= st.to; d = addDays(d, 1)) days.push(d);
+  const W = Math.max(days.length * 26, 900), H = 140, top = 14, base = H - 22;
+  const max = Math.max(4, ...days.map(d => daily[d] ? tot(daily[d]) : 0));
+  const step = Math.pow(10, Math.floor(Math.log10(max))) * (max / Math.pow(10, Math.floor(Math.log10(max))) > 5 ? 2 : 1), ymax = Math.ceil(max / step) * step;
+  const y = (v) => base - v / ymax * (base - top), bw = Math.min(18, W / days.length * 0.62);
+  let s = "";
+  for (let v = 0; v <= ymax; v += step) s += `<line x1="34" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E3ECDD"/><text x="28" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="#637361">${v}</text>`;
+  days.forEach((d, k) => {
+    const x = 40 + (k + 0.5) * (W - 44) / days.length, v = daily[d] || {c: 0, m: 0, n: 0};
+    let acc = 0;
+    for (const p of P) { if (!v[p]) continue; s += `<rect x="${x - bw / 2}" y="${y(acc + v[p])}" width="${bw}" height="${y(acc) - y(acc + v[p])}" fill="${PC[p].replace("var(--crit)", "#DC2626").replace("var(--major)", "#EA580C").replace("var(--minor)", "#CA8A04")}"><title>${thDate(d)} ${PL[p]} ${v[p]}</title></rect>`; acc += v[p]; }
+    if (acc) s += `<text x="${x}" y="${y(acc) - 3}" text-anchor="middle" font-size="10" fill="#315A28">${acc}</text>`;
+    if (days.length <= 16 || k % Math.ceil(days.length / 16) === 0) s += `<text x="${x}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#637361">${thDate(d)}</text>`;
+  });
+  $("chart").innerHTML = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="min-width:${W > 900 ? W : 0}px" role="img" aria-label="ปิดงานรายวัน">${s}</svg></div>`;
+}
+const SORTS = {team: r => r.name, done: r => tot(r.done), rem: r => tot(r.rem), pct: r => { const d = tot(r.done), x = tot(r.rem); return d + x ? d / (d + x) : 1; },
+  dc: r => r.done.c, rc: r => r.rem.c};
+function renderTable(rs) {
+  const key = SORTS[st.sort], cmp = (a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * st.dir; };
+  const show = (v) => v ? v.toLocaleString() : "–";
+  const cell = (dn, rm) => `<td class="grp num ${dn ? "d" : "z"}">${show(dn)}</td><td class="num ${rm ? "r" : "z"}">${show(rm)}</td>`;
+  const row = (name, sub, done, rem, cls = "team") => {
+    const d = tot(done), r = tot(rem), pct = d + r ? Math.round(d / (d + r) * 100) : null;
+    return `<tr class="${cls}"><td class="l">${esc(name)}${sub ? `<span class="chip">${esc(sub)}</span>` : ""}</td>
+      ${P.map(p => cell(done[p], rem[p])).join("")}${cell(d, r)}
+      <td class="grp l">${pct === null ? '<span style="color:var(--muted)">-</span>' : `<span class="ratio"><i style="width:${pct}%"></i></span><span class="num">${pct}%</span>`}</td></tr>`;
+  };
+  const th = (k, label, extra = "") => `<th class="sort ${extra}" data-s="${k}" ${st.sort === k ? `aria-sort="${st.dir > 0 ? "ascending" : "descending"}"` : ""}>${label}</th>`;
+  let body = "";
+  if (!rs.length) body = `<tr><td colspan="10" class="empty">ไม่มีทีมตามตัวกรองนี้</td></tr>`;
+  else if (st.byCo) for (const c of CO) {
+    const g = rs.filter(r => r.co === c).sort(cmp);
+    if (!g.length) continue;
+    body += row(c, `${g.length} ทีม`, sumRows(g, "done"), sumRows(g, "rem"), "co") + g.map((r, k) => row(r.name, r.zone, r.done, r.rem, k % 2 ? "team alt" : "team")).join("");
+  } else body = [...rs].sort(cmp).map((r, k) => row(r.name, `${r.co} · ${r.zone}`, r.done, r.rem, k % 2 ? "team alt" : "team")).join("");
+  if (rs.length) body += row("รวมทั้งหมด", `${rs.length} ทีม`, sumRows(rs, "done"), sumRows(rs, "rem"), "tot");
+  $("table").innerHTML = `<table>
+    <colgroup><col class="c-team">${'<col class="c-n">'.repeat(8)}<col class="c-pct"></colgroup>
+    <thead><tr>${th("team", "ทีม", "l")}
+      <th class="grp" colspan="2"><i class="tri"></i> Critical</th><th class="grp" colspan="2"><i class="dia"></i> Major</th><th class="grp" colspan="2"><i class="cir"></i> Minor</th>
+      <th class="grp" colspan="2">รวม</th>${th("pct", "ปิดแล้ว / ทั้งหมด", "grp l")}</tr>
+      <tr><th></th>${th("dc", "Done", "grp")}${th("rc", "Remain")}<th class="grp">Done</th><th>Remain</th><th class="grp">Done</th><th>Remain</th>${th("done", "Done", "grp")}${th("rem", "Remain")}<th class="grp"></th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+let fetchSeq = 0, pollTimer = null;
+async function loadRange() {
+  const seq = ++fetchSeq;
+  try {
+    const r = await fetch(`/api/team_done?from=${st.from}&to=${st.to}`, {cache: "no-store"});
+    if (r.status === 401) { location.href = "/login?next=/team_done"; return; }
+    const j = await r.json();
+    if (seq !== fetchSeq) return;   // a newer range was picked meanwhile
+    const wasLoading = D.loading;
+    Object.assign(D, {done: j.done, other: j.other, last: j.last, first: j.first, file: j.file, loading: j.loading, error: j.error});
+    if (wasLoading && !j.loading && j.last) {   // first read finished: move the default range to the data's last day
+      LAST = j.last.slice(0, 10);
+      if (st.preset) { [st.from, st.to] = presetRange(st.preset); return loadRange(); }
+    }
+    render();
+  } catch (e) { showBanner("err", "โหลดข้อมูลไม่สำเร็จ: " + e.message); }
+  clearTimeout(pollTimer);
+  if (D.loading) pollTimer = setTimeout(loadRange, 3000);
+}
+function showBanner(kind, text) {
+  $("banner").innerHTML = text ? `<div class="banner ${kind}">${kind === "wait" ? '<span class="spin"></span>' : ""}${esc(text)}</div>` : "";
+}
+function render() {
+  showBanner(D.error ? "err" : D.loading ? "wait" : "", D.error || (D.loading ? "กำลังอ่านไฟล์ Data Job done (ไฟล์ใหญ่ ใช้เวลาประมาณ 10 วินาที) — งานค้างแสดงได้แล้ว" : ""));
+  $("fFile").textContent = D.file || "ไฟล์ Data Job done";
+  $("fLast").textContent = D.last ? D.last.slice(0, 16) : "-";
+  if (D.first) $("fFrom").min = $("fTo").min = D.first;
+  $("fFrom").max = $("fTo").max = LAST;
+  renderFilters();
+  const {rows, daily, other} = compute();
+  renderKpis(rows, other); renderChart(daily); renderTable(rows);
+  setStick();
+}
+// table header sits right under the sticky filter bar
+function setStick() {
+  const f = $("fCo").closest(".filters"), root = document.documentElement.style;
+  root.setProperty("--fh", (getComputedStyle(f).position === "sticky" ? f.offsetHeight : 0) + "px");
+  const r1 = document.querySelector("#table thead tr");
+  if (r1) root.setProperty("--h1", r1.offsetHeight + "px");
+}
+addEventListener("resize", setStick);
+$("fPreset").onclick = (e) => { const b = e.target.closest("[data-p]"); if (!b) return; st.preset = b.dataset.p; [st.from, st.to] = presetRange(st.preset); render(); loadRange(); };
+$("fFrom").onchange = (e) => { if (e.target.value) { st.from = e.target.value; st.preset = ""; if (st.from > st.to) st.to = st.from; render(); loadRange(); } };
+$("fTo").onchange = (e) => { if (e.target.value) { st.to = e.target.value; st.preset = ""; if (st.to < st.from) st.from = st.to; render(); loadRange(); } };
+$("fCo").onclick = (e) => { const b = e.target.closest("[data-c]"); if (b) { st.co = b.dataset.c; render(); } };
+$("fGrp").onclick = (e) => { const b = e.target.closest("[data-g]"); if (b) { st.grp = b.dataset.g; render(); } };
+$("fZone").onchange = (e) => { st.zone = e.target.value; render(); };
+$("fQ").oninput = (e) => { st.q = e.target.value.trim().toLowerCase(); render(); };
+$("fGroupCo").onchange = (e) => { st.byCo = e.target.checked; render(); };
+$("table").onclick = (e) => { const t = e.target.closest("th[data-s]"); if (!t) return; const k = t.dataset.s; st.dir = st.sort === k ? -st.dir : (k === "team" ? 1 : -1); st.sort = k; render(); };
+$("fReset").onclick = () => { Object.assign(st, {preset: "month", co: "", grp: "", zone: "", q: ""}); [st.from, st.to] = presetRange("month"); $("fQ").value = ""; render(); loadRange(); };
+// CSV of what the table shows now (UTF-8 with BOM so Excel reads the Thai names)
+$("fExport").onclick = () => {
+  const {rows} = compute();
+  const head = ["บริษัท", "โซน", "ทีม", "Critical Done", "Critical Remain", "Major Done", "Major Remain", "Minor Done", "Minor Remain", "รวม Done", "รวม Remain"];
+  const lines = [head, ...rows.map(r => [r.co, r.zone, r.name, r.done.c, r.rem.c, r.done.m, r.rem.m, r.done.n, r.rem.n, tot(r.done), tot(r.rem)])];
+  const csv = "\ufeff" + lines.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+  a.download = `team-done_${st.from}_${st.to}${st.grp ? "_" + st.grp : ""}${st.co ? "_" + st.co : ""}.csv`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("fUpd").textContent = (D.updated || "-").slice(0, 16);
+render();
+if (D.loading) pollTimer = setTimeout(loadRange, 3000);
+</script>
+</body>
+</html>

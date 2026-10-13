@@ -2,6 +2,7 @@
 """Job Dashboard / Resource Monitor - rebuilt clean Flask application."""
 from __future__ import annotations
 
+import collections
 import json
 import os
 import re
@@ -19,6 +20,7 @@ from werkzeug.utils import secure_filename
 
 import network_map as nm
 import accounts as acc
+import team_done as td
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
@@ -1287,6 +1289,62 @@ def export_dashboard_excel():
         "Work Status":r.get("work_status",""),"Job Count":r.get("job_count",0),"Status":r.get("status_text",""),"Remark":r.get("remark","")} for r in rows])
     return excel_response(df,"Dashboard","dashboard")
 
+# ---------------------------------------------------------------- Team Done
+# Closed jobs per team (Monthly Report's "Data Job done" workbook) next to what each team
+# still holds now (latest JobMonitor upload).
+
+def team_done_payload(day_from, day_to):
+    """Done counts in [day_from, day_to] per dashboard team, plus jobs closed by names
+    outside the team list (shown as a note, not in the table)."""
+    data, status = td.snapshot(SUB_GROUP)
+    index = {t["user"].casefold(): i for i, t in enumerate(dashboard_teams())}
+    done, other = collections.Counter(), collections.Counter()
+    if data:
+        for (name, day, p, g), n in data["rows"].items():
+            if day_from <= day <= day_to:
+                i = index.get(name)
+                if i is None:
+                    other[(day, p, g)] += n
+                else:
+                    done[(i, day, p, g)] += n
+    return {
+        "done": [[*k, n] for k, n in done.items()], "other": [[*k, n] for k, n in other.items()],
+        "first": data["first"] if data else "", "last": data["last"] if data else "",
+        "file": data["file"] if data else "", "loading": status["loading"] and not data, "error": status["error"],
+    }
+
+def team_remain():
+    index = {t["user"].casefold(): i for i, t in enumerate(dashboard_teams())}
+    remain = collections.Counter()
+    for r in RAW_DATA:
+        i = index.get(clean_text(r.get("Assign to", "")).casefold())
+        p = td.PRIORITY_KEY.get(clean_text(r.get("Priority", "")).lower())
+        if i is not None and p:
+            remain[(i, p, SUB_GROUP.get(clean_text(r.get("Sub System", "")).casefold(), ""))] += 1
+    return [[*k, n] for k, n in remain.items()]
+
+def default_done_range():
+    """This month up to the newest closed job (the page's default view)."""
+    data, _ = td.snapshot(SUB_GROUP)
+    last = data["last"][:10] if data and data["last"] else now_local().strftime("%Y-%m-%d")
+    return last[:8] + "01", last
+
+@app.route("/team_done")
+def team_done():
+    if not RAW_DATA: load_latest_excel_into_memory()
+    day_from, day_to = default_done_range()
+    payload = team_done_payload(day_from, day_to)
+    payload.update(teams=[[t["user"], t["zone"], zone_company(t["zone"])] for t in dashboard_teams()],
+                   remain=team_remain(), updated=LAST_UPDATE or "", range=[day_from, day_to])
+    return render_template("team_done.html", payload=payload, last_update=LAST_UPDATE)
+
+@app.route("/api/team_done")
+def api_team_done():
+    day_from, day_to = request.args.get("from", ""), request.args.get("to", "")
+    if not (re.fullmatch(r"\d{4}-\d{2}-\d{2}", day_from) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", day_to)):
+        day_from, day_to = default_done_range()
+    return jsonify(team_done_payload(min(day_from, day_to), max(day_from, day_to)))
+
 @app.route("/health")
 def health():
     return jsonify(ok=True, loaded_jobs=len(RAW_DATA), teams=len(dashboard_teams()), last_update=LAST_UPDATE)
@@ -1302,4 +1360,5 @@ if __name__ == "__main__":
         if nm.KMZ_DIR.is_dir() and (not nm.SITE_TABLE_FILE.exists() or
                 (nm.SITE_MASTER_FILE.exists() and nm.SITE_MASTER_FILE.stat().st_mtime > nm.SITE_TABLE_FILE.stat().st_mtime)):
             threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
+        td.snapshot(SUB_GROUP)   # start reading the done workbook now, not on the first page view
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)),debug=os.environ.get("FLASK_DEBUG")=="1")
