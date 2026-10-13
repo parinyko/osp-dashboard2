@@ -53,6 +53,20 @@ form.card input,form.card select{height:38px;border:1px solid #CFE0C5;border-rad
 .msg{margin:0 14px 12px;font-size:12.5px;min-height:18px}
 .msg.err{color:var(--danger)}.msg.ok{color:#166534}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1F3322;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:50}
+.pwrow{display:flex;gap:6px}.pwrow input{flex:1;min-width:0;font-family:var(--mono)}
+.pwrow .btn{height:38px}
+.modal{position:fixed;inset:0;background:rgba(15,30,20,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.open{display:flex}
+.mbox{width:min(420px,100%);background:#fff;border-radius:14px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.25)}
+.mhead{display:flex;align-items:center;gap:8px;font-size:16px;color:#14532D}
+.mnote{margin:6px 0 12px;font-size:12.5px;color:var(--muted)}
+.credbox{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:4px 12px}
+.crow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.crow:last-child{border-bottom:0}
+.crow span{width:92px;flex:none;font-size:12px;color:var(--muted)}
+.crow b{flex:1;font-family:var(--mono);font-size:15px;word-break:break-all}
+.crow .btn{height:30px;padding:0 8px}
+.macts{display:flex;gap:8px;margin-top:14px}
 .empty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
 @media(max-width:900px){main{grid-template-columns:1fr}}
 </style>
@@ -65,6 +79,9 @@ form.card input,form.card select{height:38px;border:1px solid #CFE0C5;border-rad
   <symbol id="i-key" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l2 2M15 8l2 2"/></g></symbol>
   <symbol id="i-power" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></g></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></g></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="16" height="16" rx="3"/></g><g fill="currentColor"><circle cx="9" cy="9" r="1.3"/><circle cx="15" cy="15" r="1.3"/><circle cx="15" cy="9" r="1.3"/><circle cx="9" cy="15" r="1.3"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-logout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></g></symbol>
 </svg>
 <header>
@@ -100,7 +117,9 @@ form.card input,form.card select{height:38px;border:1px solid #CFE0C5;border-rad
         <label>ชื่อที่แสดง<input name="display_name" placeholder="เช่น สมชาย ใจดี"></label>
         <label>บริษัท<select name="company_id" id="newCo"></select></label>
         <label>สิทธิ์<select name="role"><option value="user">ผู้ใช้ทั่วไป</option><option value="admin">ผู้ดูแลระบบ</option></select></label>
-        <label>รหัสผ่านเริ่มต้น<input name="password" required minlength="6" autocomplete="new-password" placeholder="อย่างน้อย 6 ตัว"></label>
+        <label>รหัสผ่านเริ่มต้น
+          <span class="pwrow"><input name="password" id="newPw" required minlength="6" autocomplete="new-password" placeholder="อย่างน้อย 6 ตัว">
+          <button class="btn" type="button" id="genPw" title="สุ่มรหัสผ่าน"><svg class="ico" aria-hidden="true"><use href="#i-dice"/></svg>สุ่ม</button></span></label>
         <button class="btn primary" type="submit">สร้างผู้ใช้</button>
       </form>
       <div class="msg" id="newMsg"></div>
@@ -116,6 +135,17 @@ form.card input,form.card select{height:38px;border:1px solid #CFE0C5;border-rad
     </section>
   </div>
 </main>
+<div class="modal" id="cred" role="dialog" aria-modal="true" aria-labelledby="credTitle">
+  <div class="mbox">
+    <div class="mhead"><svg class="ico" style="width:22px;height:22px;color:#16A34A" aria-hidden="true"><use href="#i-check"/></svg><b id="credTitle">สร้างบัญชีแล้ว</b></div>
+    <p class="mnote" id="credNote">ส่งข้อมูลนี้ให้ผู้ใช้ · ปิดการ์ดแล้วจะดูรหัสผ่านนี้อีกไม่ได้</p>
+    <div class="credbox" id="credBox"></div>
+    <div class="macts">
+      <button class="btn primary" id="credCopy" type="button" style="width:auto;flex:1"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>คัดลอกทั้งหมด</button>
+      <button class="btn" id="credClose" type="button" style="height:40px">ปิด</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -169,8 +199,10 @@ $("rows").onclick = async (e) => {
       if (!confirm(`ปลดเครื่องของ ${u.username}?\nเครื่องเดิมจะถูกออกจากระบบ และล็อกอินเครื่องใหม่ได้`)) return;
       await post("release_device", {id: u.id}); toast("ปลดเครื่องแล้ว");
     } else if (b.dataset.a === "pw") {
-      const pw = prompt(`รหัสผ่านใหม่ของ ${u.username} (อย่างน้อย 6 ตัว)\nทุกเครื่องของบัญชีนี้จะถูกออกจากระบบ`); if (!pw) return;
-      await post("set_password", {id: u.id, password: pw}); toast("เปลี่ยนรหัสผ่านแล้ว");
+      const pw = prompt(`รหัสผ่านใหม่ของ ${u.username} (อย่างน้อย 6 ตัว · สุ่มให้แล้ว แก้ได้)\nทุกเครื่องของบัญชีนี้จะถูกออกจากระบบ`, randomPassword()); if (!pw) return;
+      await post("set_password", {id: u.id, password: pw});
+      showCred("ตั้งรหัสผ่านใหม่แล้ว", "ส่งรหัสใหม่ให้ผู้ใช้ · บัญชีนี้ถูกออกจากระบบทุกเครื่องแล้ว · ปิดการ์ดแล้วจะดูรหัสนี้อีกไม่ได้",
+        [["ชื่อผู้ใช้", u.username], ["รหัสผ่าน", pw]]);
     } else if (b.dataset.a === "active") {
       if (u.active && !confirm(`ปิดบัญชี ${u.username}? ผู้ใช้จะเข้าระบบไม่ได้จนกว่าจะเปิดใหม่`)) return;
       await post("set_active", {id: u.id, active: !u.active}); toast(u.active ? "ปิดบัญชีแล้ว" : "เปิดบัญชีแล้ว");
@@ -193,13 +225,47 @@ $("fNew").onsubmit = async (e) => {
   e.preventDefault();
   const d = Object.fromEntries(new FormData(e.target));
   $("newMsg").className = "msg"; $("newMsg").textContent = "";
-  try { await post("create_user", d); e.target.reset(); $("newMsg").className = "msg ok"; $("newMsg").textContent = `สร้าง ${d.username} แล้ว`; }
+  try {
+    await post("create_user", d); e.target.reset(); $("newPw").type = "text";
+    $("newMsg").className = "msg ok"; $("newMsg").textContent = `สร้าง ${d.username} แล้ว`;
+    const co = S.companies.find(c => String(c.id) === String(d.company_id));
+    showCred("สร้างบัญชีแล้ว", "ส่งข้อมูลนี้ให้ผู้ใช้ · ปิดการ์ดแล้วจะดูรหัสผ่านนี้อีกไม่ได้",
+      [["ชื่อผู้ใช้", d.username], ["รหัสผ่าน", d.password], ...(d.display_name ? [["ชื่อ", d.display_name]] : []), ...(co ? [["บริษัท", co.name]] : [])]);
+  }
   catch (err) { $("newMsg").className = "msg err"; $("newMsg").textContent = err.message; }
 };
 $("fCoNew").onsubmit = async (e) => {
   e.preventDefault();
   try { await post("add_company", Object.fromEntries(new FormData(e.target))); e.target.reset(); } catch (err) { alert(err.message); }
 };
+// readable random password: no look-alike characters (0/O, 1/l/I)
+function randomPassword(n = 10) {
+  const sets = ["ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnpqrstuvwxyz", "23456789"];
+  const all = sets.join(""), r = new Uint32Array(n);
+  crypto.getRandomValues(r);
+  const out = sets.map((set, i) => set[r[i] % set.length]);           // at least one of each kind
+  for (let i = sets.length; i < n; i++) out.push(all[r[i] % all.length]);
+  for (let i = out.length - 1; i > 0; i--) { const j = r[i] % (i + 1); [out[i], out[j]] = [out[j], out[i]]; }
+  return out.join("");
+}
+$("genPw").onclick = () => { $("newPw").value = randomPassword(); $("newPw").type = "text"; };
+let credText = "";
+function showCred(title, note, rows) {
+  $("credTitle").textContent = title; $("credNote").textContent = note;
+  $("credBox").innerHTML = rows.map(([k, v], i) => `<div class="crow"><span>${esc(k)}</span><b ${i > 1 ? 'style="font-family:inherit;font-size:14px"' : ""}>${esc(v)}</b>
+    <button class="btn" type="button" data-copy="${esc(v)}" aria-label="คัดลอก ${esc(k)}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg></button></div>`).join("");
+  credText = rows.map(([k, v]) => `${k}: ${v}`).join("\n") + "\nเข้าใช้งาน: " + location.origin + "/login";
+  $("cred").classList.add("open"); $("credCopy").focus();
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); }
+  catch (e) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+  toast("คัดลอกแล้ว");
+}
+$("credBox").onclick = (e) => { const b = e.target.closest("[data-copy]"); if (b) copyText(b.dataset.copy); };
+$("credCopy").onclick = () => copyText(credText);
+$("credClose").onclick = () => $("cred").classList.remove("open");
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("cred").classList.remove("open"); });
 $("q").oninput = render; $("fCo").onchange = render;
 fetch("/admin/api/state").then(r => r.json()).then(j => { S = j; render(); });
 </script>
