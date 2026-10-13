@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>เข้าสู่ระบบ — Dashboard OSP BKK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:"IBM Plex Sans Thai",system-ui,sans-serif;color:#1F3322;background:#F4F7F1}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;
+  background:linear-gradient(135deg,#FFFFFF 0%,#F4FAEF 50%,#DFF1C9 100%)}
+.card{width:min(400px,100%);background:#fff;border:1px solid #D6E6CE;border-radius:16px;box-shadow:0 14px 40px rgba(50,100,40,.12);padding:28px 26px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand svg{width:34px;height:34px;color:#4F8F18;flex:none}
+.brand b{display:block;font-size:20px;color:#4F8F18;font-weight:700;line-height:1.2}
+.brand small{display:block;font-size:12.5px;color:#637361}
+label{display:block;font-size:13px;font-weight:600;color:#315A28;margin:14px 0 6px}
+.field{display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;border:1px solid #CFE0C5;border-radius:10px;background:#FBFDF9}
+.field:focus-within{border-color:#79BD2D;box-shadow:0 0 0 3px rgba(121,189,45,.18)}
+.field svg{width:18px;height:18px;color:#6B7B69;flex:none}
+.field input{flex:1;border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#1F3322;min-width:0}
+.toggle{border:0;background:none;color:#6B7B69;cursor:pointer;padding:4px;display:flex}
+button.go{width:100%;height:46px;margin-top:20px;border:0;border-radius:10px;background:linear-gradient(135deg,#79BD2D,#4F9517);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+button.go:hover{filter:brightness(1.05)}
+.err{display:flex;gap:8px;align-items:flex-start;margin-top:16px;padding:10px 12px;border-radius:10px;background:#FFF1F2;border:1px solid #FECDD3;color:#9F1239;font-size:13px;line-height:1.5}
+.err svg{width:18px;height:18px;flex:none;margin-top:1px}
+.other{margin-top:6px;font-size:12.5px;color:#7F1D1D}
+.note{margin-top:18px;font-size:12px;color:#6B7B69;line-height:1.6;text-align:center}
+</style>
+</head>
+<body>
+<form class="card" method="post" action="/login" autocomplete="on">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M9 4v13M15 7v13" stroke="currentColor" stroke-width="1.75"/></svg>
+    <div><b>Dashboard OSP BKK</b><small>เข้าสู่ระบบเพื่อใช้งาน</small></div>
+  </div>
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="username">ชื่อผู้ใช้</label>
+  <div class="field">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></g></svg>
+    <input id="username" name="username" value="{{ username }}" autocomplete="username" autocapitalize="none" required {% if not username %}autofocus{% endif %}>
+  </div>
+  <label for="password">รหัสผ่าน</label>
+  <div class="field">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g></svg>
+    <input id="password" name="password" type="password" autocomplete="current-password" required {% if username %}autofocus{% endif %}>
+    <button type="button" class="toggle" aria-label="แสดงรหัสผ่าน" onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password'">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></g></svg>
+    </button>
+  </div>
+  {% if error %}
+  <div class="err" role="alert">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></g></svg>
+    <div>{{ error }}{% if other %}<div class="other">เครื่องที่ใช้อยู่: <b>{{ other.label }}</b> · ใช้งานล่าสุด {{ other.seen }}</div>{% endif %}</div>
+  </div>
+  {% endif %}
+  <button class="go" type="submit">เข้าสู่ระบบ</button>
+  <div class="note">1 บัญชีใช้ได้ 1 เครื่อง · จะเปลี่ยนเครื่องให้กด "ออกจากระบบ" ที่เครื่องเดิมก่อน<br>ลืมรหัสผ่านหรือเครื่องเดิมหาย ติดต่อผู้ดูแลระบบ</div>
+</form>
+</body>
+</html>

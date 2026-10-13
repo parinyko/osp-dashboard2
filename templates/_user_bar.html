@@ -1,0 +1,17 @@
+{% if current_user %}
+<div class="osp-userbar" role="navigation" aria-label="บัญชีผู้ใช้">
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" stroke-linecap="round"/></g></svg>
+  <span class="osp-ub-name">{{ current_user.name }}{% if current_user.company %} · {{ current_user.company }}{% endif %}</span>
+  {% if current_user.role == 'admin' %}<a href="/admin/users">จัดการผู้ใช้</a>{% endif %}
+  <a href="/logout">ออกจากระบบ</a>
+</div>
+<style>
+.osp-userbar{position:fixed;left:12px;bottom:12px;z-index:9000;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;
+  background:rgba(255,255,255,.96);border:1px solid #CFE0C5;border-radius:999px;box-shadow:0 4px 16px rgba(30,60,20,.14);
+  font:600 12px "IBM Plex Sans Thai",Tahoma,sans-serif;color:#315A28}
+.osp-userbar a{color:#315A28;text-decoration:none;border:1px solid #CFE0C5;border-radius:999px;padding:3px 10px;background:#F7FBF5}
+.osp-userbar a:hover{background:#EDF7E8}
+.osp-ub-name{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media print{.osp-userbar{display:none}}
+</style>
+{% endif %}

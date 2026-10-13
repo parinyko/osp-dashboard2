@@ -10,13 +10,15 @@ import threading
 from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-from flask import Flask, render_template, request, redirect, jsonify, flash, send_file
+from flask import Flask, render_template, request, redirect, jsonify, flash, send_file, g, make_response
 from werkzeug.utils import secure_filename
 
 import network_map as nm
+import accounts as acc
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret-key")
@@ -27,7 +29,115 @@ MONTHLY_REPORT_URL = os.environ.get("MONTHLY_REPORT_URL", "")
 
 @app.context_processor
 def inject_links():
-    return {"monthly_report_url": MONTHLY_REPORT_URL}
+    return {"monthly_report_url": MONTHLY_REPORT_URL, "current_user": getattr(g, "user", None)}
+
+# ---------------------------------------------------------------- sign-in (accounts.py)
+# Every page needs a signed-in user; /login, static files and /health stay open.
+OPEN_PATHS = ("/login", "/logout", "/static/", "/health", "/favicon.ico")
+LOGIN_FAILS = {}
+
+def _https():
+    return request.is_secure or request.headers.get("X-Forwarded-Proto", "") == "https"
+
+def _wants_json():
+    return request.path.startswith(("/api/", "/admin/api/")) or request.method != "GET" or \
+        request.accept_mimetypes.best == "application/json"
+
+@app.before_request
+def require_login():
+    g.user = acc.current_user(request.cookies.get(acc.SESSION_COOKIE))
+    if request.path.startswith(OPEN_PATHS) or g.user:
+        if request.path.startswith("/admin") and (not g.user or g.user["role"] != "admin"):
+            return (jsonify(success=False, message="เฉพาะผู้ดูแลระบบ"), 403) if _wants_json() else redirect("/")
+        return None
+    if _wants_json():
+        return jsonify(success=False, message="กรุณาเข้าสู่ระบบ", login=True), 401
+    nxt = request.full_path if request.query_string else request.path
+    return redirect("/login?next=" + quote(nxt))
+
+def _safe_next(v):
+    v = str(v or "/")
+    return v if v.startswith("/") and not v.startswith("//") else "/"
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    nxt = _safe_next(request.values.get("next"))
+    if request.method == "GET":
+        if g.user:
+            return redirect(nxt)
+        return render_template("login.html", next=nxt, error=None, other=None, username="")
+    ip, now_ts = client_ip(), time.time()
+    fails = [t for t in LOGIN_FAILS.get(ip, []) if now_ts - t < 900]
+    username = request.form.get("username", "")
+    if len(fails) >= 10:
+        return render_template("login.html", next=nxt, error="ใส่รหัสผิดหลายครั้ง ลองใหม่ใน 15 นาที", other=None, username=username), 429
+    device_id = request.cookies.get(acc.DEVICE_COOKIE) or acc.secrets.token_urlsafe(16)
+    try:
+        token = acc.login(username, request.form.get("password", ""), device_id,
+                          request.headers.get("User-Agent", ""), ip)
+    except acc.LoginError as e:
+        if e.other_device is None:
+            LOGIN_FAILS[ip] = fails + [now_ts]
+        other = None
+        if e.other_device:
+            seen = datetime.fromtimestamp(e.other_device["last_seen"], TZ).strftime("%d/%m/%Y %H:%M")
+            other = {"label": e.other_device["label"], "seen": seen}
+        resp = make_response(render_template("login.html", next=nxt, error=e.message, other=other, username=username), 401)
+        resp.set_cookie(acc.DEVICE_COOKIE, device_id, max_age=3 * 365 * 86400, httponly=True, samesite="Lax", secure=_https())
+        return resp
+    LOGIN_FAILS.pop(ip, None)
+    resp = redirect(nxt)
+    resp.set_cookie(acc.SESSION_COOKIE, token, max_age=365 * 86400, httponly=True, samesite="Lax", secure=_https())
+    resp.set_cookie(acc.DEVICE_COOKIE, device_id, max_age=3 * 365 * 86400, httponly=True, samesite="Lax", secure=_https())
+    return resp
+
+@app.route("/logout", methods=["GET", "POST"])
+def logout_page():
+    acc.logout(request.cookies.get(acc.SESSION_COOKIE))
+    resp = redirect("/login")
+    resp.delete_cookie(acc.SESSION_COOKIE)
+    return resp
+
+@app.route("/api/me")
+def api_me():
+    return jsonify(user=g.user)
+
+# ---- admin: users and companies
+@app.route("/admin/users")
+def admin_users_page():
+    return render_template("admin_users.html")
+
+@app.route("/admin/api/state")
+def admin_state():
+    return jsonify(users=acc.list_users(), companies=acc.list_companies(), me=g.user)
+
+@app.route("/admin/api/<action>", methods=["POST"])
+def admin_action(action):
+    d = request.get_json(silent=True) or {}
+    try:
+        if action == "create_user":
+            acc.create_user(d.get("username"), d.get("password"), d.get("display_name"), d.get("company_id"), d.get("role", "user"))
+        elif action == "update_user":
+            if d.get("role") == "user" and int(d.get("id", 0)) == g.user["id"]:
+                raise ValueError("ลดสิทธิ์บัญชีตัวเองไม่ได้")
+            acc.update_user(d.get("id"), d.get("display_name"), d.get("company_id"), d.get("role"))
+        elif action == "set_password":
+            acc.set_password(d.get("id"), d.get("password"))
+        elif action == "set_active":
+            if int(d.get("id", 0)) == g.user["id"]:
+                raise ValueError("ปิดบัญชีตัวเองไม่ได้")
+            acc.set_active(d.get("id"), bool(d.get("active")))
+        elif action == "release_device":
+            acc.release_device(d.get("id"))
+        elif action == "add_company":
+            acc.add_company(d.get("name"))
+        elif action == "set_company_active":
+            acc.set_company_active(d.get("id"), bool(d.get("active")))
+        else:
+            return jsonify(success=False, message="ไม่รู้จักคำสั่ง"), 404
+    except ValueError as e:
+        return jsonify(success=False, message=str(e)), 400
+    return jsonify(success=True, users=acc.list_users(), companies=acc.list_companies())
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "uploads"
@@ -409,6 +519,9 @@ def background_scheduler():
                 hhmm = now.strftime("%H:%M")
                 if hhmm in DAILY_OSP_TIMES:
                     save_daily_osp_snapshot(hhmm)
+                if hhmm == "03:20":   # consistent copy of the sign-in database for the nightly file backup
+                    try: acc.backup(acc.AUTH_DB.with_name("auth-backup.db"))
+                    except Exception: app.logger.exception("Auth DB backup failed")
                 if hhmm == "03:15":   # Job Map: refresh the site position table once a day
                     threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
             except Exception:
