@@ -219,6 +219,7 @@ html[data-theme="dark"] .me a{color:#B7D99A}
 .modal h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
 .modal p{margin:0 0 12px;font-size:12.5px;color:var(--muted)}
 .modal input{width:100%;height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;font:inherit;font-size:15px}
+.modal input.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.15em}
 .modal .err{color:var(--late);font-size:12px;min-height:18px;margin-top:6px}
 .modal .row2{display:flex;justify-content:flex-end;gap:8px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;display:none;z-index:60}
@@ -327,7 +328,7 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
     <label class="search">
       <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
       <span class="sr">ค้นหางาน</span>
-      <input id="q" type="search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
+      <input id="q" type="search" name="job-search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
     </label>
     <button class="iconbtn" id="themeBtn" style="width:40px;height:40px" aria-label="สลับโหมดมืด" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg></button>
     <nav class="links" aria-label="หน้าอื่น">
@@ -426,7 +427,9 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
     <h3 id="pwTitle"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>เปิดแบบโครงข่าย</h3>
     <p>แบบโครงข่ายเป็นข้อมูลภายใน กรอกรหัสก่อนเปิด (จำไว้จนปิดแท็บนี้)</p>
     <label class="sr" for="pwInput">รหัส</label>
-    <input type="password" id="pwInput" inputmode="numeric" autocomplete="off" placeholder="รหัส">
+    <!-- a masked text box, not type=password: Chrome's password manager otherwise takes the search box
+         above as the username field and autofills the signed-in name into it, emptying the job list -->
+    <input type="text" id="pwInput" class="masked" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="รหัส">
     <div class="err" id="pwErr"></div>
     <div class="row2"><button class="btn" id="pwCancel">ยกเลิก</button><button class="btn primary" id="pwOk" style="flex:none">ยืนยัน</button></div>
   </div>
@@ -839,7 +842,10 @@ function render() {
         ${j.kmz ? `<span class="tag net">แบบโครงข่าย</span>` : ""}
         ${isExact(j) ? "" : `<span class="tag">ตำแหน่งประมาณ</span>`}
       </span>
-    </button>`).join("") : '<div class="empty">ไม่มีงานตามตัวกรองนี้</div>';
+    </button>`).join("") : view.q
+      ? `<div class="empty">ไม่มีงานที่ตรงกับคำค้น "<b>${esc(view.q)}</b>"<br><button class="btn" id="qClear" style="margin-top:10px">ล้างคำค้น</button></div>`
+      : '<div class="empty">ไม่มีงานตามตัวกรองนี้</div>';
+  if ($("qClear")) $("qClear").onclick = (e) => { e.stopPropagation(); $("q").value = ""; view.q = ""; render(); };
 
   if (!map || !map.getSource("jobs")) return;
   map.getSource("jobs").setData({type: "FeatureCollection", features: shown.filter(j => j._lat != null).map(j => ({
