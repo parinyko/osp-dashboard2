@@ -100,6 +100,7 @@ html[data-theme="dark"] .osp-acct-btn:hover,html[data-theme="dark"] .osp-acct-bt
 .row .tags{grid-column:2 / 4;display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
 .row .age{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
 .row .age.late{color:var(--late);font-weight:600}
+.tag.grp{color:var(--ink2);font-weight:600;letter-spacing:.03em}
 .tag{font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--muted);white-space:nowrap;line-height:18px;display:inline-flex;align-items:center;gap:4px}
 .tag .dot{width:6px;height:6px;border-radius:50%}
 .st-assigned{background:#FFF1F2;border-color:#FECDD3;color:#9F1239}
@@ -345,6 +346,7 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
       <input id="q" type="search" name="job-search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
     </label>
     <nav class="seg" id="zoneSeg" aria-label="เลือกโซน"></nav>
+    <nav class="seg" id="grpSeg" aria-label="งานค้างตามกลุ่มงาน"></nav>
     </div>
   </header>
 
@@ -456,7 +458,10 @@ const store = {get: (k) => { try { return localStorage.getItem("jm." + k); } cat
 
 let jobs = [], selected = null, lastUpdated = null;
 // filters: zone (header), company / priority / status rows, extra toggles; status "" = every open job (not Done)
-const view = {area: "", company: "", pri: "", status: "", flags: new Set(), q: ""};
+const view = {area: "", company: "", grp: "", pri: "", status: "", flags: new Set(), q: ""};
+const GROUPS = ["MBB", "FBB", "EDS"];   // Sub System groups, same as Job Monitor
+// company + work group: the filters that also scope the KPIs, zone counts and district colours
+const inScope = (j) => (!view.company || j.company === view.company) && (!view.grp || j.grp === view.grp);
 const COMPANIES = [["DMP", "DMP"], ["Origin", "Origin"], ["Ex-Press", "Ex-Press"], ["AIS", "AIS"], ["Workforce", "Workforce"]];
 const STATUSES = [["assigned", "Assigned", "#E11D48"], ["accepted", "Accepted", "#DB2777"], ["departed", "Departed", "#D97706"],
                   ["onsite", "On-Site", "#16A34A"], ["held", "Held", "#2563EB"], ["transfered", "Transfered", "#7C3AED"], ["done", "Done", "#475569"]];
@@ -768,6 +773,7 @@ function spreadOverlaps(list) {
 function matches(j, skip) {
   if (skip !== "area" && view.area && j.area !== view.area) return false;
   if (skip !== "company" && view.company && j.company !== view.company) return false;
+  if (skip !== "grp" && view.grp && j.grp !== view.grp) return false;
   if (skip !== "pri" && view.pri && j._p !== view.pri) return false;
   if (skip !== "status") {
     if (view.status ? j._s !== view.status : j.done) return false;   // Done jobs only under their own chip
@@ -790,6 +796,8 @@ function renderFilters() {
   const rows = [
     ["บริษัท", [chip("company", "", "ทั้งหมด", count("company", () => true)),
                 ...COMPANIES.map(([k, l]) => chip("company", k, l, count("company", j => j.company === k)))]],
+    ["กลุ่มงาน", [chip("grp", "", "ทั้งหมด", count("grp", () => true)),
+                  ...GROUPS.map(g => chip("grp", g, g, count("grp", j => j.grp === g)))]],
     ["Priority", [chip("pri", "", "ทั้งหมด", count("pri", () => true)),
                   ...["critical", "major", "minor"].map(p => chip("pri", p, p[0].toUpperCase() + p.slice(1),
                      count("pri", j => j._p === p), `<svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="${SHAPES[p]}" fill="${PCOL[p]}"/></svg>`))]],
@@ -811,7 +819,7 @@ function setKpi(key, n, total, sub) {
 function render() {
   const shown = jobs.filter(matches).sort((a, b) =>
     (b._out - a._out) || ((PRANK[b._p] || 0) - (PRANK[a._p] || 0)) || ((b.age_h || 0) - (a.age_h || 0)));
-  const scope = jobs.filter(j => !j.done && (!view.area || j.area === view.area) && (!view.company || j.company === view.company));
+  const scope = jobs.filter(j => !j.done && (!view.area || j.area === view.area) && inScope(j));
   const late = scope.filter(j => j._out).length, crit = scope.filter(j => j._p === "critical").length, exact = scope.filter(isExact).length;
   setKpi("Total", scope.length, scope.length, view.area ? `โซน ${view.area} ${AREAS[view.area].name}` : "ทุกโซน");
   setKpi("Late", late, scope.length, scope.length ? Math.round(late / scope.length * 100) + "% ของงานค้าง" : "");
@@ -820,8 +828,13 @@ function render() {
 
   const segs = [["", "ทุกโซน", null], ...Object.entries(AREAS).map(([a, z]) => [a, `${a} ${z.name}`, z.color])];
   $("zoneSeg").innerHTML = segs.map(([a, label, c]) => {
-    const n = jobs.filter(j => !j.done && (!a || j.area === a) && (!view.company || j.company === view.company)).length;
+    const n = jobs.filter(j => !j.done && (!a || j.area === a) && inScope(j)).length;
     return `<button class="${view.area === a ? "on" : ""}" data-area="${a}" aria-pressed="${view.area === a}">${c ? `<span class="sw" style="background:${c}"></span>` : ""}${label}<span class="n">${n}</span></button>`;
+  }).join("");
+  // open jobs left per work group (zone + company applied), click to filter
+  $("grpSeg").innerHTML = [["", "ทุกกลุ่มงาน"], ...GROUPS.map(g => [g, g])].map(([g, label]) => {
+    const n = jobs.filter(j => !j.done && (!view.area || j.area === view.area) && (!view.company || j.company === view.company) && (!g || j.grp === g)).length;
+    return `<button class="${view.grp === g ? "on" : ""}" data-grp="${g}" aria-pressed="${view.grp === g}">${label}<span class="n">${n}</span></button>`;
   }).join("");
   renderFilters();
 
@@ -837,6 +850,7 @@ function render() {
       <span class="age ${j._out ? "late" : ""}">${ageText(j.age_h)}</span>
       <span class="tags">
         <span class="tag st-${j._s}"><i class="dot" style="background:currentColor"></i>${esc(statusLabel(j))}</span>
+        ${j.grp ? `<span class="tag grp">${esc(j.grp)}</span>` : ""}
         ${j._out ? `<span class="tag" style="color:var(--late);border-color:#FECDD3">เกินเวลา</span>` : ""}
         ${(j.faults || []).length ? `<span class="tag sp">SP ${j.faults.length}</span>` : ""}
         ${j.kmz ? `<span class="tag net">แบบโครงข่าย</span>` : ""}
@@ -860,7 +874,7 @@ function render() {
 
   const byDistrict = {};
   for (const j of jobs) {
-    if (j.done || (view.area && j.area !== view.area) || (view.company && j.company !== view.company)) continue;
+    if (j.done || (view.area && j.area !== view.area) || !inScope(j)) continue;
     const k = (j.district || "").replace(/^(เขต|อำเภอ)\s*/, "").replace(/\s+/g, "");
     (byDistrict[k] = byDistrict[k] || []).push(j);
   }
@@ -870,7 +884,7 @@ function render() {
   }
   map.getSource("districts").setData(districtFC);
   for (const [a, m] of Object.entries(zoneMarkers)) {
-    const n = jobs.filter(j => !j.done && j.area === a && (!view.company || j.company === view.company)).length, el = m.getElement();
+    const n = jobs.filter(j => !j.done && j.area === a && inScope(j)).length, el = m.getElement();
     el.classList.toggle("ok", !n);
     el.querySelector("i").textContent = n;
     el.style.color = n ? AREAS[a].color : "#15803D";
@@ -1311,6 +1325,7 @@ $("zHome").onclick = () => setArea("", true);
 // ---------------------------------------------------------------- sidebar events
 $("rows").onclick = (e) => { const c = e.target.closest(".row"); if (c) select(c.dataset.id, true); };
 $("zoneSeg").onclick = (e) => { const c = e.target.closest("[data-area]"); if (c) setArea(c.dataset.area, true); };
+$("grpSeg").onclick = (e) => { const c = e.target.closest("[data-grp]"); if (c) { view.grp = c.dataset.grp; render(); } };
 $("filters").onclick = (e) => {
   const c = e.target.closest("button");
   if (!c || c.disabled) return;

@@ -1066,6 +1066,9 @@ MAP_PASSWORD = os.environ.get("NETWORK_PASSWORD", "")
 MAP_FAILS = {}
 TEAM_ZONE = {t["user"].casefold(): t["zone"] for t in TEAM_DATA}
 AREA_NAMES = {"1": "SCT", "2": "ONT", "3": "TLC", "4": "CWT"}
+# Sub System -> MBB / FBB / EDS, same grouping as the home page and Job Monitor
+SUB_GROUP = {sub.casefold(): g for g, subs in OSP_AGING_GROUPS for sub in subs}
+SUB_GROUP.setdefault("fttx-osp", "FBB")   # Job Monitor files FTTX under FBB too
 
 def map_password_error():
     """None when the X-Map-Key header is right, else a (json, status) response."""
@@ -1143,6 +1146,7 @@ def map_jobs():
             "id": clean_text(r.get("Job ID", r.get("JobID", ""))), "priority": priority,
             "status": clean_text(r.get("Status", "")), "due": "" if r["_done"] else resource_due_status(priority, create, now),
             "create": create, "age_h": age, "sub": clean_text(r.get("Sub System", "")),
+            "grp": SUB_GROUP.get(clean_text(r.get("Sub System", "")).casefold(), ""),
             "assign": assign, "team_zone": team_zone, "company": map_company(team_zone), "done": r["_done"],
             "area": f"A{area.group(1)}" if area else "", "area_name": AREA_NAMES.get(area.group(1), "") if area else "",
             "district": clean_text(r.get("District Name", "")), "province": clean_text(r.get("Province Name", "")),
