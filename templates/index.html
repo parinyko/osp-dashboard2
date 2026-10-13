@@ -244,7 +244,7 @@ body{padding:0}
 
 .table-wrap{
   margin:0 16px;
-  height:calc(100vh - 78px);
+  height:calc(100vh - 136px);
   max-height:none;
   min-height:0;
   background:rgba(255,255,255,.98);
@@ -515,7 +515,7 @@ th:nth-child(8),td:nth-child(8){width:460px}
   .subtitle{font-size:15px}
   .refreshbar{flex:0 0 138px;min-width:138px;max-width:138px}
   .top-meta{overflow-x:auto;padding-bottom:3px}
-  .table-wrap{height:calc(100vh - 78px);max-height:none}
+  .table-wrap{height:calc(100vh - 136px);max-height:none}
 }
 /* Smartphone: keep the real table. Do not replace it with cards.
    The user can swipe/zoom the full table as needed. */
@@ -531,57 +531,45 @@ th:nth-child(8),td:nth-child(8){width:460px}
   .table-wrap th,.table-wrap td{white-space:nowrap!important}
   .mobile-dashboard{display:none!important}
 }
+
+/* header tools row (upload + refresh) under the shared app bar */
+.st-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 18px;margin-bottom:10px;background:#fff;border-bottom:1px solid #D6E6CE;
+  font-family:"IBM Plex Sans Thai",Tahoma,sans-serif;color:#315A28;font-size:13px}
+.st-tools svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.st-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0}
+.st-upload label{font-weight:600}
+.st-upload input[type=file]{height:34px;padding:4px 6px;border:1px solid #CFE0C5;border-radius:9px;background:#F7FBF5;color:#637361;font:inherit;font-size:12.5px;max-width:260px}
+.st-btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid #CFE0C5;border-radius:9px;background:#fff;color:#315A28;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.st-btn.primary{background:#4F8F18;border-color:#4F8F18;color:#fff}
+.st-btn.primary:hover{background:#467F15}
+.st-grow{flex:1}
+.st-refresh{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 4px 0 10px;border:1px solid #CFE0C5;border-radius:9px;background:#fff;font-size:12px;color:#637361;white-space:nowrap}
+.st-refresh b{font-family:"IBM Plex Mono",ui-monospace,monospace;color:#1F3322;font-size:12.5px;min-width:38px}
+.st-refresh button{width:26px;height:26px;border:0;border-radius:6px;background:#F7FBF5;color:#315A28;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.st-refresh button.paused{background:#4F8F18;color:#fff}
+@media(max-width:700px){.st-tools{display:none}}
 </style>
 </head>
 
 <body>
 
 <!-- =========================
-     HEADER
+     HEADER (shared app bar + upload / refresh row)
 ========================= -->
-<div class="top">
-
-  <div class="header-main">
-
-    <div class="brand">
-      <div>
-        <div class="title">Job Dashboard</div>
-        <div class="subtitle">ภาพรวมการปฏิบัติงานภาคสนาม</div>
-      </div>
-    </div>
-
-    <div class="top-meta">
-
-      <div class="meta-box">
-        <span>◷</span>
-        <span>Last Update<br><b>{{ last_update }}</b></span>
-      </div>
-      {% include "_user_bar.html" %}
-
-      <form class="upload-inline" method="post" enctype="multipart/form-data">
-        <div class="meta-box">
-          <span>▣</span>
-          <span>Upload Excel:</span>
-          <input type="file" name="file" accept=".xlsx,.xls" required>
-          <button class="btn btn-blue" type="submit">⬆ Upload / Update</button>
-        </div>
-      </form>
-
-      <div class="actions dashboard-actions">
-        <a class="btn btn-green" href="/">⌂ Dashboard OSP BKK</a>
-        <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
-        <a class="btn btn-green" href="/daily_osp_remain">▤ Daily Job OSP Remain</a>
-
-        <div class="refreshbar">
-          <span>⟳ Auto Refresh:<br><b id="refreshCountdown">05:00</b></span>
-          <button id="refreshToggle" class="btn btn-dark" type="button">⏸ หยุด</button>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-
+{% set ab_page = 'team' %}{% set ab_title = 'Status Team' %}{% set ab_icon = 'team' %}
+{% set ab_sub = 'ภาพรวมการปฏิบัติงานภาคสนาม' %}{% set ab_updated = last_update or '-' %}
+{% include "_app_bar.html" %}
+<div class="st-tools">
+  <form class="st-upload" method="post" enctype="multipart/form-data">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>
+    <label for="excelFile">อัปโหลด Excel</label>
+    <input id="excelFile" type="file" name="file" accept=".xlsx,.xls" required>
+    <button class="st-btn primary" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"/></svg>Upload / Update</button>
+  </form>
+  <span class="st-grow"></span>
+  <span class="st-refresh">รีเฟรชใน <b id="refreshCountdown">05:00</b>
+    <button id="refreshToggle" type="button" aria-label="หยุดรีเฟรชอัตโนมัติ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg></button>
+  </span>
 </div>
 
 
@@ -808,10 +796,10 @@ function renderRefresh(){
       ? 'หยุด'
       : `${minutes}:${seconds}`;
 
-  toggle.textContent =
-    refreshPaused
-      ? '▶ เริ่ม'
-      : '⏸ หยุด';
+  toggle.innerHTML = refreshPaused
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg>';
+  toggle.setAttribute('aria-label', refreshPaused ? 'เริ่มรีเฟรชอัตโนมัติ' : 'หยุดรีเฟรชอัตโนมัติ');
 
   toggle.classList.toggle(
     'paused',
@@ -933,7 +921,7 @@ async function saveTeamField(
 
 
     stateEl.textContent =
-      '✓ บันทึกแล้ว';
+      'บันทึกแล้ว';
 
 
     clearTimeout(
@@ -953,7 +941,7 @@ async function saveTeamField(
   }catch(error){
 
     stateEl.textContent =
-      '✕ บันทึกไม่สำเร็จ';
+      'บันทึกไม่สำเร็จ';
 
     stateEl.classList.add(
       'save-error'
@@ -1022,7 +1010,7 @@ function unlockEditing(element){
   }
 
   const password = prompt(
-    '🔐 กรุณาใส่รหัสเพื่อแก้ไข Contact / Remark'
+    'กรุณาใส่รหัสเพื่อแก้ไข Contact / Remark'
   );
 
   if(password === null){
@@ -1031,7 +1019,7 @@ function unlockEditing(element){
 
   if(password !== EDIT_PASSWORD){
 
-    alert('❌ รหัสไม่ถูกต้อง');
+    alert('รหัสไม่ถูกต้อง');
 
     return false;
   }

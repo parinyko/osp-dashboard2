@@ -26,76 +26,6 @@ body {
 }
 
 /* =========================
-   HEADER
-========================= */
-
-.header {
-  background: #eaf3e5;
-  border: 1px solid #cddfc5;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-}
-
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 21px;
-}
-
-.subtitle {
-  margin-top: 3px;
-  color: #647262;
-}
-
-.update {
-  font-size: 11px;
-  color: #667566;
-}
-
-/* =========================
-   NAVIGATION
-========================= */
-
-.page-nav {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  background: #fff;
-  border-bottom: 1px solid #dfe9da;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-
-.page-nav a {
-  padding: 7px 12px;
-  border: 1px solid #cfe0c5;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #315a28;
-  background: #f7fbf5;
-  font-weight: 800;
-  font-size: 12px;
-}
-
-.page-nav a:hover {
-  background: #edf7e8;
-}
-
-.page-nav a.active {
-  background: #dff0d6;
-  border-color: #9fc58a;
-}
-
-/* =========================
    TOOLBAR
 ========================= */
 
@@ -519,11 +449,6 @@ tr.row-hidden {
 
 @media (max-width: 800px) {
 
-  .header-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .note {
     margin-left: 0;
   }
@@ -542,75 +467,11 @@ tr.row-hidden {
 
 <body>
 
+{% set ab_page = 'resource' %}{% set ab_title = 'Resource Monitor' %}{% set ab_icon = 'clock' %}
+{% set ab_sub = 'สถานะทีมทุก 30 นาที · Indue / Outdue จาก Create Time' %}{% set ab_updated = last_update or '-' %}
+{% include "_app_bar.html" %}
+
 <div class="shell">
-
-  <!-- =========================
-       HEADER
-  ========================== -->
-
-  <header class="header">
-
-    <div class="header-row">
-
-      <div>
-
-        <h1>
-          🕒 Resource Monitor
-        </h1>
-
-        <div class="subtitle">
-          แสดง Current Status พร้อม Indue / Outdue จาก Create Time
-        </div>
-
-      </div>
-
-      <div class="osp-hdr-right">
-      <div class="update">
-        Last Update:
-        <b>{{ last_update or '-' }}</b>
-      </div>
-      {% include "_user_bar.html" %}
-      </div>
-
-    </div>
-
-  </header>
-
-
-  <!-- =========================
-       NAVIGATION
-  ========================== -->
-
-  <nav class="page-nav">
-
-    <a href="/">
-      🏠 Status Team
-    </a>
-
-    <a href="/job_monitor">
-      📋 Job Monitor
-    </a>
-
-    <a href="/daily_osp_remain">
-      📈 Daily Job OSP Remain
-    </a>
-
-    <a href="/resource_monitor" class="active">
-      🕒 Resource Monitor
-    </a>
-
-    <a href="/map">
-      🗺️ Job Map
-    </a>
-
-    {% if monthly_report_url %}
-    <a href="{{ monthly_report_url }}">
-      🗂️ Monthly Report
-    </a>
-    {% endif %}
-
-  </nav>
-
 
   <!-- =========================
        TOOLBAR

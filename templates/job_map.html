@@ -30,7 +30,11 @@ button{font:inherit}
 
 /* header */
 /* header: same look as the dashboard's other pages (green header + page nav) */
-.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;padding:10px 18px;background:linear-gradient(135deg,#FFFFFF 0%,#F4FAEF 55%,#DFF1C9 100%);border-bottom:1px solid #D6E6CE}
+.top{background:linear-gradient(135deg,#FFFFFF 0%,#F4FAEF 55%,#DFF1C9 100%);border-bottom:1px solid #D6E6CE}
+/* row 1: brand · page menu · theme · account   row 2: search · zones */
+.hrow1{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:9px 18px}
+.hrow2{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:8px 18px;background:var(--surface);border-top:1px solid #D6E6CE}
+.hrow2 .search{height:36px;flex:0 1 360px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand .ico{color:#4F8F18}
 .brand b{display:block;font-size:20px;font-weight:800;color:#4F8F18;letter-spacing:.01em;line-height:1.15}
@@ -228,6 +232,7 @@ html[data-theme="dark"] .top .seg{background:#0E151E;border-color:#243446}
 html[data-theme="dark"] .top .seg button{color:var(--muted)}
 html[data-theme="dark"] .top .seg button.on{background:#1A2533;color:var(--ink)}
 html[data-theme="dark"] .top .search{background:#0E151E;border-color:#243446}
+html[data-theme="dark"] .hrow2{border-top-color:#1F2A37}
 html[data-theme="dark"] .top .iconbtn{border-color:#243446;color:var(--ink2);background:#111823}
 html[data-theme="dark"] .links a{background:#111823;border-color:#243446;color:#B7D99A}
 html[data-theme="dark"] .links a:hover{background:#16212C}
@@ -315,18 +320,11 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
 
 <div class="app">
   <header class="top">
+    <div class="hrow1">
     <div class="brand">
       <svg class="ico" style="width:30px;height:30px" aria-hidden="true"><use href="#i-map"/></svg>
       <div><b>Job Map</b><small>Dashboard OSP BKK · ข้อมูล <span id="upd" class="mono">{{ last_update or '-' }}</span></small></div>
     </div>
-    <nav class="seg" id="zoneSeg" aria-label="เลือกโซน"></nav>
-    <div class="grow"></div>
-    <label class="search">
-      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
-      <span class="sr">ค้นหางาน</span>
-      <input id="q" type="search" name="job-search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
-    </label>
-    <button class="iconbtn" id="themeBtn" style="width:40px;height:40px" aria-label="สลับโหมดมืด" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg></button>
     <nav class="links" aria-label="หน้าอื่น">
       <a href="/"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg><span>หน้าแรก</span></a>
       <a href="/dashboard"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg><span>Status Team</span></a>
@@ -336,7 +334,18 @@ html[data-theme="dark"] .maplibregl-ctrl-attrib a{color:#C3CEDB}
       <a href="/map" class="active" aria-current="page"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg><span>Job Map</span></a>
       {% if monthly_report_url %}<a href="{{ monthly_report_url }}"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg><span>Monthly Report</span></a>{% endif %}
     </nav>
+    <div class="grow"></div>
+    <button class="iconbtn" id="themeBtn" style="width:38px;height:38px" aria-label="สลับโหมดมืด" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg></button>
     {% include "_user_bar.html" %}
+    </div>
+    <div class="hrow2">
+    <label class="search">
+      <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+      <span class="sr">ค้นหางาน</span>
+      <input id="q" type="search" name="job-search" placeholder="Job ID, SITE_CODE, เขต, ทีม" autocomplete="off">
+    </label>
+    <nav class="seg" id="zoneSeg" aria-label="เลือกโซน"></nav>
+    </div>
   </header>
 
   <section class="kpis" aria-label="ภาพรวม">

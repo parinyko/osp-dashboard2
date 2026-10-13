@@ -8,10 +8,6 @@
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:linear-gradient(180deg,#f7fbf4,#edf7e8);color:#24384d}
 body{display:flex;flex-direction:column;overflow:hidden}
-.header{position:relative;padding:10px 14px 9px;background:linear-gradient(135deg,#fff 0%,#f7fbf4 46%,#dff1c9 100%);border-bottom:1px solid #cfe3bf;box-shadow:0 3px 14px rgba(73,128,37,.10);overflow:hidden}
-.header:after{content:"";position:absolute;right:-100px;top:-50px;width:55%;height:130px;background:linear-gradient(155deg,transparent 18%,rgba(117,187,50,.18) 19% 46%,rgba(174,222,99,.18) 47% 63%,transparent 64%);transform:rotate(-5deg);pointer-events:none}
-.header-row{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.left{display:flex;align-items:center;gap:10px}.title{margin:0;color:#4f8f18;font-size:25px;font-weight:800}.subtitle{margin-top:2px;color:#718078;font-size:13px}
 .actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:8px 12px;font-weight:800;text-decoration:none;cursor:pointer;white-space:nowrap}.btn-green{background:linear-gradient(135deg,#79bd2d,#4f9517);color:#fff}.btn-dark{background:#293841;color:#fff}.btn-light{background:#fff;border:1px solid #cfe0c5;color:#397817}.btn-danger{background:#dc3545;color:#fff}
 .content{flex:1;min-height:0;overflow:auto;padding:10px 14px 14px}
 .summary{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:10px}.card{border-radius:12px;padding:10px 13px;background:#fff;border:1px solid #dbe8d4;box-shadow:0 3px 10px rgba(55,105,46,.07)}.card .label{font-size:12px;font-weight:700;color:#6c7d72}.card .value{font-size:26px;font-weight:900;margin-top:1px}.critical .value{color:#c62828}.major .value{color:#e66a00}.minor .value{color:#a18b00}.total .value{color:#21864a}
@@ -34,27 +30,19 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
 .chip button{border:0;background:#fff;color:#c62828;border-radius:50%;width:22px;height:22px;cursor:pointer;font-weight:900;line-height:1}.chips .none{color:#a0522d;font-size:13px;align-self:center}
 .add-row{display:flex;gap:8px;align-items:center}.add-row input{flex:1;padding:7px 10px;border:1px solid #cfe0c5;border-radius:9px;font-size:15px}
 .pw-row{display:flex;gap:8px;align-items:center;margin-top:12px}.pw-row label{font-size:13px;font-weight:800;color:#397817;white-space:nowrap}.pw-row input{flex:1;padding:7px 10px;border:1px solid #cfe0c5;border-radius:9px;font-size:15px}
+.modal-title,.pw-row label{display:inline-flex;align-items:center;gap:7px}
+.modal-title svg,.pw-row label svg,.modal-x svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.modal-x{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px}.modal-x:hover{background:#f1f5ef}
+.pw-row input.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.15em}
 .err{color:#c62828;font-size:12px;min-height:16px;margin-top:6px}.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}.header-row{align-items:flex-start}.title{font-size:22px}}
+@media(max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="header-row">
-    <div class="left">
-      <div>
-        <div class="title">Daily Job OSP Remain</div>
-        <div class="subtitle">สรุปงาน OSP คงเหลือตามรอบ {% if schedule_times %}{{ schedule_times|join(' · ') }}{% else %}ปิดการสรุปอัตโนมัติ{% endif %}</div>
-      </div>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn btn-green" onclick="openSchedule()">⏰ ตั้งรอบสรุป</button>
-      <a class="btn btn-light" href="/">🏠 Dashboard</a>
-      <a class="btn btn-dark" href="/job_monitor">▣ Job Monitor</a>
-      {% include "_user_bar.html" %}
-    </div>
-  </div>
-</div>
+{% set ab_page = 'daily' %}{% set ab_title = 'Daily Job OSP Remain' %}{% set ab_icon = 'chart' %}
+{% set ab_sub %}สรุปงาน OSP คงเหลือตามรอบ {% if schedule_times %}{{ schedule_times|join(' · ') }}{% else %}(ปิดการสรุปอัตโนมัติ){% endif %}{% endset %}
+{% set ab_actions %}<button type="button" class="ab-btn primary" onclick="openSchedule()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M5 3 2 6M19 3l3 3"/></svg>ตั้งรอบสรุป</button>{% endset %}
+{% include "_app_bar.html" %}
 
 <div class="content">
   {% if latest %}
@@ -112,12 +100,12 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
     {% else %}<div class="empty">ยังไม่มีประวัติ Snapshot</div>{% endif %}
   </div>
 
-  <div class="note">{% if schedule_times %}ระบบจะบันทึกอัตโนมัติทุกวันเวลา {{ schedule_times|join(' · ') }} ตามเวลา Asia/Bangkok — เปลี่ยนได้ที่ปุ่ม ⏰ ตั้งรอบสรุป{% else %}ปิดการบันทึกอัตโนมัติอยู่ — เปิดได้ที่ปุ่ม ⏰ ตั้งรอบสรุป{% endif %}</div>
+  <div class="note">{% if schedule_times %}ระบบจะบันทึกอัตโนมัติทุกวันเวลา {{ schedule_times|join(' · ') }} ตามเวลา Asia/Bangkok — เปลี่ยนได้ที่ปุ่ม "ตั้งรอบสรุป" มุมขวาบน{% else %}ปิดการบันทึกอัตโนมัติอยู่ — เปิดได้ที่ปุ่ม "ตั้งรอบสรุป" มุมขวาบน{% endif %}</div>
 </div>
 
 <div id="scheduleModal" class="modal-bg" onclick="if(event.target===this)closeSchedule()">
   <div class="modal">
-    <div class="modal-head"><span class="panel-title">⏰ ตั้งรอบสรุป Daily OSP Remain</span><button type="button" class="modal-x" onclick="closeSchedule()">✕</button></div>
+    <div class="modal-head"><span class="panel-title modal-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M5 3 2 6M19 3l3 3"/></svg>ตั้งรอบสรุป Daily OSP Remain</span><button type="button" class="modal-x" onclick="closeSchedule()" aria-label="ปิด"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div class="muted">ระบบบันทึก Snapshot อัตโนมัติทุกวันตามเวลาด้านล่าง (Asia/Bangkok) · ไม่มีรอบเลย = ปิดการบันทึกอัตโนมัติ</div>
     <div id="scheduleChips" class="chips"></div>
     <div class="add-row">
@@ -125,7 +113,7 @@ canvas{width:100%;height:100%;display:block}.trend-legend{display:flex;flex-wrap
       <button type="button" class="btn btn-light" onclick="addScheduleTime()">+ เพิ่มรอบ</button>
     </div>
     {% if schedule_locked %}
-    <div class="pw-row"><label for="schedulePassword">🔒 รหัสยืนยัน</label><input type="password" id="schedulePassword" inputmode="numeric" autocomplete="off" placeholder="กรอกรหัสก่อนบันทึก"></div>
+    <div class="pw-row"><label for="schedulePassword"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>รหัสยืนยัน</label><input type="text" id="schedulePassword" class="masked" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="กรอกรหัสก่อนบันทึก"></div>
     {% endif %}
     <div id="scheduleError" class="err"></div>
     <div class="modal-foot">
