@@ -125,7 +125,7 @@ th.grp,td.grp{border-left:1px solid var(--sep)}
 <div class="filters" role="search" aria-label="ตัวกรอง">
   <div class="fgroup"><span class="flabel">ช่วงปิดงาน</span>
     <div class="seg" id="fPreset">
-      <button data-p="yday">เมื่อวาน</button><button data-p="7d">7 วัน</button><button data-p="month" class="on">เดือนนี้</button><button data-p="prev">เดือนก่อน</button>
+      <button data-p="today">วันนี้</button><button data-p="yday">เมื่อวาน</button><button data-p="7d">7 วัน</button><button data-p="month" class="on">เดือนนี้</button><button data-p="prev">เดือนก่อน</button>
     </div>
     <label class="dates"><svg class="i" style="color:var(--muted)"><use href="#cal"/></svg>
       <input type="date" id="fFrom" aria-label="ตั้งแต่วันที่"><span>–</span><input type="date" id="fTo" aria-label="ถึงวันที่"></label>
@@ -142,7 +142,7 @@ th.grp,td.grp{border-left:1px solid var(--sep)}
 
 <main>
   <div id="banner"></div>
-  <div class="fresh"><span>ข้อมูลปิดงานถึง <b class="num" id="fLast"></b> (<span id="fFile">ไฟล์ Data Job done</span> · ไฟล์เดียวกับ Monthly Report)</span><span>งานค้าง ณ <b class="num" id="fUpd"></b> (ไฟล์ JobMonitor ล่าสุด)</span><span id="fOther"></span></div>
+  <div class="fresh"><span id="fSrc"></span><span>งานค้าง ณ <b class="num" id="fUpd"></b> (ไฟล์ล่าสุดที่อัปโหลด)</span><span id="fOther"></span></div>
 
   <section class="kpis" aria-label="สรุป">
     <div class="kpi"><span class="t">ปิดงาน (Done)</span><span class="v num" id="kDone" style="color:var(--done)"></span><span class="s" id="kDoneS"></span></div>
@@ -162,7 +162,7 @@ th.grp,td.grp{border-left:1px solid var(--sep)}
     <div class="panel-h"><b>รายทีม</b>
       <span><label><input type="checkbox" id="fGroupCo" checked> จัดกลุ่มตามบริษัท</label> · กดหัวคอลัมน์เพื่อเรียง</span></div>
     <div class="tw" id="table"></div>
-    <div class="foot">Done = งานที่ปิดในช่วงวันที่เลือก (REPORT_DATE) · Remain = งานค้างตอนนี้ ไม่ขึ้นกับช่วงวันที่ · % = Done ÷ (Done + Remain)</div>
+    <div class="foot">Done = งานที่ปิดในช่วงวันที่เลือก — วันที่อยู่ในไฟล์ Monthly Report ใช้เวลาปิดจริง (REPORT_DATE) · วันหลังจากนั้นนับงานที่ขึ้น Done(Not Leave) หรือหายไปจากไฟล์ที่อัปโหลดถัดไป (นับตามวันที่อัปโหลด) · Remain = งานค้างตอนนี้ · % = Done ÷ (Done + Remain)</div>
   </section>
 </main>
 
@@ -178,7 +178,8 @@ const thDate = (s) => { const [y, m, d] = s.split("-"); return `${+d}/${+m}`; };
 const st = {from: D.range[0], to: D.range[1], preset: "month", co: "", grp: "", zone: "", q: "", byCo: true, sort: "done", dir: -1};
 
 function presetRange(p) {
-  if (p === "yday") return [LAST, LAST];
+  if (p === "today") return [LAST, LAST];
+  if (p === "yday") return [addDays(LAST, -1), addDays(LAST, -1)];
   if (p === "7d") return [addDays(LAST, -6), LAST];
   if (p === "month") return [LAST.slice(0, 8) + "01", LAST];
   const first = LAST.slice(0, 8) + "01", prevEnd = addDays(first, -1);
@@ -244,6 +245,11 @@ function renderChart(daily) {
     if (acc) s += `<text x="${x}" y="${y(acc) - 3}" text-anchor="middle" font-size="10" fill="#315A28">${acc}</text>`;
     if (days.length <= 16 || k % Math.ceil(days.length / 16) === 0) s += `<text x="${x}" y="${H - 6}" text-anchor="middle" font-size="10" fill="#637361">${thDate(d)}</text>`;
   });
+  const ml = (D.monthly_last || "").slice(0, 10), k0 = days.indexOf(addDays(ml, 1));
+  if (ml && D.upload_latest && k0 > 0) {
+    const xb = 40 + k0 * (W - 44) / days.length;
+    s += `<line x1="${xb}" x2="${xb}" y1="${top - 6}" y2="${base}" stroke="#8DBF5F" stroke-dasharray="4 3"/><text x="${xb + 5}" y="${top + 2}" font-size="10" fill="#4F8F18">นับจากไฟล์อัปโหลด</text>`;
+  }
   $("chart").innerHTML = `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="min-width:${W > 900 ? W : 0}px" role="img" aria-label="ปิดงานรายวัน">${s}</svg></div>`;
 }
 const SORTS = {team: r => r.name, done: r => tot(r.done), rem: r => tot(r.rem), pct: r => { const d = tot(r.done), x = tot(r.rem); return d + x ? d / (d + x) : 1; },
@@ -284,7 +290,7 @@ async function loadRange() {
     const j = await r.json();
     if (seq !== fetchSeq) return;   // a newer range was picked meanwhile
     const wasLoading = D.loading;
-    Object.assign(D, {done: j.done, other: j.other, last: j.last, first: j.first, file: j.file, loading: j.loading, error: j.error});
+    Object.assign(D, j);
     if (wasLoading && !j.loading && j.last) {   // first read finished: move the default range to the data's last day
       LAST = j.last.slice(0, 10);
       if (st.preset) { [st.from, st.to] = presetRange(st.preset); return loadRange(); }
@@ -299,8 +305,10 @@ function showBanner(kind, text) {
 }
 function render() {
   showBanner(D.error ? "err" : D.loading ? "wait" : "", D.error || (D.loading ? "กำลังอ่านไฟล์ Data Job done (ไฟล์ใหญ่ ใช้เวลาประมาณ 10 วินาที) — งานค้างแสดงได้แล้ว" : ""));
-  $("fFile").textContent = D.file || "ไฟล์ Data Job done";
-  $("fLast").textContent = D.last ? D.last.slice(0, 16) : "-";
+  // where the Done numbers come from: the workbook up to its last day, uploads after that
+  const ml = (D.monthly_last || "").slice(0, 10), us = (D.upload_since || "").slice(0, 16), ul = (D.upload_latest || "").slice(0, 16);
+  $("fSrc").innerHTML = (ml ? `ปิดงานถึง <b class="num">${thDate(ml)}</b> จากไฟล์ Monthly Report` : "") +
+    (ul ? `${ml ? " · หลังจากนั้น" : "ปิดงาน"}นับจากไฟล์ที่อัปโหลด (เริ่มเก็บ <b class="num">${esc(us)}</b> · ล่าสุด <b class="num">${esc(ul)}</b>)` : "");
   if (D.first) $("fFrom").min = $("fTo").min = D.first;
   $("fFrom").max = $("fTo").max = LAST;
   renderFilters();

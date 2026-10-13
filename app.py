@@ -151,6 +151,7 @@ CONTACT_FILE = BASE_DIR / "contacts.json"
 DAILY_OSP_FILE = BASE_DIR / "daily_osp_remain.json"
 RESOURCE_FILE = BASE_DIR / "resource_monitor_history.json"
 DAILY_OSP_SCHEDULE_FILE = BASE_DIR / "daily_osp_schedule.json"
+TEAM_DONE_LEDGER = BASE_DIR / "team_done_ledger.json"   # closures seen between uploads
 DAILY_OSP_DEFAULT_TIMES = ["06:00", "18:00"]
 DAILY_OSP_MAX_RECORDS = 730
 RESOURCE_MONITOR_MAX_RECORDS = 20000
@@ -996,6 +997,8 @@ def dashboard():
             # instead of waiting for the next :00 / :30 snapshot.
             try: save_resource_snapshot()
             except Exception: app.logger.exception("Resource snapshot after upload failed")
+            try: record_team_closures()
+            except Exception: app.logger.exception("Team Done closures after upload failed")
         except Exception as exc:
             flash(f"อ่านไฟล์ไม่สำเร็จ: {exc}","error")
         return redirect("/dashboard")
@@ -1293,24 +1296,58 @@ def export_dashboard_excel():
 # Closed jobs per team (Monthly Report's "Data Job done" workbook) next to what each team
 # still holds now (latest JobMonitor upload).
 
+def upload_osp_jobs():
+    """Every OSP job in the current upload (open and Done(Not Leave)) for the closure ledger."""
+    jobs = {}
+    for r in ORIGINAL_DATA:
+        if clean_text(r.get("Sub System", "")) not in VALID_SUBSYSTEMS:
+            continue
+        p = td.PRIORITY_KEY.get(clean_text(r.get("Priority", "")).lower())
+        jid = clean_text(r.get("Job ID", ""))
+        if p and jid:
+            jobs[jid] = [clean_text(r.get("Assign to", "")), p,
+                         SUB_GROUP.get(clean_text(r.get("Sub System", "")).casefold(), ""), clean_text(r.get("Status", ""))]
+    return jobs
+
+def record_team_closures():
+    stamp = now_local().strftime("%Y-%m-%d %H:%M")
+    td.mark_since(TEAM_DONE_LEDGER, stamp)
+    return td.record_upload(TEAM_DONE_LEDGER, upload_osp_jobs(), stamp)
+
+def team_done_sources():
+    """Monthly Report counts (exact, but uploaded now and then) and upload-ledger counts,
+    plus the day after which the ledger takes over."""
+    data, status = td.snapshot(SUB_GROUP)
+    upload_rows, up = td.upload_closures(TEAM_DONE_LEDGER)
+    monthly_last = data["last"][:10] if data and data["last"] else ""
+    return data, status, upload_rows, up, monthly_last
+
 def team_done_payload(day_from, day_to):
     """Done counts in [day_from, day_to] per dashboard team, plus jobs closed by names
-    outside the team list (shown as a note, not in the table)."""
-    data, status = td.snapshot(SUB_GROUP)
+    outside the team list (shown as a note, not in the table). Days up to the workbook's
+    last close date use the workbook; later days use closures seen between uploads."""
+    data, status, upload_rows, up, monthly_last = team_done_sources()
     index = {t["user"].casefold(): i for i, t in enumerate(dashboard_teams())}
     done, other = collections.Counter(), collections.Counter()
-    if data:
-        for (name, day, p, g), n in data["rows"].items():
-            if day_from <= day <= day_to:
+    def add(rows, keep):
+        for (name, day, p, g), n in rows.items():
+            if day_from <= day <= day_to and keep(day):
                 i = index.get(name)
                 if i is None:
                     other[(day, p, g)] += n
                 else:
                     done[(i, day, p, g)] += n
+    if data:
+        add(data["rows"], lambda day: True)
+    add(upload_rows, lambda day: day > monthly_last)
+    latest_upload = up["latest"][:10]
     return {
         "done": [[*k, n] for k, n in done.items()], "other": [[*k, n] for k, n in other.items()],
-        "first": data["first"] if data else "", "last": data["last"] if data else "",
-        "file": data["file"] if data else "", "loading": status["loading"] and not data, "error": status["error"],
+        "first": data["first"] if data else (up["since"][:10] if up["since"] else ""),
+        "last": max(monthly_last, latest_upload), "monthly_last": data["last"] if data else "",
+        "upload_since": up["since"], "upload_latest": up["latest"],
+        "file": data["file"] if data else "", "loading": status["loading"] and not data,
+        "error": status["error"] if not up["latest"] else "",
     }
 
 def team_remain():
@@ -1324,9 +1361,9 @@ def team_remain():
     return [[*k, n] for k, n in remain.items()]
 
 def default_done_range():
-    """This month up to the newest closed job (the page's default view)."""
-    data, _ = td.snapshot(SUB_GROUP)
-    last = data["last"][:10] if data and data["last"] else now_local().strftime("%Y-%m-%d")
+    """This month up to the newest day with closures (the page's default view)."""
+    data, _, _, up, monthly_last = team_done_sources()
+    last = max(monthly_last, up["latest"][:10]) or now_local().strftime("%Y-%m-%d")
     return last[:8] + "01", last
 
 @app.route("/team_done")
@@ -1361,4 +1398,7 @@ if __name__ == "__main__":
                 (nm.SITE_MASTER_FILE.exists() and nm.SITE_MASTER_FILE.stat().st_mtime > nm.SITE_TABLE_FILE.stat().st_mtime)):
             threading.Thread(target=rebuild_site_table, name="site-table", daemon=True).start()
         td.snapshot(SUB_GROUP)   # start reading the done workbook now, not on the first page view
+        if RAW_DATA and not td.upload_closures(TEAM_DONE_LEDGER)[1]["latest"]:
+            try: record_team_closures()   # first run: today's upload is the baseline to compare against
+            except Exception: app.logger.exception("Team Done baseline failed")
     app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)),debug=os.environ.get("FLASK_DEBUG")=="1")
