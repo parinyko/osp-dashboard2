@@ -326,8 +326,10 @@ def prepare_job_dataframe(df):
     priority = normalize_priority_series(out)
     out = out[~status.str.contains("done(not leave)", regex=False)]
     out = out[priority.ne("") & priority.ne("none")].copy()
-    order = {name: i for i, name in enumerate(ASSIGN_ORDER)}
-    out["_sort"] = out["Assign to"].fillna("").astype(str).str.strip().map(order).fillna(9999)
+    # known teams in table order, then anyone else, and Workforce BKK Pool (not dispatched yet) always last
+    order = {name.casefold(): i for i, name in enumerate(ASSIGN_ORDER)}
+    order["workforce bkk pool"] = len(ASSIGN_ORDER) + 1
+    out["_sort"] = out["Assign to"].fillna("").astype(str).str.strip().str.casefold().map(order).fillna(len(ASSIGN_ORDER))
     out = out.sort_values(["_sort", "Assign to"], kind="stable").drop(columns="_sort")
     return out
 
