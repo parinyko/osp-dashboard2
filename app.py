@@ -928,7 +928,7 @@ def build_home_summary():
 
     team_rows = build_dashboard_data(job_df) if not job_df.empty else empty_dashboard_data()
     missing_keywords = ("ลา", "ไม่มีทีม", "รถเสีย")
-    working = onsite = departed = free = missing = late = 0
+    working = onsite = departed = free = missing = late = other = 0
     team_status_rows = []
     now = datetime.now(ZoneInfo("Asia/Bangkok"))
 
@@ -950,8 +950,15 @@ def build_home_summary():
                 status = "Departed"
                 departed += 1
             elif row.get("work_status") == "Working":
-                status = "Working"
-                working += 1
+                # the Working card counts teams holding an Assigned or Accepted job; a team holding
+                # only Held / Transfered / Created / Interupted jobs is not in it, but is still ready
+                st = row.get("status_text", "").lower()
+                if "assigned" in st or "accepted" in st:
+                    status = "Working"
+                    working += 1
+                else:
+                    status = "งานอื่น"
+                    other += 1
             else:
                 status = "ว่าง"
                 free += 1
@@ -968,7 +975,7 @@ def build_home_summary():
         "team_summary": {
             "working": working, "onsite": onsite, "departed": departed,
             "free": free, "missing": missing,
-            "late": late, "ready": working + onsite + departed + free, "total": total_teams,
+            "late": late, "ready": working + onsite + departed + free + other, "total": total_teams,
         },
     }
 
