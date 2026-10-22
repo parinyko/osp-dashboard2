@@ -471,7 +471,8 @@ tbody tr:hover{
       <span class="lbl">SUB SYSTEM</span>
       <button type="button" class="subsystem-filter" data-subsystem-group="mbb" title="Transmission-OSP">MBB <span class="n" id="mbbCount">0</span></button>
       <button type="button" class="subsystem-filter" data-subsystem-group="eds" title="EDS 4 Sub Systems">EDS <span class="n" id="edsCount">0</span></button>
-      <button type="button" class="subsystem-filter" data-subsystem-group="fbb" title="FBB 4 Sub Systems">FBB <span class="n" id="fbbCount">0</span></button>
+      <button type="button" class="subsystem-filter" data-subsystem-group="fbb" title="FTTB · FTTH · FTTX">FBB <span class="n" id="fbbCount">0</span></button>
+      <button type="button" class="subsystem-filter" data-subsystem-group="splitter" title="Splitter-OSP">Splitter <span class="n" id="splitterCount">0</span></button>
     </div>
     <span id="activeFilterText" class="jh-active">แสดงทั้งหมด</span>
     <button type="button" class="jh-tool" id="showAllBtn"><svg class="i" aria-hidden="true"><use href="#i-reset"/></svg>ล้างตัวกรอง</button>
@@ -1292,7 +1293,9 @@ const subsystemGroups = {
   fbb: [
     'fttb-osp',
     'ftth-osp',
-    'fttx-osp',
+    'fttx-osp'
+  ],
+  splitter: [
     'splitter-osp'
   ]
 };
@@ -1448,7 +1451,7 @@ function updateSummary(){
 
 
 function updateSubsystemCounts(){
-  const counts = {mbb:0, eds:0, fbb:0};
+  const counts = {mbb:0, eds:0, fbb:0, splitter:0};
 
   document.querySelectorAll('.job-row').forEach(row => {
     const group = getSubsystemGroup(row.dataset.subsystem);
@@ -1588,7 +1591,7 @@ function updateActiveFilters(){
   if(activeText){
     const parts = [];
     if(filterState.subsystem){
-      const names = {mbb:'MBB', eds:'EDS', fbb:'FBB'};
+      const names = {mbb:'MBB', eds:'EDS', fbb:'FBB', splitter:'Splitter'};
       parts.push('Sub System: ' + (names[filterState.subsystem] || filterState.subsystem));
     }
     if(filterState.priority) parts.push('Priority: ' + filterState.priority.toUpperCase());
