@@ -1,0 +1,16 @@
+node_modules/
+dist/
+server/.venv/
+server/storage/
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.log
+# Job data stays out of git: ~50 MB per year, uploaded through the web UI instead.
+*.xlsx
+*.xlsm
+
+# real secrets stay out of this public repo; see .env.example
+.env

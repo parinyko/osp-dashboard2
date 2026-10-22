@@ -1,0 +1,13 @@
+node_modules
+dist
+data
+server/.venv
+server/storage
+server/test_*.py
+**/__pycache__
+.pytest_cache
+.git
+.claude
+*.xlsx
+*.xlsm
+*.md

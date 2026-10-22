@@ -1,0 +1,27 @@
+{
+  "name": "osp-monthly-report",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "node scripts/dev-api.mjs",
+    "dev:all": "concurrently -n vite,api -c green,cyan \"npm:dev\" \"npm:dev:server\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "server/.venv/bin/python -m pytest -q server"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "pptxgenjs": "^4.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
+    "vite": "^5.4.10"
+  }
+}
