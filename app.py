@@ -685,34 +685,25 @@ def _transmission_type(title):
     return "Optic LOS"
 
 
-def _empty_aging_counts():
-    return {
-        "today": 0,
-        "lt3": 0,
-        "lt7": 0,
-        "lt15": 0,
-        "over15": 0,
-        "total": 0,
-    }
+# Age buckets: (key, upper bound in hours, exclusive; None = no upper bound), in display order.
+# Mutually exclusive: a job lands in the first bucket whose bound is above its age.
+AGING_DAY_BUCKETS = [("today", 24), ("lt3", 72), ("lt7", 168), ("lt15", 360), ("over15", None)]
+AGING_HOUR_BUCKETS = [("h3", 3), ("h10", 10), ("h24", 24), ("over24", None)]
 
 
-def _add_aging_bucket(counts, age_days):
-    # Buckets are mutually exclusive and follow the requested display order.
-    if age_days < 1:
-        counts["today"] += 1
-    elif age_days < 3:
-        counts["lt3"] += 1
-    elif age_days < 7:
-        counts["lt7"] += 1
-    elif age_days < 15:
-        counts["lt15"] += 1
-    else:
-        counts["over15"] += 1
+def _empty_aging_counts(buckets=AGING_DAY_BUCKETS):
+    return {**{key: 0 for key, _ in buckets}, "total": 0}
+
+
+def _add_aging_bucket(counts, age_hours, buckets=AGING_DAY_BUCKETS):
+    key = next(k for k, upper in buckets if upper is None or age_hours < upper)
+    counts[key] += 1
     counts["total"] += 1
 
 
-def build_osp_aging_summary(job_df):
-    """Build the requested grouped OSP aging table from Create Time."""
+def build_osp_aging_summary(job_df, buckets=AGING_DAY_BUCKETS):
+    """Build the requested grouped OSP aging table from Create Time.
+    buckets picks the age columns: days (OSP Job Aging Summary) or hours (the hour table)."""
     rows = []
     if job_df is None or job_df.empty:
         return rows
@@ -747,16 +738,10 @@ def build_osp_aging_summary(job_df):
             if subsystem == "Transmission-OSP":
                 for kind in ("Optic LOS", "BBU", "RRU", "High loss", "ร้องเรียน"):
                     accumulators[(group_name, subsystem, kind)] = {
-                        "critical": _empty_aging_counts(),
-                        "major": _empty_aging_counts(),
-                        "minor": _empty_aging_counts(),
-                    }
+                        p: _empty_aging_counts(buckets) for p in ("critical", "major", "minor")}
             else:
                 accumulators[(group_name, subsystem, None)] = {
-                    "critical": _empty_aging_counts(),
-                    "major": _empty_aging_counts(),
-                    "minor": _empty_aging_counts(),
-                }
+                    p: _empty_aging_counts(buckets) for p in ("critical", "major", "minor")}
 
     for idx, row in filtered.iterrows():
         subsystem = str(filtered_subsystems.loc[idx]).strip()
@@ -768,7 +753,7 @@ def build_osp_aging_summary(job_df):
         # A Job without a usable Create Time cannot be assigned an age bucket.
         if create_dt is None:
             continue
-        age_days = max((now - create_dt).total_seconds() / 86400.0, 0.0)
+        age_hours = max((now - create_dt).total_seconds() / 3600.0, 0.0)
 
         kind = _transmission_type(row[title_col]) if subsystem == "Transmission-OSP" and title_col else (
             "Optic LOS" if subsystem == "Transmission-OSP" else None
@@ -778,7 +763,7 @@ def build_osp_aging_summary(job_df):
         )
         if key is None:
             continue
-        _add_aging_bucket(accumulators[key][priority], age_days)
+        _add_aging_bucket(accumulators[key][priority], age_hours, buckets)
 
     for group_name, subsystems in OSP_AGING_GROUPS:
         for subsystem in subsystems:
@@ -904,6 +889,7 @@ def build_home_summary():
         subsystem_summary = [{"subsystem": name, "critical": 0, "major": 0, "minor": 0, "total": 0} for name in VALID_SUBSYSTEMS]
 
     osp_aging_summary = build_osp_aging_summary(job_df)
+    osp_aging_hours = build_osp_aging_summary(job_df, AGING_HOUR_BUCKETS)
     zone_group_summary = build_zone_group_summary(job_df)
     # Done(Not Leave) must be counted from the original upload because
     # prepare_job_dataframe() intentionally removes those rows.
@@ -968,6 +954,7 @@ def build_home_summary():
     return {
         "subsystem_summary": subsystem_summary,
         "osp_aging_summary": osp_aging_summary,
+        "osp_aging_hours": osp_aging_hours,
         "zone_group_summary": zone_group_summary,
         "done_not_leave_by_group": done_not_leave_by_group,
         "done_not_leave_total": done_not_leave_total,

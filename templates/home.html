@@ -186,6 +186,8 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
 
 /* OSP aging v3: requested group/order and Transmission title breakdown */
 .osp-age-table-v3{min-width:1260px}
+.osp-age-table-v3.osp-age-hours{min-width:1080px}
+.osp-age-hours-panel{margin-top:14px}
 .osp-age-table-v3 .subsystem-head,.osp-age-table-v3 td.subsystem-cell{min-width:190px;width:190px}
 .osp-age-table-v3 .age-sub{display:block;margin-top:2px;font-size:8.5px;font-weight:700;opacity:.72}
 .osp-age-table-v3 .aging-group-row td{padding:5px 8px;text-align:left;background:#edf6e8!important;border-top:2px solid #c9dcc2;border-bottom:1px solid #d7e6d1;color:#315a2c}
@@ -284,106 +286,95 @@ h1{margin:0;color:#4f8f18;font-size:28px;font-weight:900}.subtitle{margin-top:4p
   </div>
 </section>
 
+{#- One OSP aging table: groups EDS / FBB / MBB, Critical / Major / Minor, one column per age bucket.
+    rows   = build_osp_aging_summary(...) output
+    buckets = [(key, label, sub-label)] in display order; keys match the row fields (critical_<key>) -#}
+{% macro aging_table(rows, buckets, extra_class='') %}
+{% set P = ['critical', 'major', 'minor'] %}
+{% set n = buckets|length %}
+<div class="osp-age-wrap">
+  <table class="osp-age-table osp-age-table-v3 {{ extra_class }}">
+    <thead>
+      <tr>
+        <th class="subsystem-head" rowspan="2">กลุ่ม / Sub System</th>
+        {% for p in P %}<th class="group-{{ p }}" colspan="{{ n + 1 }}">{{ p|capitalize }}</th>{% endfor %}
+        <th class="grand-total-head" rowspan="2">Grand<br>Total</th>
+      </tr>
+      <tr>
+        {% for p in P %}
+          {% for key, label, sub in buckets %}<th class="age-{{ p }}">{{ label }}{% if sub %}<span class="age-sub">{{ sub }}</span>{% endif %}</th>{% endfor %}
+          <th class="{{ p }}-total-head">Total</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% set ns = namespace(last_group='', transmission_shown=false) %}
+    {% for r in rows %}
+      {% if r.group != ns.last_group %}
+        {% set grows = rows|selectattr('group','equalto',r.group)|list %}
+        <tr class="aging-group-row aging-group-{{ r.group|lower }}">
+          <td class="subsystem-cell"><span class="aging-group-badge">{{ r.group }}</span></td>
+          {% for p in P %}
+            {% for key, label, sub in buckets %}<td class="num">{{ (grows|sum(attribute=p ~ '_' ~ key)) or '' }}</td>{% endfor %}
+            <td class="num priority-total-{{ p }}">{{ (grows|sum(attribute=p ~ '_total')) or '' }}</td>
+          {% endfor %}
+          <td class="num grand-total">{{ (grows|sum(attribute='total')) or '' }}</td>
+        </tr>
+        {% set ns.last_group = r.group %}
+      {% endif %}
+      <tr class="{% if r.transmission %}transmission-child{% endif %}">
+        <td class="subsystem-cell">
+          {% if r.transmission %}
+            {% if not ns.transmission_shown %}
+              <span class="transmission-subsystem">Transmission-OSP</span>
+              {% set ns.transmission_shown = true %}
+            {% endif %}
+            <span class="transmission-kind">{{ r.label }}</span>
+          {% else %}
+            <span class="subsystem-label">{{ r.label }}</span>
+          {% endif %}
+        </td>
+        {% for p in P %}
+          {% for key, label, sub in buckets %}<td class="num">{{ r[p ~ '_' ~ key] or '' }}</td>{% endfor %}
+          <td class="num priority-total-{{ p }}">{{ r[p ~ '_total'] or '' }}</td>
+        {% endfor %}
+        <td class="num grand-total">{{ r.total or '' }}</td>
+      </tr>
+    {% endfor %}
+    {% if not rows %}
+      <tr><td colspan="{{ 2 + 3 * (n + 1) }}" class="empty">ขณะนี้ไม่มี Job ค้าง หรือไม่พบ Create Time ที่อ่านได้</td></tr>
+    {% endif %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="subsystem-head"><b>Grand Total</b></td>
+        {% for p in P %}
+          {% for key, label, sub in buckets %}<td class="num priority-total-{{ p }}">{{ (rows|sum(attribute=p ~ '_' ~ key)) or '' }}</td>{% endfor %}
+          <td class="num priority-total-{{ p }}">{{ (rows|sum(attribute=p ~ '_total')) or '' }}</td>
+        {% endfor %}
+        <td class="num grand-total">{{ (rows|sum(attribute='total')) or '' }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endmacro %}
+
 <section class="panel osp-age-panel">
   <div class="panel-head">
     <div class="panel-title">OSP Job Aging Summary</div>
     <div class="panel-note">เรียงตามกลุ่ม EDS → FBB → MBB · Today (&lt; 1 วัน) → &lt;3 → &lt;7 → &lt;15 → Over 15 วัน</div>
   </div>
-  <div class="osp-age-wrap">
-    <table class="osp-age-table osp-age-table-v3">
-      <thead>
-        <tr>
-          <th class="subsystem-head" rowspan="2">กลุ่ม / Sub System</th>
-          <th class="group-critical" colspan="6">Critical</th>
-          <th class="group-major" colspan="6">Major</th>
-          <th class="group-minor" colspan="6">Minor</th>
-          <th class="grand-total-head" rowspan="2">Grand<br>Total</th>
-        </tr>
-        <tr>
-          <th class="age-critical">Today<span class="age-sub">&lt; 1 วัน</span></th>
-          <th class="age-critical">&lt;3 วัน</th>
-          <th class="age-critical">&lt;7 วัน</th>
-          <th class="age-critical">&lt;15 วัน</th>
-          <th class="age-critical">Over 15 วัน</th>
-          <th class="critical-total-head">Total</th>
-
-          <th class="age-major">Today<span class="age-sub">&lt; 1 วัน</span></th>
-          <th class="age-major">&lt;3 วัน</th>
-          <th class="age-major">&lt;7 วัน</th>
-          <th class="age-major">&lt;15 วัน</th>
-          <th class="age-major">Over 15 วัน</th>
-          <th class="major-total-head">Total</th>
-
-          <th class="age-minor">Today<span class="age-sub">&lt; 1 วัน</span></th>
-          <th class="age-minor">&lt;3 วัน</th>
-          <th class="age-minor">&lt;7 วัน</th>
-          <th class="age-minor">&lt;15 วัน</th>
-          <th class="age-minor">Over 15 วัน</th>
-          <th class="minor-total-head">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% set ns = namespace(last_group='', transmission_shown=false) %}
-      {% for r in osp_aging_summary %}
-        {% if r.group != ns.last_group %}
-          {% set grows = osp_aging_summary|selectattr('group','equalto',r.group)|list %}
-          <tr class="aging-group-row aging-group-{{ r.group|lower }}">
-            <td class="subsystem-cell"><span class="aging-group-badge">{{ r.group }}</span></td>
-            <td class="num">{{ (grows|sum(attribute='critical_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='critical_over15')) or '' }}</td><td class="num priority-total-critical">{{ (grows|sum(attribute='critical_total')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='major_over15')) or '' }}</td><td class="num priority-total-major">{{ (grows|sum(attribute='major_total')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_today')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt3')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt7')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_lt15')) or '' }}</td><td class="num">{{ (grows|sum(attribute='minor_over15')) or '' }}</td><td class="num priority-total-minor">{{ (grows|sum(attribute='minor_total')) or '' }}</td><td class="num grand-total">{{ (grows|sum(attribute='total')) or '' }}</td>
-          </tr>
-          {% set ns.last_group = r.group %}
-        {% endif %}
-        <tr class="{% if r.transmission %}transmission-child{% endif %}">
-          <td class="subsystem-cell">
-            {% if r.transmission %}
-              {% if not ns.transmission_shown %}
-                <span class="transmission-subsystem">Transmission-OSP</span>
-                {% set ns.transmission_shown = true %}
-              {% endif %}
-              <span class="transmission-kind">{{ r.label }}</span>
-            {% else %}
-              <span class="subsystem-label">{{ r.label }}</span>
-            {% endif %}
-          </td>
-          <td class="num">{{ '' if r.critical_today == 0 else r.critical_today }}</td><td class="num">{{ '' if r.critical_lt3 == 0 else r.critical_lt3 }}</td><td class="num">{{ '' if r.critical_lt7 == 0 else r.critical_lt7 }}</td><td class="num">{{ '' if r.critical_lt15 == 0 else r.critical_lt15 }}</td><td class="num">{{ '' if r.critical_over15 == 0 else r.critical_over15 }}</td><td class="num priority-total-critical">{{ '' if r.critical_total == 0 else r.critical_total }}</td>
-          <td class="num">{{ '' if r.major_today == 0 else r.major_today }}</td><td class="num">{{ '' if r.major_lt3 == 0 else r.major_lt3 }}</td><td class="num">{{ '' if r.major_lt7 == 0 else r.major_lt7 }}</td><td class="num">{{ '' if r.major_lt15 == 0 else r.major_lt15 }}</td><td class="num">{{ '' if r.major_over15 == 0 else r.major_over15 }}</td><td class="num priority-total-major">{{ '' if r.major_total == 0 else r.major_total }}</td>
-          <td class="num">{{ '' if r.minor_today == 0 else r.minor_today }}</td><td class="num">{{ '' if r.minor_lt3 == 0 else r.minor_lt3 }}</td><td class="num">{{ '' if r.minor_lt7 == 0 else r.minor_lt7 }}</td><td class="num">{{ '' if r.minor_lt15 == 0 else r.minor_lt15 }}</td><td class="num">{{ '' if r.minor_over15 == 0 else r.minor_over15 }}</td><td class="num priority-total-minor">{{ '' if r.minor_total == 0 else r.minor_total }}</td>
-          <td class="num grand-total">{{ '' if r.total == 0 else r.total }}</td>
-        </tr>
-      {% endfor %}
-      {% if not osp_aging_summary %}
-        <tr><td colspan="20" class="empty">ขณะนี้ไม่มี Job ค้าง หรือไม่พบ Create Time ที่อ่านได้</td></tr>
-      {% endif %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td class="subsystem-head"><b>Grand Total</b></td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_today')) == 0 else (osp_aging_summary|sum(attribute='critical_today')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt3')) == 0 else (osp_aging_summary|sum(attribute='critical_lt3')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt7')) == 0 else (osp_aging_summary|sum(attribute='critical_lt7')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_lt15')) == 0 else (osp_aging_summary|sum(attribute='critical_lt15')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_over15')) == 0 else (osp_aging_summary|sum(attribute='critical_over15')) }}</td>
-          <td class="num priority-total-critical">{{ '' if (osp_aging_summary|sum(attribute='critical_total')) == 0 else (osp_aging_summary|sum(attribute='critical_total')) }}</td>
-
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_today')) == 0 else (osp_aging_summary|sum(attribute='major_today')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt3')) == 0 else (osp_aging_summary|sum(attribute='major_lt3')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt7')) == 0 else (osp_aging_summary|sum(attribute='major_lt7')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_lt15')) == 0 else (osp_aging_summary|sum(attribute='major_lt15')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_over15')) == 0 else (osp_aging_summary|sum(attribute='major_over15')) }}</td>
-          <td class="num priority-total-major">{{ '' if (osp_aging_summary|sum(attribute='major_total')) == 0 else (osp_aging_summary|sum(attribute='major_total')) }}</td>
-
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_today')) == 0 else (osp_aging_summary|sum(attribute='minor_today')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt3')) == 0 else (osp_aging_summary|sum(attribute='minor_lt3')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt7')) == 0 else (osp_aging_summary|sum(attribute='minor_lt7')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_lt15')) == 0 else (osp_aging_summary|sum(attribute='minor_lt15')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_over15')) == 0 else (osp_aging_summary|sum(attribute='minor_over15')) }}</td>
-          <td class="num priority-total-minor">{{ '' if (osp_aging_summary|sum(attribute='minor_total')) == 0 else (osp_aging_summary|sum(attribute='minor_total')) }}</td>
-          <td class="num grand-total">{{ '' if (osp_aging_summary|sum(attribute='total')) == 0 else (osp_aging_summary|sum(attribute='total')) }}</td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+  {{ aging_table(osp_aging_summary, [('today', 'Today', '< 1 วัน'), ('lt3', '<3 วัน', ''), ('lt7', '<7 วัน', ''), ('lt15', '<15 วัน', ''), ('over15', 'Over 15 วัน', '')]) }}
   <div class="osp-age-note">Transmission-OSP แยกจาก Job Title: <b>Optic LOS</b> = นอกเหนือจาก 4 รายการ · <b>BBU</b> = Node B Down · <b>RRU</b> = RRU · <b>High loss</b> = Highloss / High loss · <b>ร้องเรียน</b> = ร้องเรียน</div>
+</section>
+
+<section class="panel osp-age-panel osp-age-hours-panel">
+  <div class="panel-head">
+    <div class="panel-title">OSP Job Aging Summary · รายชั่วโมง</div>
+    <div class="panel-note">งานชุดเดียวกับตารางด้านบน · อายุงานนับจาก Create Time · &lt;3 → 3-10 → 10-24 → &gt;24 ชั่วโมง</div>
+  </div>
+  {{ aging_table(osp_aging_hours, [('h3', '<3 hr', ''), ('h10', '3-10 hr', ''), ('h24', '10-24 hr', ''), ('over24', '>24 hr', '')], 'osp-age-hours') }}
+  <div class="osp-age-note">ขอบเขตช่วง: ครบ 3 ชม. พอดีนับใน 3-10 hr · ครบ 10 ชม. นับใน 10-24 hr · ครบ 24 ชม. ขึ้นไปนับใน &gt;24 hr</div>
 </section>
 
 
