@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Job Monitor</title>
+<title>{{ "All Jobs" if mode == "all" else "Job Monitor" }}</title>
 
 <style>
 *{
@@ -34,6 +34,25 @@ body{
 .jh-grow{flex:1}
 
 .jh-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.6fr);gap:1px;background:#D6E6CE;border-bottom:1px solid #D6E6CE}
+.jh-kpis.five{grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.6fr)}
+.jh-none{width:9px;height:9px;border-radius:2px;border:2px solid #64748B}
+/* All Jobs: Sub System picker (tick boxes + presets) */
+.ss-pick{position:relative}
+.ss-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:1px solid #CFE0C5;border-radius:9px;background:#F7FBF5;color:#315A28;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.ss-btn b{font-family:"IBM Plex Mono",ui-monospace,monospace;color:#1F3322}
+.ss-btn[aria-expanded="true"]{background:#E3F1D6;border-color:#A9CF8A}
+.ss-panel{position:absolute;left:0;top:calc(100% + 6px);z-index:50;width:min(520px,92vw);background:#fff;border:1px solid #D6E6CE;border-radius:12px;box-shadow:0 14px 36px rgba(30,60,20,.18);padding:12px}
+.ss-panel[hidden]{display:none}
+.ss-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ss-presets button{height:30px;padding:0 11px;border:1px solid #CFE0C5;border-radius:999px;background:#fff;color:#315A28;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.ss-presets button.on{background:#4F8F18;border-color:#4F8F18;color:#fff}
+.ss-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px;max-height:46vh;overflow:auto;border-top:1px solid #EEF2EC;padding-top:8px}
+.ss-list label{display:flex;align-items:center;gap:7px;padding:4px 4px;border-radius:6px;font-size:12.5px;color:#1F3322;cursor:pointer}
+.ss-list label:hover{background:#F7FBF5}
+.ss-list label span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-list label em{font-style:normal;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;color:#637361}
+.ss-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:#637361}
+.ss-foot button{border:0;background:none;color:#4F8F18;font:inherit;font-weight:600;cursor:pointer;padding:2px 4px}
 .jh-kpi{all:unset;box-sizing:border-box;background:#fff;padding:9px 16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0}
 .jh-kpi:hover{background:#FAFDF8}
 .jh-kpi.active{box-shadow:inset 0 -3px 0 var(--c);background:#FAFDF8}
@@ -434,10 +453,11 @@ tbody tr:hover{
 </svg>
 
 <div class="jh">
-  {% set ab_page = 'jobs' %}{% set ab_title = 'Job Monitor' %}{% set ab_icon = 'list' %}{% set ab_updated = last_update or '-' %}
+  {% if mode == 'all' %}{% set ab_page = 'all' %}{% set ab_title = 'All Jobs' %}{% set ab_icon = 'list' %}{% set ab_sub = 'งานค้างทุก Sub System · เลือกได้หลายอัน' %}
+  {% else %}{% set ab_page = 'jobs' %}{% set ab_title = 'Job Monitor' %}{% set ab_icon = 'list' %}{% endif %}{% set ab_updated = last_update or '-' %}
   {% include "_app_bar.html" %}
 
-  <section class="jh-kpis" aria-label="สรุปงาน กดเพื่อกรอง">
+  <section class="jh-kpis{% if mode == 'all' %} five{% endif %}" aria-label="สรุปงาน กดเพื่อกรอง">
     <button type="button" class="jh-kpi priority-filter" data-priority="" style="--c:#334155">
       <span class="t">งานทั้งหมด</span><span class="v"><span id="totalJobsCount">{{ total_jobs }}</span><small>งาน</small></span>
       <span class="jh-meter"><i style="width:100%"></i></span>
@@ -454,6 +474,12 @@ tbody tr:hover{
       <span class="t"><i class="jh-cir"></i>Minor</span><span class="v"><span id="minorCount">{{ total_minor }}</span><small id="minorPct"></small></span>
       <span class="jh-meter"><i id="minorBar"></i></span>
     </button>
+    {% if mode == 'all' %}
+    <button type="button" class="jh-kpi priority-filter" data-priority="none" style="--c:#64748B" title="งานที่ช่อง Priority ว่าง">
+      <span class="t"><i class="jh-none"></i>None</span><span class="v"><span id="noneCount">{{ total_none }}</span><small id="nonePct"></small></span>
+      <span class="jh-meter"><i id="noneBar"></i></span>
+    </button>
+    {% endif %}
     <div class="jh-zones" role="group" aria-label="โซน">
       <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ST2" style="--c:#2563EB"><span class="t"><i></i>SCT</span><span class="v">{{ total_sct }}</span></button>
       <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ONT" style="--c:#DB2777"><span class="t"><i></i>ONT</span><span class="v">{{ total_ont }}</span></button>
@@ -467,6 +493,21 @@ tbody tr:hover{
       <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
       <input id="searchInput" type="search" name="job-monitor-search" autocomplete="off" placeholder="ค้นหา Job ID, ทีม, สถานะ, เขต, โซน" aria-label="ค้นหางาน">
     </label>
+    {% if mode == 'all' %}
+    <div class="ss-pick">
+      <button type="button" class="ss-btn" id="ssBtn" aria-haspopup="true" aria-expanded="false" aria-controls="ssPanel">Sub System <b id="ssLabel">ทั้งหมด</b>
+        <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="ss-panel" id="ssPanel" hidden>
+        <div class="ss-presets" id="ssPresets">
+          {% for pr in presets %}<button type="button" data-preset="{{ pr.key }}">{{ pr.label }}</button>{% endfor %}
+        </div>
+        <div class="ss-list" id="ssList">
+          {% for s in subsystem_counts %}<label><input type="checkbox" value="{{ s.name }}"><span title="{{ s.name }}">{{ s.name }}</span><em>{{ s.count }}</em></label>{% endfor %}
+        </div>
+        <div class="ss-foot"><span id="ssSummary"></span><span><button type="button" id="ssAll">เลือกทั้งหมด</button><button type="button" id="ssNone">ล้าง</button></span></div>
+      </div>
+    </div>
+    {% else %}
     <div class="jh-seg" role="group" aria-label="Sub System">
       <span class="lbl">SUB SYSTEM</span>
       <button type="button" class="subsystem-filter" data-subsystem-group="mbb" title="Transmission-OSP">MBB <span class="n" id="mbbCount">0</span></button>
@@ -474,6 +515,7 @@ tbody tr:hover{
       <button type="button" class="subsystem-filter" data-subsystem-group="fbb" title="FTTB · FTTH · FTTX">FBB <span class="n" id="fbbCount">0</span></button>
       <button type="button" class="subsystem-filter" data-subsystem-group="splitter" title="Splitter-OSP">Splitter <span class="n" id="splitterCount">0</span></button>
     </div>
+    {% endif %}
     <span id="activeFilterText" class="jh-active">แสดงทั้งหมด</span>
     <button type="button" class="jh-tool" id="showAllBtn"><svg class="i" aria-hidden="true"><use href="#i-reset"/></svg>ล้างตัวกรอง</button>
     <span class="jh-grow"></span>
@@ -481,7 +523,7 @@ tbody tr:hover{
       <button id="refreshToggle" type="button" aria-label="หยุดรีเฟรชอัตโนมัติ"><svg class="i" aria-hidden="true"><use href="#i-pause"/></svg></button>
     </span>
     <a class="jh-tool" href="https://script.google.com/macros/s/AKfycbxrLAv4qHBnri9y48ClB08sXiYdQ81-zF63TMkozR2norOQcxR3xHpB0YgRfrlBJAym/exec" target="_blank" rel="noopener noreferrer"><svg class="i" aria-hidden="true"><use href="#i-wave"/></svg>เช็กน้ำท่วม</a>
-    <a class="jh-tool primary" href="/export_excel"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Export Excel</a>
+    <a class="jh-tool primary" id="exportLink" href="/export_excel{% if mode == 'all' %}?mode=all{% endif %}"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Export Excel</a>
   </div>
 </div>
 
@@ -571,7 +613,7 @@ tbody tr:hover{
 
 <tr
   class="job-row"
-  data-priority="{{ priority|lower|trim }}"
+  data-priority="{{ (priority|lower|trim) or 'none' }}"
   data-zone="{{ zone|e }}"
   data-subsystem="{{ row.get('Sub System','')|e }}"
 >
@@ -1259,10 +1301,13 @@ setInterval(
    FILTER
 ========================================== */
 
+const ALL_MODE = {{ (mode == 'all')|tojson }};
+const PRESETS = {{ (presets or [])|tojson }};
 const filterState = {
   zone:'',
   priority:'',
   subsystem:'',
+  subsystems:null,   // All Jobs: Set of ticked Sub Systems
   search:''
 };
 
@@ -1344,10 +1389,10 @@ function applyFilters(){
           row.dataset.priority ===
             filterState.priority;
 
-        const okSubsystem =
-          !filterState.subsystem ||
-          getSubsystemGroup(row.dataset.subsystem) ===
-            filterState.subsystem;
+        const okSubsystem = ALL_MODE
+          ? (filterState.subsystems || new Set()).has(row.dataset.subsystem || '(ไม่ระบุ)')
+          : (!filterState.subsystem ||
+             getSubsystemGroup(row.dataset.subsystem) === filterState.subsystem);
 
 
         const okSearch =
@@ -1358,6 +1403,9 @@ function applyFilters(){
               filterState.search
             );
 
+
+        // All Jobs: zone tiles count what the other filters leave
+        row.dataset.nz = (okPriority && okSubsystem && okSearch) ? '1' : '';
 
         row.style.display =
           (
@@ -1388,6 +1436,7 @@ function updateSummary(){
   let m = 0;
   let n = 0;
   let t = 0;
+  let x = 0;   // no Priority (All Jobs)
 
 
   document
@@ -1432,6 +1481,15 @@ function updateSummary(){
 
         }
 
+        else if(
+          r.dataset.priority ===
+          'none'
+        ){
+
+          x++;
+
+        }
+
       }
     );
 
@@ -1445,6 +1503,14 @@ function updateSummary(){
   set('critical', c);
   set('major', m);
   set('minor', n);
+  if(ALL_MODE){
+    set('none', x);
+    document.querySelectorAll('.zone-filter').forEach(z => {
+      const token = (z.dataset.zone || '').toLowerCase();
+      z.querySelector('.v').textContent = [...document.querySelectorAll('.job-row[data-nz="1"]')]
+        .filter(r => (r.dataset.zone || '').toLowerCase().includes(token)).length;
+    });
+  }
   document.getElementById('totalJobsCount').textContent = t;
 
 }
@@ -1548,6 +1614,7 @@ document
       filterState.priority = '';
       filterState.subsystem = '';
       filterState.search = '';
+      if(ALL_MODE) setSubsystems(allSubsystems());
 
 
       document.getElementById(
@@ -1594,6 +1661,7 @@ function updateActiveFilters(){
       const names = {mbb:'MBB', eds:'EDS', fbb:'FBB', splitter:'Splitter'};
       parts.push('Sub System: ' + (names[filterState.subsystem] || filterState.subsystem));
     }
+    if(ALL_MODE) parts.push('Sub System: ' + subsystemLabel());
     if(filterState.priority) parts.push('Priority: ' + filterState.priority.toUpperCase());
     if(filterState.zone) parts.push('Zone: ' + filterState.zone);
     if(filterState.search) parts.push('ค้นหา: ' + filterState.search);
@@ -1658,9 +1726,79 @@ applyFilters =
   };
 
 
+/* ==========================================
+   ALL JOBS: Sub System picker
+   Selection lives in the URL (?subs=a|b or ?preset=radio, &pri=none) so a link
+   shows the same view, and in localStorage as the default for the next visit.
+========================================== */
+function allSubsystems(){
+  return [...document.querySelectorAll('#ssList input')].map(i => i.value);
+}
+function subsystemLabel(){
+  const sel = filterState.subsystems || new Set(), all = allSubsystems();
+  const pr = PRESETS.find(p => p.subs.length === sel.size && p.subs.every(s => sel.has(s)));
+  if(pr) return pr.label;
+  if(sel.size === 1) return [...sel][0];
+  return sel.size + ' รายการ';
+}
+function setSubsystems(list){
+  filterState.subsystems = new Set(list);
+  document.querySelectorAll('#ssList input').forEach(i => i.checked = filterState.subsystems.has(i.value));
+  const label = subsystemLabel(), sel = filterState.subsystems;
+  document.getElementById('ssLabel').textContent = label;
+  document.querySelectorAll('#ssPresets button').forEach(b => {
+    const p = PRESETS.find(x => x.key === b.dataset.preset);
+    b.classList.toggle('on', !!p && p.subs.length === sel.size && p.subs.every(s => sel.has(s)));
+  });
+  const jobs = [...document.querySelectorAll('#ssList label')].filter(l => l.querySelector('input').checked)
+    .reduce((a, l) => a + (+l.querySelector('em').textContent || 0), 0);
+  document.getElementById('ssSummary').textContent = `เลือก ${sel.size} จาก ${allSubsystems().length} · ${jobs} งาน`;
+  saveSelection();
+}
+function saveSelection(){
+  const sel = [...(filterState.subsystems || [])];
+  const pr = PRESETS.find(p => p.subs.length === sel.length && p.subs.every(s => sel.includes(s)));
+  const q = new URLSearchParams();
+  if(pr && pr.key !== 'all') q.set('preset', pr.key);
+  else if(!pr) q.set('subs', sel.join('|'));
+  if(filterState.priority) q.set('pri', filterState.priority);
+  history.replaceState(null, '', '/all_jobs' + (q.toString() ? '?' + q : '') + location.hash);
+  try { localStorage.setItem('allJobsSubs', JSON.stringify(sel)); } catch(e) {}
+  const ex = new URLSearchParams({mode: 'all', subs: sel.join('|')});
+  if(filterState.priority) ex.set('pri', filterState.priority);
+  document.getElementById('exportLink').href = '/export_excel?' + ex;
+}
+if(ALL_MODE){
+  const q = new URLSearchParams(location.search), all = allSubsystems();
+  let start = all;
+  if(q.get('preset')) start = (PRESETS.find(p => p.key === q.get('preset')) || {subs: all}).subs;
+  else if(q.get('subs')) start = q.get('subs').split('|').filter(s => all.includes(s));
+  else { try { const saved = JSON.parse(localStorage.getItem('allJobsSubs') || 'null'); if(Array.isArray(saved)) start = saved.filter(s => all.includes(s)); } catch(e) {} }
+  if(q.get('pri')) filterState.priority = q.get('pri');
+  setSubsystems(start);
+
+  const btn = document.getElementById('ssBtn'), panel = document.getElementById('ssPanel');
+  const show = (open) => { panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); };
+  btn.addEventListener('click', e => { e.stopPropagation(); show(panel.hidden); });
+  panel.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', () => show(false));
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && !panel.hidden){ show(false); btn.focus(); } });
+  document.getElementById('ssList').addEventListener('change', () => {
+    setSubsystems([...document.querySelectorAll('#ssList input:checked')].map(i => i.value)); applyFilters();
+  });
+  document.getElementById('ssPresets').addEventListener('click', e => {
+    const b = e.target.closest('[data-preset]'); if(!b) return;
+    setSubsystems((PRESETS.find(p => p.key === b.dataset.preset) || {subs: []}).subs); applyFilters();
+  });
+  document.getElementById('ssAll').addEventListener('click', () => { setSubsystems(allSubsystems()); applyFilters(); });
+  document.getElementById('ssNone').addEventListener('click', () => { setSubsystems([]); applyFilters(); });
+  // priority tiles also update the link / export
+  document.querySelectorAll('.priority-filter').forEach(b => b.addEventListener('click', () => setTimeout(saveSelection)));
+}
+
 updateSubsystemCounts();
 updateSummary();
-if(filterState.zone){
+if(filterState.zone || ALL_MODE){
   applyFilters();
 }
 

@@ -329,12 +329,22 @@ def prepare_job_dataframe(df):
     priority = normalize_priority_series(out)
     out = out[~status.str.contains("done(not leave)", regex=False)]
     out = out[priority.ne("") & priority.ne("none")].copy()
+    return sort_by_team(out)
+
+def sort_by_team(out):
     # known teams in table order, then anyone else, and Workforce BKK Pool (not dispatched yet) always last
     order = {name.casefold(): i for i, name in enumerate(ASSIGN_ORDER)}
     order["workforce bkk pool"] = len(ASSIGN_ORDER) + 1
+    out = out.copy()
     out["_sort"] = out["Assign to"].fillna("").astype(str).str.strip().str.casefold().map(order).fillna(len(ASSIGN_ORDER))
-    out = out.sort_values(["_sort", "Assign to"], kind="stable").drop(columns="_sort")
-    return out
+    return out.sort_values(["_sort", "Assign to"], kind="stable").drop(columns="_sort")
+
+def prepare_all_jobs(df):
+    """All Jobs page: every Sub System, jobs with no Priority kept; only Done(Not Leave) dropped."""
+    if df is None or df.empty or "Status" not in df.columns or "Assign to" not in df.columns:
+        return pd.DataFrame()
+    out = df[~normalize_status_series(df).str.contains("done(not leave)", regex=False)]
+    return sort_by_team(out)
 
 def calculate_totals(df):
     p = normalize_priority_series(df)
@@ -1007,6 +1017,37 @@ def job_monitor():
         total_minor=TOTAL_MINOR,total_jobs=TOTAL_JOBS,total_sct=TOTAL_SCT,total_cwt=TOTAL_CWT,
         total_ont=TOTAL_ONT,total_tlc=TOTAL_TLC,last_update=LAST_UPDATE)
 
+# ---------------------------------------------------------------- All Jobs
+# Job Monitor for any Sub System: pick several with tick boxes, or a preset.
+def is_isp_subsystem(name):
+    return re.search(r"(^|[\s-])isp$", name.strip(), re.I) is not None
+
+def all_jobs_presets(subsystems):
+    return [
+        {"key": "all", "label": "ทั้งหมด", "subs": subsystems},
+        {"key": "osp", "label": "OSP (ชุดเดิม)", "subs": [s for s in subsystems if s in VALID_SUBSYSTEMS]},
+        {"key": "radio", "label": "Radio-OSP", "subs": [s for s in subsystems if s == "Radio-OSP"]},
+        {"key": "isp", "label": "ISP + Power + Facility BS",
+         "subs": [s for s in subsystems if is_isp_subsystem(s) or s in ("Power System", "Facility-Base Station")]},
+    ]
+
+def all_jobs_frame():
+    return prepare_all_jobs(pd.DataFrame(ORIGINAL_DATA)) if ORIGINAL_DATA else pd.DataFrame()
+
+@app.route("/all_jobs")
+def all_jobs():
+    if not RAW_DATA: load_latest_excel_into_memory()
+    df = all_jobs_frame()
+    jobs = df.fillna("").to_dict(orient="records") if not df.empty else []
+    t = calculate_totals(df) if not df.empty else dict(jobs=0, critical=0, major=0, minor=0, sct=0, cwt=0, ont=0, tlc=0)
+    sub = df["Sub System"].fillna("").astype(str).str.strip().replace("", "(ไม่ระบุ)") if not df.empty else pd.Series(dtype=str)
+    counts = [{"name": n, "count": int(c)} for n, c in sub.value_counts().items()]
+    none = int(normalize_priority_series(df).isin(["", "none"]).sum()) if not df.empty else 0
+    return render_template("job_monitor.html", mode="all", jobs=jobs, total_jobs=t["jobs"], total_critical=t["critical"],
+        total_major=t["major"], total_minor=t["minor"], total_none=none, total_sct=t["sct"], total_cwt=t["cwt"],
+        total_ont=t["ont"], total_tlc=t["tlc"], last_update=LAST_UPDATE,
+        subsystem_counts=counts, presets=all_jobs_presets([c["name"] for c in counts]))
+
 @app.route("/resource_monitor")
 def resource_monitor():
     if not RAW_DATA: load_latest_excel_into_memory()
@@ -1274,10 +1315,21 @@ def excel_response(frame, sheet, prefix):
 def export_excel():
     if not RAW_DATA: return "ยังไม่มีข้อมูล Job สำหรับ Export กรุณา Upload Excel ก่อน",400
     df=pd.DataFrame(RAW_DATA)
+    if request.args.get("mode") == "all":
+        # All Jobs page: export what is ticked (Sub System list, optional priority)
+        df = all_jobs_frame()
+        subs = [s for s in request.args.get("subs", "").split("|") if s]
+        if subs:
+            df = df[df["Sub System"].fillna("").astype(str).str.strip().replace("", "(ไม่ระบุ)").isin(subs)]
+        pri = request.args.get("pri", "").strip().lower()
+        if pri:
+            p = normalize_priority_series(df)
+            df = df[p.isin(["", "none"])] if pri == "none" else df[p.eq(pri)]
     if "Assign to" in df:
         df.insert(0,"Remark",[REMARKS.get(clean_text(u),"") for u in df["Assign to"]])
         df.insert(0,"Contact",[CONTACTS.get(clean_text(u),"") for u in df["Assign to"]])
-    return excel_response(df,"Job Monitor","job_monitor")
+    all_mode = request.args.get("mode") == "all"
+    return excel_response(df,"All Jobs" if all_mode else "Job Monitor","all_jobs" if all_mode else "job_monitor")
 
 @app.route("/export_dashboard_excel")
 def export_dashboard_excel():
