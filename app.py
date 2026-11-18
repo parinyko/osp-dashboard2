@@ -340,11 +340,12 @@ def sort_by_team(out):
     return out.sort_values(["_sort", "Assign to"], kind="stable").drop(columns="_sort")
 
 def prepare_all_jobs(df):
-    """All Jobs page: every Sub System, jobs with no Priority kept; only Done(Not Leave) dropped."""
+    """All Jobs page: every Sub System; Done(Not Leave) and jobs with no Priority dropped, like Job Monitor."""
     if df is None or df.empty or "Status" not in df.columns or "Assign to" not in df.columns:
         return pd.DataFrame()
     out = df[~normalize_status_series(df).str.contains("done(not leave)", regex=False)]
-    return sort_by_team(out)
+    p = normalize_priority_series(out)
+    return sort_by_team(out[p.ne("") & p.ne("none")])
 
 def calculate_totals(df):
     p = normalize_priority_series(df)
@@ -1042,9 +1043,8 @@ def all_jobs():
     t = calculate_totals(df) if not df.empty else dict(jobs=0, critical=0, major=0, minor=0, sct=0, cwt=0, ont=0, tlc=0)
     sub = df["Sub System"].fillna("").astype(str).str.strip().replace("", "(ไม่ระบุ)") if not df.empty else pd.Series(dtype=str)
     counts = [{"name": n, "count": int(c)} for n, c in sub.value_counts().items()]
-    none = int(normalize_priority_series(df).isin(["", "none"]).sum()) if not df.empty else 0
     return render_template("job_monitor.html", mode="all", jobs=jobs, total_jobs=t["jobs"], total_critical=t["critical"],
-        total_major=t["major"], total_minor=t["minor"], total_none=none, total_sct=t["sct"], total_cwt=t["cwt"],
+        total_major=t["major"], total_minor=t["minor"], total_sct=t["sct"], total_cwt=t["cwt"],
         total_ont=t["ont"], total_tlc=t["tlc"], last_update=LAST_UPDATE,
         subsystem_counts=counts, presets=all_jobs_presets([c["name"] for c in counts]))
 
@@ -1323,8 +1323,7 @@ def export_excel():
             df = df[df["Sub System"].fillna("").astype(str).str.strip().replace("", "(ไม่ระบุ)").isin(subs)]
         pri = request.args.get("pri", "").strip().lower()
         if pri:
-            p = normalize_priority_series(df)
-            df = df[p.isin(["", "none"])] if pri == "none" else df[p.eq(pri)]
+            df = df[normalize_priority_series(df).eq(pri)]
     if "Assign to" in df:
         df.insert(0,"Remark",[REMARKS.get(clean_text(u),"") for u in df["Assign to"]])
         df.insert(0,"Contact",[CONTACTS.get(clean_text(u),"") for u in df["Assign to"]])

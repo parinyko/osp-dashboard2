@@ -34,8 +34,6 @@ body{
 .jh-grow{flex:1}
 
 .jh-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.6fr);gap:1px;background:#D6E6CE;border-bottom:1px solid #D6E6CE}
-.jh-kpis.five{grid-template-columns:repeat(5,minmax(0,1fr)) minmax(0,1.6fr)}
-.jh-none{width:9px;height:9px;border-radius:2px;border:2px solid #64748B}
 /* All Jobs: Sub System picker (tick boxes + presets) */
 .ss-pick{position:relative}
 .ss-btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:1px solid #CFE0C5;border-radius:9px;background:#F7FBF5;color:#315A28;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
@@ -457,7 +455,7 @@ tbody tr:hover{
   {% else %}{% set ab_page = 'jobs' %}{% set ab_title = 'Job Monitor' %}{% set ab_icon = 'list' %}{% endif %}{% set ab_updated = last_update or '-' %}
   {% include "_app_bar.html" %}
 
-  <section class="jh-kpis{% if mode == 'all' %} five{% endif %}" aria-label="สรุปงาน กดเพื่อกรอง">
+  <section class="jh-kpis" aria-label="สรุปงาน กดเพื่อกรอง">
     <button type="button" class="jh-kpi priority-filter" data-priority="" style="--c:#334155">
       <span class="t">งานทั้งหมด</span><span class="v"><span id="totalJobsCount">{{ total_jobs }}</span><small>งาน</small></span>
       <span class="jh-meter"><i style="width:100%"></i></span>
@@ -474,12 +472,6 @@ tbody tr:hover{
       <span class="t"><i class="jh-cir"></i>Minor</span><span class="v"><span id="minorCount">{{ total_minor }}</span><small id="minorPct"></small></span>
       <span class="jh-meter"><i id="minorBar"></i></span>
     </button>
-    {% if mode == 'all' %}
-    <button type="button" class="jh-kpi priority-filter" data-priority="none" style="--c:#64748B" title="งานที่ช่อง Priority ว่าง">
-      <span class="t"><i class="jh-none"></i>None</span><span class="v"><span id="noneCount">{{ total_none }}</span><small id="nonePct"></small></span>
-      <span class="jh-meter"><i id="noneBar"></i></span>
-    </button>
-    {% endif %}
     <div class="jh-zones" role="group" aria-label="โซน">
       <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ST2" style="--c:#2563EB"><span class="t"><i></i>SCT</span><span class="v">{{ total_sct }}</span></button>
       <button type="button" class="jh-zone zone-filter" data-zone="Bangkok-ONT" style="--c:#DB2777"><span class="t"><i></i>ONT</span><span class="v">{{ total_ont }}</span></button>
@@ -1436,7 +1428,6 @@ function updateSummary(){
   let m = 0;
   let n = 0;
   let t = 0;
-  let x = 0;   // no Priority (All Jobs)
 
 
   document
@@ -1481,15 +1472,6 @@ function updateSummary(){
 
         }
 
-        else if(
-          r.dataset.priority ===
-          'none'
-        ){
-
-          x++;
-
-        }
-
       }
     );
 
@@ -1504,7 +1486,6 @@ function updateSummary(){
   set('major', m);
   set('minor', n);
   if(ALL_MODE){
-    set('none', x);
     document.querySelectorAll('.zone-filter').forEach(z => {
       const token = (z.dataset.zone || '').toLowerCase();
       z.querySelector('.v').textContent = [...document.querySelectorAll('.job-row[data-nz="1"]')]
@@ -1728,7 +1709,7 @@ applyFilters =
 
 /* ==========================================
    ALL JOBS: Sub System picker
-   Selection lives in the URL (?subs=a|b or ?preset=radio, &pri=none) so a link
+   Selection lives in the URL (?subs=a|b or ?preset=radio, &pri=critical) so a link
    shows the same view, and in localStorage as the default for the next visit.
 ========================================== */
 function allSubsystems(){
@@ -1774,7 +1755,7 @@ if(ALL_MODE){
   if(q.get('preset')) start = (PRESETS.find(p => p.key === q.get('preset')) || {subs: all}).subs;
   else if(q.get('subs')) start = q.get('subs').split('|').filter(s => all.includes(s));
   else { try { const saved = JSON.parse(localStorage.getItem('allJobsSubs') || 'null'); if(Array.isArray(saved)) start = saved.filter(s => all.includes(s)); } catch(e) {} }
-  if(q.get('pri')) filterState.priority = q.get('pri');
+  if(['critical','major','minor'].includes(q.get('pri'))) filterState.priority = q.get('pri');
   setSubsystems(start);
 
   const btn = document.getElementById('ssBtn'), panel = document.getElementById('ssPanel');
